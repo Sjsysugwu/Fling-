@@ -141,7 +141,7 @@ UserInputService.InputChanged:Connect(function(input)
 		
 		PowerSlider.Position = UDim2.new(newPos,0,0,0)
 		
-		flingPower = math.floor(newPos * 5000) + 500
+		flingPower = math.floor(newPos * 50000) + 500
 		
 		PowerLabel.Text = "Power : "..flingPower
 	end
