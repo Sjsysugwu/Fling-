@@ -14,7 +14,7 @@ local PowerSlider = Instance.new("TextButton")
 local PowerBar = Instance.new("Frame")
 
 local hiddenfling = false
-local flingPower = 10000
+local flingPower = 20000
 local dragging = false
 
 ScreenGui.Parent = lp:WaitForChild("PlayerGui")
