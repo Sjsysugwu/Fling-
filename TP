@@ -1,0 +1,111 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local plr = Players.LocalPlayer
+local savedPos
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "FastTeleport"
+gui.ResetOnSpawn = false
+gui.Parent = plr:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Parent = gui
+frame.Size = UDim2.new(0,170,0,140)
+frame.Position = UDim2.new(1,-180,0.35,0)
+frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+
+-- زوايا فقط
+local corners = {}
+
+local function corner(pos,size)
+	local f = Instance.new("Frame")
+	f.Parent = frame
+	f.Position = pos
+	f.Size = size
+	f.BorderSizePixel = 0
+	table.insert(corners,f)
+	return f
+end
+
+-- فوق يسار
+corner(UDim2.new(0,0,0,0),UDim2.new(0,30,0,4))
+corner(UDim2.new(0,0,0,0),UDim2.new(0,4,0,30))
+
+-- فوق يمين
+corner(UDim2.new(1,-30,0,0),UDim2.new(0,30,0,4))
+corner(UDim2.new(1,-4,0,0),UDim2.new(0,4,0,30))
+
+-- تحت يسار
+corner(UDim2.new(0,0,1,-4),UDim2.new(0,30,0,4))
+corner(UDim2.new(0,0,1,-30),UDim2.new(0,4,0,30))
+
+-- تحت يمين
+corner(UDim2.new(1,-30,1,-4),UDim2.new(0,30,0,4))
+corner(UDim2.new(1,-4,1,-30),UDim2.new(0,4,0,30))
+
+-- عنوان
+local title = Instance.new("TextLabel")
+title.Parent = frame
+title.Size = UDim2.new(1,0,0,30)
+title.BackgroundTransparency = 1
+title.Text = "FAST TP"
+title.TextColor3 = Color3.new(1,1,0)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+
+-- زر
+local function makeButton(text,y)
+	local b = Instance.new("TextButton")
+	b.Parent = frame
+	b.Size = UDim2.new(1,-20,0,40)
+	b.Position = UDim2.new(0,10,0,y)
+	b.BackgroundColor3 = Color3.fromRGB(55,55,55)
+	b.TextColor3 = Color3.new(1,1,0)
+	b.Font = Enum.Font.GothamBold
+	b.TextSize = 15
+	b.BorderSizePixel = 0
+	b.Text = text
+	return b
+end
+
+local save = makeButton("SAVE",40)
+local tp = makeButton("TP",85)
+
+-- تغيير لون الزوايا فقط
+local hue = 0
+
+RunService.RenderStepped:Connect(function()
+	hue = (hue + 0.004) % 1
+	local color = Color3.fromHSV(hue,1,1)
+
+	for _,v in pairs(corners) do
+		v.BackgroundColor3 = color
+	end
+end)
+
+-- حفظ
+save.MouseButton1Click:Connect(function()
+	local char = plr.Character
+	if char then
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			savedPos = hrp.CFrame
+		end
+	end
+end)
+
+-- انتقال
+tp.MouseButton1Click:Connect(function()
+	local char = plr.Character
+	if char and savedPos then
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			hrp.CFrame = savedPos
+		end
+	end
+end)
