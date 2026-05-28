@@ -22,17 +22,17 @@ gui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame")
 frame.Parent = gui
-frame.Size = UDim2.new(0,320,0,240)
-frame.Position = UDim2.new(0.35,0,0.3,0)
+frame.Size = UDim2.new(0,220,0,160) -- صغير
+frame.Position = UDim2.new(0.4,0,0.35,0)
 frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
 frame.Active = true
 frame.Draggable = true
 
-local corner = Instance.new("UICorner", frame)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
 
 local title = Instance.new("TextLabel")
 title.Parent = frame
-title.Size = UDim2.new(1,0,0,35)
+title.Size = UDim2.new(1,0,0,28)
 title.BackgroundColor3 = Color3.fromRGB(25,25,25)
 title.Text = "Attack GUI"
 title.TextColor3 = Color3.new(1,1,1)
@@ -40,31 +40,37 @@ title.TextScaled = true
 
 local box = Instance.new("TextBox")
 box.Parent = frame
-box.Size = UDim2.new(0,280,0,45)
-box.Position = UDim2.new(0,20,0,50)
-box.PlaceholderText = "Enter Player Name"
+box.Size = UDim2.new(0,190,0,30)
+box.Position = UDim2.new(0,15,0,40)
+box.PlaceholderText = "Player Name"
 box.Text = ""
 box.TextScaled = true
 box.BackgroundColor3 = Color3.fromRGB(55,55,55)
 box.TextColor3 = Color3.new(1,1,1)
 
+Instance.new("UICorner", box).CornerRadius = UDim.new(0,8)
+
 local attackBtn = Instance.new("TextButton")
 attackBtn.Parent = frame
-attackBtn.Size = UDim2.new(0,280,0,45)
-attackBtn.Position = UDim2.new(0,20,0,110)
-attackBtn.Text = "Attack Player"
+attackBtn.Size = UDim2.new(0,190,0,30)
+attackBtn.Position = UDim2.new(0,15,0,80)
+attackBtn.Text = "Attack"
 attackBtn.TextScaled = true
 attackBtn.BackgroundColor3 = Color3.fromRGB(255,170,0)
 attackBtn.TextColor3 = Color3.new(1,1,1)
 
+Instance.new("UICorner", attackBtn).CornerRadius = UDim.new(0,8)
+
 local stopBtn = Instance.new("TextButton")
 stopBtn.Parent = frame
-stopBtn.Size = UDim2.new(0,280,0,45)
-stopBtn.Position = UDim2.new(0,20,0,170)
-stopBtn.Text = "Leave Player"
+stopBtn.Size = UDim2.new(0,190,0,30)
+stopBtn.Position = UDim2.new(0,15,0,118)
+stopBtn.Text = "Leave"
 stopBtn.TextScaled = true
 stopBtn.BackgroundColor3 = Color3.fromRGB(255,70,70)
 stopBtn.TextColor3 = Color3.new(1,1,1)
+
+Instance.new("UICorner", stopBtn).CornerRadius = UDim.new(0,8)
 
 -- Attack
 attackBtn.MouseButton1Click:Connect(function()
@@ -82,22 +88,24 @@ stopBtn.MouseButton1Click:Connect(function()
 	targetPlayer = nil
 end)
 
--- Follow Fast
+-- Fast Follow
 RunService.Heartbeat:Connect(function()
 	if attacking and targetPlayer and targetPlayer.Character then
 		local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
 		local myHRP = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
 
 		if targetHRP and myHRP then
-			myHRP.CFrame = targetHRP.CFrame * CFrame.new(0,0,2)
+			
+			-- يلحقه بسرعه
+			myHRP.CFrame = targetHRP.CFrame * CFrame.new(0,0,3)
 
-			-- Fast Dash Effect
+			-- سرعه قويه
 			local bv = Instance.new("BodyVelocity")
-			bv.MaxForce = Vector3.new(999999,0,999999)
-			bv.Velocity = myHRP.CFrame.LookVector * 120
+			bv.MaxForce = Vector3.new(9999999,9999999,9999999)
+			bv.Velocity = (targetHRP.Position - myHRP.Position).Unit * 250
 			bv.Parent = myHRP
 
-			Debris:AddItem(bv,0.1)
+			Debris:AddItem(bv,0.05)
 		end
 	end
 end)
