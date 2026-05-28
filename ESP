@@ -1,0 +1,318 @@
+--// PLAYER ESP + TOGGLE + CREDIT (COLOR EDITION)
+--// By YT: ALi_BOOSS919
+
+-- 🔒 CREDIT LOCK
+local CREDIT = "By YT: ALi_BOOSS919"
+if CREDIT ~= "By YT: ALi_BOOSS919" then return end
+
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+repeat task.wait() until LocalPlayer:FindFirstChild("PlayerGui")
+
+-- REMOVE OLD GUI
+if LocalPlayer.PlayerGui:FindFirstChild("ESP_GUI") then
+	LocalPlayer.PlayerGui.ESP_GUI:Destroy()
+end
+
+-- SETTINGS
+local DEFAULT_ESP = true
+local ESP_ENABLED = DEFAULT_ESP
+local TEAM_CHECK = true
+
+-- 🎨 GUI COLORS
+local THEMES = {
+	{ Name = "Red", Color = Color3.fromRGB(170,0,0) },
+	{ Name = "Blue", Color = Color3.fromRGB(0,85,255) },
+	{ Name = "Green", Color = Color3.fromRGB(0,170,0) },
+	{ Name = "Purple", Color = Color3.fromRGB(140,0,255) },
+	{ Name = "Pink", Color = Color3.fromRGB(255,0,170) },
+}
+
+local ThemeIndex = 1
+
+-- STORAGE
+local ESPs = {}
+local Tracers = {}
+local Highlights = {}
+
+-- GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ESP_GUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer.PlayerGui
+
+local Frame = Instance.new("Frame")
+Frame.Parent = ScreenGui
+Frame.Size = UDim2.new(0,180,0,150)
+Frame.Position = UDim2.new(0,20,0.4,0)
+Frame.BackgroundColor3 = THEMES[ThemeIndex].Color
+Frame.BorderSizePixel = 0
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0,10)
+
+-- DRAG
+local dragging = false
+local dragStart
+local startPos
+
+Frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+	or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = Frame.Position
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+	or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = false
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if dragging and (
+		input.UserInputType == Enum.UserInputType.MouseMovement
+		or input.UserInputType == Enum.UserInputType.Touch
+	) then
+		local delta = input.Position - dragStart
+
+		Frame.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+-- TITLE
+local Title = Instance.new("TextLabel")
+Title.Parent = Frame
+Title.Size = UDim2.new(1,0,0,25)
+Title.BackgroundTransparency = 1
+Title.Text = "ESP MENU"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 16
+
+-- CREDIT
+local Credit = Instance.new("TextLabel")
+Credit.Parent = Frame
+Credit.Size = UDim2.new(1,-10,0,18)
+Credit.Position = UDim2.new(0,5,0,25)
+Credit.BackgroundTransparency = 1
+Credit.Text = CREDIT
+Credit.TextColor3 = Color3.new(1,1,1)
+Credit.Font = Enum.Font.SourceSans
+Credit.TextSize = 12
+
+-- TOGGLE BUTTON
+local Toggle = Instance.new("TextButton")
+Toggle.Parent = Frame
+Toggle.Size = UDim2.new(0.85,0,0,35)
+Toggle.Position = UDim2.new(0.075,0,0.45,0)
+Toggle.BackgroundColor3 = Color3.fromRGB(0,170,0)
+Toggle.Text = "ESP : ON"
+Toggle.TextColor3 = Color3.new(1,1,1)
+Toggle.Font = Enum.Font.SourceSansBold
+Toggle.TextSize = 14
+Instance.new("UICorner", Toggle).CornerRadius = UDim.new(0,8)
+
+-- THEME BUTTON
+local ThemeButton = Instance.new("TextButton")
+ThemeButton.Parent = Frame
+ThemeButton.Size = UDim2.new(0.85,0,0,30)
+ThemeButton.Position = UDim2.new(0.075,0,0.73,0)
+ThemeButton.BackgroundColor3 = Color3.fromRGB(40,40,40)
+ThemeButton.Text = "Theme : "..THEMES[ThemeIndex].Name
+ThemeButton.TextColor3 = Color3.new(1,1,1)
+ThemeButton.Font = Enum.Font.SourceSansBold
+ThemeButton.TextSize = 13
+Instance.new("UICorner", ThemeButton).CornerRadius = UDim.new(0,8)
+
+local function updateToggle()
+	Toggle.Text = ESP_ENABLED and "ESP : ON" or "ESP : OFF"
+
+	if ESP_ENABLED then
+		Toggle.BackgroundColor3 = Color3.fromRGB(0,170,0)
+	else
+		Toggle.BackgroundColor3 = Color3.fromRGB(170,0,0)
+	end
+end
+
+Toggle.MouseButton1Click:Connect(function()
+	ESP_ENABLED = not ESP_ENABLED
+	updateToggle()
+
+	for _,v in pairs(ESPs) do
+		v.Enabled = ESP_ENABLED
+	end
+
+	for _,v in pairs(Highlights) do
+		v.Enabled = ESP_ENABLED
+	end
+
+	for _,v in pairs(Tracers) do
+		v.Visible = false
+	end
+end)
+
+-- THEME SWITCH
+ThemeButton.MouseButton1Click:Connect(function()
+	ThemeIndex += 1
+
+	if ThemeIndex > #THEMES then
+		ThemeIndex = 1
+	end
+
+	Frame.BackgroundColor3 = THEMES[ThemeIndex].Color
+	ThemeButton.Text = "Theme : "..THEMES[ThemeIndex].Name
+end)
+
+-- CREATE ESP
+local function createESP(player)
+	if player == LocalPlayer then return end
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Size = UDim2.new(0,200,0,30)
+	billboard.AlwaysOnTop = true
+	billboard.Enabled = ESP_ENABLED
+
+	local label = Instance.new("TextLabel")
+	label.Name = "TextLabel"
+	label.Parent = billboard
+	label.Size = UDim2.new(1,0,1,0)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.SourceSansBold
+	label.TextSize = 13
+	label.TextStrokeTransparency = 0.4
+
+	local tracer = Drawing.new("Line")
+	tracer.Thickness = 1
+	tracer.Transparency = 1
+	tracer.Visible = false
+
+	local highlight = Instance.new("Highlight")
+	highlight.FillTransparency = 0.6
+	highlight.OutlineTransparency = 0
+	highlight.Enabled = ESP_ENABLED
+
+	ESPs[player] = billboard
+	Tracers[player] = tracer
+	Highlights[player] = highlight
+end
+
+for _,p in ipairs(Players:GetPlayers()) do
+	createESP(p)
+end
+
+Players.PlayerAdded:Connect(createESP)
+
+Players.PlayerRemoving:Connect(function(player)
+	if ESPs[player] then
+		ESPs[player]:Destroy()
+		ESPs[player] = nil
+	end
+
+	if Tracers[player] then
+		Tracers[player]:Remove()
+		Tracers[player] = nil
+	end
+
+	if Highlights[player] then
+		Highlights[player]:Destroy()
+		Highlights[player] = nil
+	end
+end)
+
+-- RESPAWN RESET
+LocalPlayer.CharacterAdded:Connect(function()
+	task.wait(0.5)
+
+	ESP_ENABLED = DEFAULT_ESP
+	updateToggle()
+
+	for _,v in pairs(ESPs) do
+		v.Enabled = ESP_ENABLED
+	end
+
+	for _,v in pairs(Highlights) do
+		v.Enabled = ESP_ENABLED
+	end
+
+	for _,v in pairs(Tracers) do
+		v.Visible = false
+	end
+end)
+
+-- UPDATE LOOP
+RunService.RenderStepped:Connect(function()
+	if not ESP_ENABLED then
+		return
+	end
+
+	local myChar = LocalPlayer.Character
+
+	if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then
+		return
+	end
+
+	for player,billboard in pairs(ESPs) do
+		local char = player.Character
+
+		if char
+		and char:FindFirstChild("Head")
+		and char:FindFirstChild("HumanoidRootPart") then
+
+			billboard.Parent = char.Head
+
+			Highlights[player].Parent = char
+			Highlights[player].Adornee = char
+
+			local dist = math.floor(
+				(myChar.HumanoidRootPart.Position -
+				char.HumanoidRootPart.Position).Magnitude
+			)
+
+			local color = Color3.fromRGB(255,0,0)
+
+			if TEAM_CHECK and player.Team == LocalPlayer.Team then
+				color = Color3.fromRGB(0,255,0)
+			end
+
+			billboard.TextLabel.Text = player.Name.." ["..dist.."m]"
+			billboard.TextLabel.TextColor3 = color
+
+			Highlights[player].FillColor = color
+			Highlights[player].OutlineColor = color
+
+			local pos, onScreen = Camera:WorldToViewportPoint(char.Head.Position)
+
+			local tracer = Tracers[player]
+
+			if onScreen then
+				tracer.From = Vector2.new(
+					Camera.ViewportSize.X/2,
+					Camera.ViewportSize.Y
+				)
+
+				tracer.To = Vector2.new(pos.X, pos.Y)
+				tracer.Color = color
+				tracer.Visible = true
+			else
+				tracer.Visible = false
+			end
+		else
+			if Tracers[player] then
+				Tracers[player].Visible = false
+			end
+		end
+	end
+end)
