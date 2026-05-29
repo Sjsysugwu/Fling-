@@ -14,14 +14,19 @@ local PowerSlider = Instance.new("TextButton")
 local PowerBar = Instance.new("Frame")
 
 local hiddenfling = false
-local flingPower = 20000000000000000000
+local flingPower = 5000000000000000000000
 local dragging = false
 
 ScreenGui.Parent = lp:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
+local Sound = Instance.new("Sound")
+Sound.Parent = ScreenGui
+Sound.SoundId = "rbxassetid://7361207035"
+Sound.Volume = 2
+
 Frame.Parent = ScreenGui
-Frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 127)
 Frame.Position = UDim2.new(0.35,0,0.4,0)
 Frame.Size = UDim2.new(0,220,0,160)
 Frame.Active = true
@@ -59,7 +64,7 @@ PowerLabel.BackgroundTransparency = 1
 PowerLabel.Position = UDim2.new(0.1,0,0.55,0)
 PowerLabel.Size = UDim2.new(0.8,0,0.12,0)
 PowerLabel.Font = Enum.Font.SourceSansBold
-PowerLabel.Text = "Power : 10000000000000000000"
+PowerLabel.Text = "Power : 200000000000000000"
 PowerLabel.TextColor3 = Color3.fromRGB(255,255,255)
 PowerLabel.TextSize = 18
 
@@ -72,7 +77,7 @@ local BarCorner = Instance.new("UICorner")
 BarCorner.Parent = PowerBar
 
 PowerSlider.Parent = PowerBar
-PowerSlider.Size = UDim2.new(0.1,0,1,0)
+PowerSlider.Size = UDim2.new(0.08,0,1,0)
 PowerSlider.BackgroundColor3 = Color3.fromRGB(0,170,255)
 PowerSlider.Text = ""
 
@@ -80,37 +85,33 @@ local SliderCorner = Instance.new("UICorner")
 SliderCorner.Parent = PowerSlider
 
 HideButton.Parent = ScreenGui
-HideButton.Position = UDim2.new(0.02,0,0.9,0)
-HideButton.Size = UDim2.new(0,60,0,30)
-HideButton.Text = "Hide"
+HideButton.Position = UDim2.new(0.01,0,0.95,0)
+HideButton.Size = UDim2.new(0,40,0,20)
+HideButton.Text = "GUI"
 HideButton.Font = Enum.Font.SourceSansBold
-HideButton.TextSize = 18
+HideButton.TextSize = 14
 HideButton.TextColor3 = Color3.fromRGB(255,255,255)
-HideButton.BackgroundColor3 = Color3.fromRGB(40,40,40)
+HideButton.BackgroundColor3 = Color3.fromRGB(0,0,0)
 
 local HideCorner = Instance.new("UICorner")
 HideCorner.Parent = HideButton
 
 ToggleButton.MouseButton1Click:Connect(function()
 	hiddenfling = not hiddenfling
-	
+
 	if hiddenfling then
 		ToggleButton.Text = "ON"
-		ToggleButton.BackgroundColor3 = Color3.fromRGB(0,170,0)
+		ToggleButton.BackgroundColor3 = Color3.fromRGB( 127, 127, 127)
+
+		Sound:Play()
 	else
 		ToggleButton.Text = "OFF"
-		ToggleButton.BackgroundColor3 = Color3.fromRGB(170,0,0)
+		ToggleButton.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	end
 end)
 
 HideButton.MouseButton1Click:Connect(function()
 	Frame.Visible = not Frame.Visible
-	
-	if Frame.Visible then
-		HideButton.Text = "Hide"
-	else
-		HideButton.Text = "Show"
-	end
 end)
 
 PowerSlider.InputBegan:Connect(function(input)
@@ -132,17 +133,17 @@ UserInputService.InputChanged:Connect(function(input)
 		input.UserInputType == Enum.UserInputType.MouseMovement
 		or input.UserInputType == Enum.UserInputType.Touch
 	) then
-		
+
 		local mousePos = input.Position.X
 		local barPos = PowerBar.AbsolutePosition.X
 		local barSize = PowerBar.AbsoluteSize.X
-		
+
 		local newPos = math.clamp((mousePos - barPos) / barSize,0,1)
-		
+
 		PowerSlider.Position = UDim2.new(newPos,0,0,0)
-		
-		flingPower = math.floor(newPos * 50000000000000) + 50000000000
-		
+
+		flingPower = math.floor(newPos * 500000000000000000) + 50000000000000
+
 		PowerLabel.Text = "Power : "..flingPower
 	end
 end)
@@ -151,10 +152,10 @@ task.spawn(function()
 	while true do
 		for i = 0,1,0.01 do
 			local color = Color3.fromHSV(i,1,1)
-			
+
 			TextLabel.TextColor3 = color
 			Stroke.Color = color
-			
+
 			task.wait(0.03)
 		end
 	end
@@ -164,30 +165,30 @@ task.spawn(function()
 	local hrp
 	local vel
 	local movel = 0.1
-	
+
 	while true do
 		RunService.Heartbeat:Wait()
-		
+
 		if hiddenfling then
 			local character = lp.Character
-			
+
 			if character then
 				hrp = character:FindFirstChild("HumanoidRootPart")
 			end
-			
+
 			if hrp then
 				vel = hrp.Velocity
-				
+
 				hrp.Velocity = vel * flingPower + Vector3.new(0,flingPower,0)
-				
+
 				RunService.RenderStepped:Wait()
-				
+
 				hrp.Velocity = vel
-				
+
 				RunService.Stepped:Wait()
-				
+
 				hrp.Velocity = vel + Vector3.new(0,movel,0)
-				
+
 				movel = -movel
 			end
 		end
