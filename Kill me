@@ -1,0 +1,90 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "CityLightTP"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local lastPosition = nil
+local busy = false
+
+------------------------------------------------
+-- KILL (فوق يسار - زاوية)
+local button3 = Instance.new("TextButton")
+button3.Size = UDim2.new(0, 120, 0, 50)
+button3.Position = UDim2.new(0, 10, 0, 10)
+button3.Text = "by A_A"
+button3.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+button3.TextColor3 = Color3.fromRGB(0, 0, 0)
+button3.Parent = gui
+
+------------------------------------------------
+-- Go Far (تحت الكيل)
+local button1 = Instance.new("TextButton")
+button1.Size = UDim2.new(0, 120, 0, 50)
+button1.Position = UDim2.new(0, 10, 0, 70)
+button1.Text = "by A_A"
+button1.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+button1.TextColor3 = Color3.fromRGB(255, 255, 255)
+button1.Parent = gui
+
+------------------------------------------------
+-- Return
+local button2 = Instance.new("TextButton")
+button2.Size = UDim2.new(0, 120, 0, 50)
+button2.Position = UDim2.new(0, 10, 0, 130)
+button2.Text = "by A_A"
+button2.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+button2.TextColor3 = Color3.fromRGB(255, 255, 255)
+button2.Parent = gui
+
+------------------------------------------------
+-- Go Far = بلوكة بعيدة
+button1.MouseButton1Click:Connect(function()
+	if busy then return end
+	busy = true
+
+	local char = player.Character or player.CharacterAdded:Wait()
+	local hrp = char:WaitForChild("HumanoidRootPart")
+
+	lastPosition = hrp.CFrame
+
+	local block = Instance.new("Part")
+	block.Size = Vector3.new(100, 100, 100)
+	block.Anchored = true
+	block.Position = Vector3.new(100000, 50, 100000)
+	block.Parent = workspace
+
+	hrp.CFrame = CFrame.new(block.Position + Vector3.new(0, 6, 0))
+
+	busy = false
+end)
+
+------------------------------------------------
+-- Return
+button2.MouseButton1Click:Connect(function()
+	if busy then return end
+	busy = true
+
+	local char = player.Character or player.CharacterAdded:Wait()
+	local hrp = char:WaitForChild("HumanoidRootPart")
+
+	if lastPosition then
+		hrp.CFrame = lastPosition
+	end
+
+	busy = false
+end)
+
+------------------------------------------------
+-- Kill
+button3.MouseButton1Click:Connect(function()
+	local char = player.Character or player.CharacterAdded:Wait()
+	local hum = char:FindFirstChildOfClass("Humanoid")
+
+	if hum then
+		hum.Health = 0
+	end
+end)
