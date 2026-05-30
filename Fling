@@ -43,7 +43,7 @@ TextLabel.Parent = Frame
 TextLabel.BackgroundTransparency = 1
 TextLabel.Size = UDim2.new(1,0,0.2,0)
 TextLabel.Font = Enum.Font.SourceSansBold
-TextLabel.Text = "😈ALi_BOOSS414🥶"
+TextLabel.Text = "🇹🇷ALi_BOOSS67📿"
 TextLabel.TextColor3 = Color3.fromRGB(255,255,255)
 TextLabel.TextSize = 24
 
