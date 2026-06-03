@@ -1,0 +1,144 @@
+--VibeSupportedMe♥️
+local v1=game:GetService("Players")
+local v2=game:GetService("RobloxReplicatedStorage").RequestDeviceCameraOrientationCapability
+local v3=v1.LocalPlayer
+local v4,v5={},{}
+
+local sg=Instance.new("ScreenGui")
+sg.ResetOnSpawn=false sg.IgnoreGuiInset=true sg.Parent=v3:WaitForChild("PlayerGui")
+
+-- First GUI
+local f=Instance.new("Frame")
+f.Size=UDim2.new(0,300,0,90) f.Position=UDim2.new(0.5,-150,0.5,-45)
+f.BackgroundColor3=Color3.fromRGB(15,15,25) f.BorderSizePixel=0 f.Parent=sg
+Instance.new("UICorner",f).CornerRadius=UDim.new(0,12)
+
+local tt=Instance.new("TextLabel")
+tt.Size=UDim2.new(1,0,0,35) tt.Position=UDim2.new(0,0,0,5)
+tt.BackgroundTransparency=1 tt.Text="Do You Have A Brain? 🧠"
+tt.TextColor3=Color3.fromRGB(255,255,255) tt.Font=Enum.Font.GothamBold
+tt.TextScaled=true tt.Parent=f
+
+local y=Instance.new("TextButton")
+y.Size=UDim2.new(0,110,0,35) y.Position=UDim2.new(0,10,0,48)
+y.BackgroundColor3=Color3.fromRGB(0,200,100) y.Text="Yes"
+y.TextColor3=Color3.fromRGB(255,255,255) y.Font=Enum.Font.GothamBold
+y.TextScaled=true y.BorderSizePixel=0 y.Parent=f
+Instance.new("UICorner",y).CornerRadius=UDim.new(0,8)
+
+local n=Instance.new("TextButton")
+n.Size=UDim2.new(0,110,0,35) n.Position=UDim2.new(0,180,0,48)
+n.BackgroundColor3=Color3.fromRGB(200,50,50) n.Text="No"
+n.TextColor3=Color3.fromRGB(255,255,255) n.Font=Enum.Font.GothamBold
+n.TextScaled=true n.BorderSizePixel=0 n.Parent=f
+Instance.new("UICorner",n).CornerRadius=UDim.new(0,8)
+
+-- Second GUI (warning)
+local wf=Instance.new("Frame")
+wf.Size=UDim2.new(0,380,0,140) wf.Position=UDim2.new(0.5,-190,0.5,-70)
+wf.BackgroundColor3=Color3.fromRGB(15,15,25) wf.BorderSizePixel=0
+wf.Visible=false wf.Parent=sg
+Instance.new("UICorner",wf).CornerRadius=UDim.new(0,12)
+
+local wt=Instance.new("TextLabel")
+wt.Size=UDim2.new(1,-20,0,80) wt.Position=UDim2.new(0,10,0,8)
+wt.BackgroundTransparency=1
+wt.Text="⚠️ THIS SCRIPT DOESN'T WORK ON XBOX, IPAD OR ANY OTHER SHIT, IT ONLY WORKS ON PC OR MOBILE"
+wt.TextColor3=Color3.fromRGB(255,200,0) wt.Font=Enum.Font.GothamBold
+wt.TextScaled=true wt.TextWrapped=true wt.Parent=wf
+
+local ok=Instance.new("TextButton")
+ok.Size=UDim2.new(0,120,0,35) ok.Position=UDim2.new(0,20,0,95)
+ok.BackgroundColor3=Color3.fromRGB(0,170,255) ok.Text="Proceed"
+ok.TextColor3=Color3.fromRGB(255,255,255) ok.Font=Enum.Font.GothamBold
+ok.TextScaled=true ok.BorderSizePixel=0 ok.Parent=wf
+Instance.new("UICorner",ok).CornerRadius=UDim.new(0,8)
+
+local nah=Instance.new("TextButton")
+nah.Size=UDim2.new(0,120,0,35) nah.Position=UDim2.new(0,240,0,95)
+nah.BackgroundColor3=Color3.fromRGB(200,50,50) nah.Text="Nah"
+nah.TextColor3=Color3.fromRGB(255,255,255) nah.Font=Enum.Font.GothamBold
+nah.TextScaled=true nah.BorderSizePixel=0 nah.Parent=wf
+Instance.new("UICorner",nah).CornerRadius=UDim.new(0,8)
+
+local function v6(v7)
+	local v8=v7.Character if not v8 then return end
+	local v9=v8:FindFirstChild("Head") if not v9 then return end
+	local v10=v9:FindFirstChild("ImKindaProudToMyCountryFilipinos") if v10 then v10:Destroy() end
+	local v11=v4[v7] if v11==nil then return end
+	local v12=Instance.new("BillboardGui")
+	v12.Name="ImKindaProudToMyCountryFilipinos" v12.Size=UDim2.new(0,120,0,30)
+	v12.StudsOffset=Vector3.new(0,2.8,0) v12.AlwaysOnTop=true v12.Parent=v9
+	local v13=Instance.new("TextLabel")
+	v13.Size=UDim2.new(1,0,1,0) v13.BackgroundTransparency=1
+	v13.Font=Enum.Font.GothamBold v13.TextScaled=true v13.TextStrokeTransparency=0
+	v13.Text=v11 and"📱Mobile"or"🖥️Pc"
+	v13.TextColor3=v11 and Color3.fromRGB(0,255,170)or Color3.fromRGB(100,170,255)
+	v13.Parent=v12
+end
+
+v2.OnClientEvent:Connect(function(v14,v15)
+	v4[v14]=v15 v5[v14]=true v6(v14)
+end)
+
+local function v16(v17)
+	local v18=v17.Character if not v18 then return false end
+	local v19=v18:FindFirstChild("Head") if not v19 then return false end
+	return v19:FindFirstChild("ImKindaProudToMyCountryFilipinos")~=nil
+end
+
+local function v20(v21)
+	local v22=v3.Character and v3.Character:FindFirstChild("HumanoidRootPart")
+	local v23=v21.Character and v21.Character:FindFirstChild("HumanoidRootPart")
+	return(v22 and v23)and(v22.Position-v23.Position).Magnitude or 0
+end
+
+local function v24()
+	local v25={}
+	for _,v26 in ipairs(v1:GetPlayers())do
+		if v26~=v3 and v26.Parent then table.insert(v25,v26)end
+	end
+	table.sort(v25,function(a,b)return v20(a)>v20(b)end)
+	return v25
+end
+
+local function v27(v28)
+	if v16(v28)then return end
+	v5[v28]=false local v29=0
+	while not v5[v28]do
+		v29+=1 pcall(function()v2:FireServer(v28)end)
+		task.wait() if v29>20 then break end
+	end
+end
+
+local function startScript()
+	v1.PlayerAdded:Connect(function(v30)
+		v30.CharacterAdded:Connect(function()task.wait()v27(v30)end)
+	end)
+	task.spawn(function()
+		task.wait()
+		while true do
+			for _,v31 in ipairs(v24())do v27(v31)end
+			task.wait()
+		end
+	end)
+end
+
+y.MouseButton1Click:Connect(function()f:Destroy()wf.Visible=true end)
+n.MouseButton1Click:Connect(function()sg:Destroy()end)
+ok.MouseButton1Click:Connect(function()sg:Destroy()startScript()end)
+nah.MouseButton1Click:Connect(function()sg:Destroy()end)
+task.wait(1)
+local messages = {
+    "AintMyCrib",
+    "IsdaBest!?",
+    "KEYLESS PCMOBILE DETECTOR",
+    "HAS BEEN EXECUTED!?"
+}
+
+local TextChatService = game:GetService("TextChatService")
+
+for _,msg in ipairs(messages) do
+    TextChatService.TextChannels.RBXGeneral:SendAsync(msg)
+    task.wait()
+end
