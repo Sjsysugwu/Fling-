@@ -1,0 +1,219 @@
+-- SERVICES
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Debris = game:GetService("Debris")
+
+-- PLAYER
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local root = character:WaitForChild("HumanoidRootPart")
+
+------------------------------------------------
+-- 🔥 INTRO SYSTEM
+------------------------------------------------
+task.spawn(function()
+	local guiParent = player:WaitForChild("PlayerGui")
+
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "IntroGui"
+	gui.ResetOnSpawn = false
+	gui.Parent = guiParent
+
+	local timerLabel = Instance.new("TextLabel")
+	timerLabel.Size = UDim2.new(1, 0, 0.2, 0)
+	timerLabel.Position = UDim2.new(0, 0, 0, 0)
+	timerLabel.BackgroundTransparency = 1
+	timerLabel.TextScaled = true
+	timerLabel.Font = Enum.Font.GothamBold
+	timerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	timerLabel.Text = ""
+	timerLabel.Parent = gui
+
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.new(1, 0, 0.8, 0)
+	text.Position = UDim2.new(0, 0, 0.2, 0)
+	text.BackgroundTransparency = 1
+	text.TextScaled = true
+	text.Font = Enum.Font.GothamBold
+	text.Text = "by A_A"
+	text.Parent = gui
+
+	local typeSound = Instance.new("Sound")
+	typeSound.SoundId = "rbxassetid://9118823101"
+	typeSound.Volume = 1
+	typeSound.Parent = gui
+
+	local music = Instance.new("Sound")
+	music.SoundId = "rbxassetid://1843529636"
+	music.Volume = 2
+	music.Looped = true
+	music.Parent = gui
+
+	music:Play()
+
+	local running = true
+	task.spawn(function()
+		while running do
+			text.TextColor3 = Color3.fromRGB(
+				math.random(0,255),
+				math.random(0,255),
+				math.random(0,255)
+			)
+			task.wait(0.15)
+		end
+	end)
+
+	for i = 5, 1, -1 do
+		timerLabel.Text = "TIME: " .. i
+		typeSound:Play()
+		task.wait(1)
+	end
+
+	timerLabel.Text = "START"
+	running = false
+
+	local t1 = TweenService:Create(text, TweenInfo.new(1), {TextTransparency = 1})
+	local t2 = TweenService:Create(timerLabel, TweenInfo.new(1), {TextTransparency = 1})
+
+	t1:Play()
+	t2:Play()
+	t1.Completed:Wait()
+
+	music:Stop()
+	typeSound:Stop()
+
+	task.wait(1)
+	gui:Destroy()
+end)
+
+------------------------------------------------
+-- PLAYER STATS
+------------------------------------------------
+humanoid.JumpPower = 75
+humanoid.WalkSpeed = 14
+
+local animate = character:FindFirstChild("Animate")
+if animate then animate.Disabled = true end
+
+------------------------------------------------
+-- CAMERA + MUSIC LOOP
+------------------------------------------------
+camera.FieldOfView = 70
+TweenService:Create(camera, TweenInfo.new(2), {FieldOfView = 85}):Play()
+
+local loopSound = Instance.new("Sound", camera)
+loopSound.SoundId = "rbxassetid://130501290862644"
+loopSound.Volume = 1.5
+loopSound.Looped = true
+loopSound:Play()
+
+------------------------------------------------
+-- ANIMATIONS
+------------------------------------------------
+local animator = humanoid:WaitForChild("Animator")
+
+local function loadAnim(id)
+	local anim = Instance.new("Animation")
+	anim.AnimationId = id
+	return animator:LoadAnimation(anim)
+end
+
+local idleAnim = loadAnim("rbxassetid://115485274167727")
+local walkAnim = loadAnim("rbxassetid://113076603308515")
+local runAnim  = loadAnim("rbxassetid://87721497492370")
+local jumpAnim = loadAnim("rbxassetid://107050614591332")
+
+idleAnim:Play()
+
+RunService.RenderStepped:Connect(function()
+	if humanoid.MoveDirection.Magnitude == 0 then
+		walkAnim:Stop()
+		runAnim:Stop()
+		if not idleAnim.IsPlaying then idleAnim:Play() end
+	else
+		if humanoid.WalkSpeed >= 40 then
+			idleAnim:Stop()
+			walkAnim:Stop()
+			if not runAnim.IsPlaying then runAnim:Play() end
+		else
+			idleAnim:Stop()
+			runAnim:Stop()
+			if not walkAnim.IsPlaying then walkAnim:Play() end
+		end
+	end
+end)
+
+------------------------------------------------
+-- TOOLS
+------------------------------------------------
+local function createTool(name)
+	local tool = Instance.new("Tool")
+	tool.Name = name
+	tool.RequiresHandle = false
+	tool.Parent = player.Backpack
+	return tool
+end
+
+-- RAGE MODE
+local rageTool = createTool("RAGE MODE")
+local raging = false
+
+rageTool.Activated:Connect(function()
+	raging = not raging
+
+	if raging then
+		humanoid.WalkSpeed = 50
+		TweenService:Create(camera, TweenInfo.new(0.5), {FieldOfView = 120}):Play()
+	else
+		humanoid.WalkSpeed = 14
+		TweenService:Create(camera, TweenInfo.new(0.5), {FieldOfView = 85}):Play()
+	end
+end)
+
+-- JUMP TOOL
+local jumpTool = createTool("JUMP")
+local mouse = player:GetMouse()
+local busy = false
+
+jumpTool.Activated:Connect(function()
+	if busy then return end
+
+	local target = mouse.Target
+	if not target then return end
+
+	local model = target:FindFirstAncestorOfClass("Model")
+	if not model then return end
+
+	local targetHum = model:FindFirstChild("Humanoid")
+	local targetRoot = model:FindFirstChild("HumanoidRootPart")
+	if not targetHum or not targetRoot then return end
+
+	busy = true
+
+	local original = root.CFrame
+	root.CFrame = targetRoot.CFrame * CFrame.new(0, 0, -2.5)
+
+	if jumpAnim then jumpAnim:Play() end
+
+	local s = Instance.new("Sound", camera)
+	s.SoundId = "rbxassetid://78316558643437"
+	s.Volume = 6
+	s:Play()
+	Debris:AddItem(s, 3)
+
+	task.wait(0.55)
+	root.CFrame = original
+
+	busy = false
+end)
+
+------------------------------------------------
+-- CLEANUP
+------------------------------------------------
+humanoid.Died:Connect(function()
+	if loopSound then loopSound:Destroy() end
+end)
