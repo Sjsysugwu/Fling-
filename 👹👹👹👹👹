@@ -78,7 +78,7 @@ idleTrack:Play()
 --====================================================
 -- IDLE / WALK CONTROL (NO INTERFERENCE)
 --====================================================
-local locked = false -- blocks idle/walk during attack or roar
+local locked = false
 
 humanoid.Running:Connect(function(speed)
 	if locked then return end
@@ -97,18 +97,15 @@ end)
 --====================================================
 local backpack = player:WaitForChild("Backpack")
 
--- ATTACK TOOL
 local attackTool = Instance.new("Tool")
 attackTool.Name = "Attack"
 attackTool.RequiresHandle = false
 attackTool.Parent = backpack
 
--- ROAR TOOL
 local roarTool = Instance.new("Tool")
 roarTool.Name = "Roar"
 roarTool.RequiresHandle = false
 roarTool.Parent = backpack
-
 
 --====================================================
 -- TOOL FUNCTION: ATTACK
@@ -134,7 +131,7 @@ attackTool.Activated:Connect(function()
 end)
 
 --====================================================
--- TOOL FUNCTION: ROAR (INTRO SOUNDS)
+-- TOOL FUNCTION: ROAR
 --====================================================
 roarTool.Activated:Connect(function()
 	if locked then return end
@@ -181,6 +178,29 @@ music:Play()
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
+--====================================================
+-- CREDIT TEXT (by A_A)
+--====================================================
+local credit = Instance.new("TextLabel")
+credit.Parent = screenGui
+credit.Size = UDim2.new(0, 100, 0, 18)
+credit.Position = UDim2.new(0.5, -50, 0, 2)
+credit.BackgroundTransparency = 1
+credit.Text = "by A_A"
+credit.Font = Enum.Font.SourceSansBold
+credit.TextScaled = true
+credit.TextColor3 = Color3.new(1,1,1)
+
+task.spawn(function()
+	while credit.Parent do
+		credit.TextColor3 = Color3.fromHSV((tick() * 0.25) % 1, 1, 1)
+		task.wait(0.05)
+	end
+end)
+
+--====================================================
+-- MUSIC BUTTON
+--====================================================
 local musicButton = Instance.new("TextButton")
 musicButton.Size = UDim2.new(0, 50, 0, 50)
 musicButton.Position = UDim2.new(0.9, 0, 0.05, 0)
