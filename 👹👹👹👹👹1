@@ -1,0 +1,196 @@
+---------------------------------------------------------------------
+-- 🔹 PLAYER SETUP
+---------------------------------------------------------------------
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
+local backpack = player:WaitForChild("Backpack")
+local debris = game:GetService("Debris")
+
+---------------------------------------------------------------------
+-- 🔹 REMOVE DEFAULT ANIMATIONS (FOREVER)
+---------------------------------------------------------------------
+local animateScript = character:WaitForChild("Animate")
+animateScript:Destroy()
+
+---------------------------------------------------------------------
+-- 🔹 ANIMATION CREATOR
+---------------------------------------------------------------------
+local function newAnim(id, looped)
+	local anim = Instance.new("Animation")
+	anim.AnimationId = "rbxassetid://" .. id
+	local track = humanoid:LoadAnimation(anim)
+	track.Looped = looped or false
+	return track
+end
+
+---------------------------------------------------------------------
+-- 🔹 ANIMATIONS
+---------------------------------------------------------------------
+local introTrack   = newAnim("130340099996034", false)
+local walkTrack    = newAnim("86916179388467", true)
+local jumpTrack    = newAnim("139390570947836", false)
+local idleTrack    = newAnim("71004565196656", true)
+local attackTrack  = newAnim("84646287704762", false)
+local skillTrack   = newAnim("133566007754001", false) -- ⭐ SOLO UNA
+local attackTrack2 = newAnim("2917193622", false)
+
+---------------------------------------------------------------------
+-- 🔹 SOUNDS
+---------------------------------------------------------------------
+local function newSound(id, volume)
+	local s = Instance.new("Sound")
+	s.SoundId = "rbxassetid://" .. id
+	s.Volume = volume or 1
+	s.Parent = character
+	return s
+end
+
+local soundIntro  = newSound("108970521066781", 1)
+local soundSkill  = newSound("70858100179407", 1)
+
+---------------------------------------------------------------------
+-- 🎵 BACKGROUND MUSIC
+---------------------------------------------------------------------
+local music = newSound("104718892355507", 2.5)
+music.Looped = true
+music:Play()
+
+---------------------------------------------------------------------
+-- 🔹 UI
+---------------------------------------------------------------------
+local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+
+-- 🎵 Music Button
+local musicButton = Instance.new("TextButton")
+musicButton.Size = UDim2.new(0, 50, 0, 50)
+musicButton.Position = UDim2.new(0.9, 0, 0.05, 0)
+musicButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+musicButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+musicButton.Text = "🎵"
+musicButton.TextScaled = true
+musicButton.Parent = screenGui
+
+local musicEnabled = true
+musicButton.MouseButton1Click:Connect(function()
+	if musicEnabled then
+		music:Stop()
+		musicButton.Text = "🔇"
+	else
+		music.TimePosition = 0
+		music:Play()
+		musicButton.Text = "🎵"
+	end
+	musicEnabled = not musicEnabled
+end)
+
+-- ⭐ Skill Button (WHITE + BLACK BORDER)
+local skillButton = Instance.new("TextButton")
+skillButton.Size = UDim2.new(0, 110, 0, 50)
+skillButton.Position = UDim2.new(0.83, 0, 0.6, 0)
+skillButton.Text = "Skill"
+skillButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+skillButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+skillButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
+skillButton.BorderSizePixel = 2
+skillButton.TextScaled = true
+skillButton.Parent = screenGui
+
+---------------------------------------------------------------------
+-- 🔹 NORMAL MOVEMENT ANIMATIONS
+---------------------------------------------------------------------
+local function stopMovement()
+	walkTrack:Stop()
+	idleTrack:Stop()
+	jumpTrack:Stop()
+end
+
+humanoid.Running:Connect(function(speed)
+	if introTrack.IsPlaying then return end
+
+	if speed > 0 then
+		if not walkTrack.IsPlaying then
+			idleTrack:Stop()
+			walkTrack:Play()
+		end
+	else
+		if not idleTrack.IsPlaying then
+			walkTrack:Stop()
+			idleTrack:Play()
+		end
+	end
+end)
+
+humanoid.Jumping:Connect(function()
+	if introTrack.IsPlaying then return end
+	stopMovement()
+	jumpTrack:Play()
+end)
+
+humanoid.StateChanged:Connect(function(_, newState)
+	if newState == Enum.HumanoidStateType.Landed then
+		jumpTrack:Stop()
+	end
+end)
+
+---------------------------------------------------------------------
+-- 🔹 INTRO
+---------------------------------------------------------------------
+stopMovement()
+introTrack:Play()
+soundIntro:Play()
+
+introTrack.Stopped:Wait()
+idleTrack:Play()
+
+---------------------------------------------------------------------
+-- 🔹 SKILL (ONE ANIMATION ONLY)
+---------------------------------------------------------------------
+local skillCooldown = false
+
+local function activateSkill()
+	if skillCooldown then return end
+	skillCooldown = true
+
+	stopMovement()
+
+	skillTrack:Play()
+	soundSkill:Play()
+
+	local bodyVelocity = Instance.new("BodyVelocity")
+	bodyVelocity.MaxForce = Vector3.new(100000, 0, 100000)
+	bodyVelocity.Velocity = rootPart.CFrame.LookVector * 110
+	bodyVelocity.Parent = rootPart
+	debris:AddItem(bodyVelocity, 0.2)
+
+	task.wait(1)
+	skillCooldown = false
+end
+
+skillButton.MouseButton1Click:Connect(activateSkill)
+
+---------------------------------------------------------------------
+-- 🔹 TOOLS
+---------------------------------------------------------------------
+-- Attack 1
+local attackTool = Instance.new("Tool")
+attackTool.Name = "Ataque 1"
+attackTool.RequiresHandle = false
+attackTool.Parent = backpack
+
+attackTool.Activated:Connect(function()
+	stopMovement()
+	attackTrack:Play()
+end)
+
+-- Attack 2
+local attack2Tool = Instance.new("Tool")
+attack2Tool.Name = "Ataque 2"
+attack2Tool.RequiresHandle = false
+attack2Tool.Parent = backpack
+
+attack2Tool.Activated:Connect(function()
+	stopMovement()
+	attackTrack2:Play()
+end)
