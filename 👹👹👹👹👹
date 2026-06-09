@@ -1,0 +1,207 @@
+--====================================================
+-- SYSTEM: Delete Default Animations Forever
+--====================================================
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local function RemoveDefaultAnimations(character)
+	local animate = character:FindFirstChild("Animate")
+	if animate then animate:Destroy() end
+end
+
+player.CharacterAdded:Connect(function(char)
+	task.wait(0.1)
+	RemoveDefaultAnimations(char)
+end)
+
+--====================================================
+-- WAIT FOR CHARACTER
+--====================================================
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+RemoveDefaultAnimations(character)
+
+--====================================================
+-- ANIMATION IDs
+--====================================================
+local INTRO_ID  = "rbxassetid://114644193890609"
+local IDLE_ID   = "rbxassetid://74775170766222"
+local WALK_ID   = "rbxassetid://140439422789664"
+local ATTACK_ID = "rbxassetid://582797263"
+local ROAR_ID   = "rbxassetid://111605486153977"
+
+-- Sounds
+local INTRO_SOUND1 = "rbxassetid://125769978282211"
+local INTRO_SOUND2 = "rbxassetid://130244882663105"
+local ATTACK_SOUND = "rbxassetid://126353838447439"
+
+--====================================================
+-- CREATE / LOAD ANIMATIONS
+--====================================================
+local function LoadAnim(id)
+	local anim = Instance.new("Animation")
+	anim.AnimationId = id
+	return humanoid:LoadAnimation(anim)
+end
+
+local introTrack  = LoadAnim(INTRO_ID)
+local idleTrack   = LoadAnim(IDLE_ID)
+local walkTrack   = LoadAnim(WALK_ID)
+local attackTrack = LoadAnim(ATTACK_ID)
+local roarTrack   = LoadAnim(ROAR_ID)
+
+idleTrack.Looped = true
+walkTrack.Looped = true
+attackTrack.Looped = false
+roarTrack.Looped = false
+
+--====================================================
+-- INTRO WITH SOUND
+--====================================================
+local s1 = Instance.new("Sound", character)
+s1.SoundId = INTRO_SOUND1
+s1.Volume = 3
+
+local s2 = Instance.new("Sound", character)
+s2.SoundId = INTRO_SOUND2
+s2.Volume = 3
+
+task.wait(0.5)
+introTrack:Play()
+s1:Play()
+s1.Ended:Wait()
+s2:Play()
+
+introTrack.Ended:Wait()
+idleTrack:Play()
+
+--====================================================
+-- IDLE / WALK CONTROL (NO INTERFERENCE)
+--====================================================
+local locked = false -- blocks idle/walk during attack or roar
+
+humanoid.Running:Connect(function(speed)
+	if locked then return end
+
+	if speed > 1 then
+		if idleTrack.IsPlaying then idleTrack:Stop() end
+		if not walkTrack.IsPlaying then walkTrack:Play() end
+	else
+		if walkTrack.IsPlaying then walkTrack:Stop() end
+		if not idleTrack.IsPlaying then idleTrack:Play() end
+	end
+end)
+
+--====================================================
+-- CREATE TOOLS IN BACKPACK
+--====================================================
+local backpack = player:WaitForChild("Backpack")
+
+-- ATTACK TOOL
+local attackTool = Instance.new("Tool")
+attackTool.Name = "Attack"
+attackTool.RequiresHandle = false
+attackTool.Parent = backpack
+
+-- ROAR TOOL
+local roarTool = Instance.new("Tool")
+roarTool.Name = "Roar"
+roarTool.RequiresHandle = false
+roarTool.Parent = backpack
+
+
+--====================================================
+-- TOOL FUNCTION: ATTACK
+--====================================================
+attackTool.Activated:Connect(function()
+	if locked then return end
+	locked = true
+
+	idleTrack:Stop()
+	walkTrack:Stop()
+
+	local s = Instance.new("Sound", character)
+	s.SoundId = ATTACK_SOUND
+	s.Volume = 4
+	s:Play()
+
+	attackTrack:Play()
+	attackTrack.Stopped:Wait()
+
+	s:Destroy()
+	locked = false
+	idleTrack:Play()
+end)
+
+--====================================================
+-- TOOL FUNCTION: ROAR (INTRO SOUNDS)
+--====================================================
+roarTool.Activated:Connect(function()
+	if locked then return end
+	locked = true
+
+	idleTrack:Stop()
+	walkTrack:Stop()
+
+	local r1 = Instance.new("Sound", character)
+	r1.SoundId = INTRO_SOUND1
+	r1.Volume = 3
+
+	local r2 = Instance.new("Sound", character)
+	r2.SoundId = INTRO_SOUND2
+	r2.Volume = 3
+
+	roarTrack:Play()
+	r1:Play()
+
+	r1.Ended:Connect(function()
+		r2:Play()
+	end)
+
+	roarTrack.Stopped:Wait()
+
+	r1:Destroy()
+	r2:Destroy()
+
+	locked = false
+	idleTrack:Play()
+end)
+
+--====================================================
+-- MUSIC BUTTON SYSTEM
+--====================================================
+local music = Instance.new("Sound", character)
+music.Name = "BackgroundMusic"
+music.SoundId = "rbxassetid://72750019250769"
+music.Volume = 2.5
+music.Looped = true
+music.PlaybackSpeed = 0.1
+music:Play()
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local musicButton = Instance.new("TextButton")
+musicButton.Size = UDim2.new(0, 50, 0, 50)
+musicButton.Position = UDim2.new(0.9, 0, 0.05, 0)
+musicButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+musicButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+musicButton.Font = Enum.Font.SourceSansBold
+musicButton.TextScaled = true
+musicButton.Text = "🎵"
+musicButton.Parent = screenGui
+
+local enabled = true
+
+musicButton.MouseButton1Click:Connect(function()
+	if enabled then
+		music:Stop()
+		enabled = false
+		musicButton.Text = "🔇"
+	else
+		music.TimePosition = 0
+		music:Play()
+		enabled = true
+		musicButton.Text = "🎵"
+	end
+end)
