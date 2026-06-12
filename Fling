@@ -14,7 +14,7 @@ local PowerSlider = Instance.new("TextButton")
 local PowerBar = Instance.new("Frame")
 
 local hiddenfling = false
-local flingPower = 5000000000000000000000
+local flingPower = 50000
 local dragging = false
 
 ScreenGui.Parent = lp:WaitForChild("PlayerGui")
@@ -43,7 +43,7 @@ TextLabel.Parent = Frame
 TextLabel.BackgroundTransparency = 1
 TextLabel.Size = UDim2.new(1,0,0.2,0)
 TextLabel.Font = Enum.Font.SourceSansBold
-TextLabel.Text = "🇹🇷A_A📿"
+TextLabel.Text = " by A_A"
 TextLabel.TextColor3 = Color3.fromRGB(255,255,255)
 TextLabel.TextSize = 24
 
@@ -64,7 +64,7 @@ PowerLabel.BackgroundTransparency = 1
 PowerLabel.Position = UDim2.new(0.1,0,0.55,0)
 PowerLabel.Size = UDim2.new(0.8,0,0.12,0)
 PowerLabel.Font = Enum.Font.SourceSansBold
-PowerLabel.Text = "Power : 200000000000000000"
+PowerLabel.Text = "Power : 20000"
 PowerLabel.TextColor3 = Color3.fromRGB(255,255,255)
 PowerLabel.TextSize = 18
 
@@ -142,7 +142,7 @@ UserInputService.InputChanged:Connect(function(input)
 
 		PowerSlider.Position = UDim2.new(newPos,0,0,0)
 
-		flingPower = math.floor(newPos * 500000000000000000) + 50000000000000
+		flingPower = math.floor(newPos * 50000) + 500
 
 		PowerLabel.Text = "Power : "..flingPower
 	end
