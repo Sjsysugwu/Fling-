@@ -1,0 +1,732 @@
+-- ═══════════════════════════════════════════════════
+--  Grow a Garden 2 | Player Data Scanner
+--  Executor Script
+-- ═══════════════════════════════════════════════════
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+local LP = Players.LocalPlayer
+
+-- ═══════════════════════════════
+--  CONFIGURAÇÃO
+-- ═══════════════════════════════
+local TARGET_NAME = "ALi_BOOSS919" -- padrão
+
+-- ═══════════════════════════════
+--  UI SETUP
+-- ═══════════════════════════════
+local function create(class, props)
+	local obj = Instance.new(class)
+	for k, v in props do
+		if k ~= "Parent" then obj[k] = v end
+	end
+	if props.Parent then obj.Parent = props.Parent end
+	return obj
+end
+
+-- Limpar GUI antiga
+if game:GetService("CoreGui"):FindFirstChild("GardenScanner") then
+	game:GetService("CoreGui"):FindFirstChild("GardenScanner"):Destroy()
+end
+
+local ScreenGui = create("ScreenGui", {
+	Name = "GardenScanner",
+	ResetOnSpawn = false,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	Parent = game:GetService("CoreGui")
+})
+
+local MainFrame = create("Frame", {
+	Name = "Main",
+	Size = UDim2.new(0, 420, 0, 520),
+	Position = UDim2.new(0.5, -210, 0.5, -260),
+	BackgroundColor3 = Color3.fromRGB(18, 18, 22),
+	BorderSizePixel = 0,
+	Parent = ScreenGui
+})
+create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = MainFrame })
+create("UIStroke", { Color = Color3.fromRGB(60, 180, 90), Thickness = 2, Parent = MainFrame })
+
+-- Título
+local TitleBar = create("Frame", {
+	Size = UDim2.new(1, 0, 0, 42),
+	BackgroundColor3 = Color3.fromRGB(25, 120, 55),
+	BorderSizePixel = 0,
+	Parent = MainFrame
+})
+create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = TitleBar })
+-- Corrigir canto inferior
+create("Frame", {
+	Size = UDim2.new(1, 0, 0, 14),
+	Position = UDim2.new(0, 0, 1, -14),
+	BackgroundColor3 = Color3.fromRGB(25, 120, 55),
+	BorderSizePixel = 0,
+	Parent = TitleBar
+})
+
+create("TextLabel", {
+	Text = "🌱 Garden Scanner",
+	Size = UDim2.new(1, -40, 1, 0),
+	Position = UDim2.new(0, 14, 0, 0),
+	BackgroundTransparency = 1,
+	TextColor3 = Color3.fromRGB(255, 255, 255),
+	Font = Enum.Font.GothamBold,
+	TextSize = 17,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	Parent = TitleBar
+})
+
+local CloseBtn = create("TextButton", {
+	Text = "✕",
+	Size = UDim2.new(0, 36, 0, 36),
+	Position = UDim2.new(1, -39, 0, 3),
+	BackgroundColor3 = Color3.fromRGB(200, 50, 50),
+	TextColor3 = Color3.fromRGB(255, 255, 255),
+	Font = Enum.Font.GothamBold,
+	TextSize = 16,
+	BorderSizePixel = 0,
+	Parent = TitleBar
+})
+create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = CloseBtn })
+
+-- Input
+local InputFrame = create("Frame", {
+	Size = UDim2.new(1, -24, 0, 40),
+	Position = UDim2.new(0, 12, 0, 54),
+	BackgroundColor3 = Color3.fromRGB(30, 30, 38),
+	BorderSizePixel = 0,
+	Parent = MainFrame
+})
+create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = InputFrame })
+
+local PlayerInput = create("TextBox", {
+	PlaceholderText = "اكتب اسم اللاعب هنا...",
+	Text = TARGET_NAME,
+	Size = UDim2.new(1, -16, 1, 0),
+	Position = UDim2.new(0, 8, 0, 0),
+	BackgroundTransparency = 1,
+	TextColor3 = Color3.fromRGB(255, 255, 255),
+	PlaceholderColor3 = Color3.fromRGB(120, 120, 130),
+	Font = Enum.Font.GothamMedium,
+	TextSize = 15,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ClearTextOnFocus = false,
+	Parent = InputFrame
+})
+
+-- أزرار
+local BtnHolder = create("Frame", {
+	Size = UDim2.new(1, -24, 0, 38),
+	Position = UDim2.new(0, 12, 0, 102),
+	BackgroundTransparency = 1,
+	Parent = MainFrame
+})
+
+local function makeBtn(text, color, pos)
+	local btn = create("TextButton", {
+		Text = text,
+		Size = UDim2.new(0.48, 0, 1, 0),
+		Position = pos,
+		BackgroundColor3 = color,
+		TextColor3 = Color3.fromRGB(255, 255, 255),
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		BorderSizePixel = 0,
+		Parent = BtnHolder
+	})
+	create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = btn })
+	return btn
+end
+
+local ScanBtn = makeBtn("🔍 بحث", Color3.fromRGB(25, 120, 55), UDim2.new(0, 0, 0, 0))
+local MailBtn = makeBtn("📬 Mailbox", Color3.fromRGB(50, 90, 180), UDim2.new(0.52, 0, 0, 0))
+
+-- Status
+local StatusLabel = create("TextLabel", {
+	Text = "جاهز للبحث...",
+	Size = UDim2.new(1, -24, 0, 22),
+	Position = UDim2.new(0, 12, 0, 146),
+	BackgroundTransparency = 1,
+	TextColor3 = Color3.fromRGB(120, 220, 120),
+	Font = Enum.Font.GothamMedium,
+	TextSize = 13,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	Parent = MainFrame
+})
+
+-- النتائج
+local ResultScroll = create("ScrollingFrame", {
+	Size = UDim2.new(1, -24, 1, -182),
+	Position = UDim2.new(0, 12, 0, 174),
+	BackgroundColor3 = Color3.fromRGB(14, 14, 18),
+	BorderSizePixel = 0,
+	ScrollBarThickness = 4,
+	ScrollBarImageColor3 = Color3.fromRGB(25, 120, 55),
+	CanvasSize = UDim2.new(0, 0, 0, 0),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	Parent = MainFrame
+})
+create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = ResultScroll })
+create("UIListLayout", {
+	SortOrder = Enum.SortOrder.LayoutOrder,
+	Padding = UDim.new(0, 4),
+	Parent = ResultScroll
+})
+create("UIPadding", {
+	PaddingTop = UDim.new(0, 6),
+	PaddingBottom = UDim.new(0, 6),
+	PaddingLeft = UDim.new(0, 6),
+	PaddingRight = UDim.new(0, 6),
+	Parent = ResultScroll
+})
+
+-- ═══════════════════════════════
+--  DRAG
+-- ═══════════════════════════════
+do
+	local dragging, dragStart, startPos
+	TitleBar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = MainFrame.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then dragging = false end
+			end)
+		end
+	end)
+	UIS.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local delta = input.Position - dragStart
+			MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		end
+	end)
+end
+
+-- ═══════════════════════════════
+--  FUNÇÕES AUXILIARES
+-- ═══════════════════════════════
+local function clearResults()
+	for _, c in ResultScroll:GetChildren() do
+		if c:IsA("Frame") or c:IsA("TextLabel") then c:Destroy() end
+	end
+end
+
+local function addSection(title, order)
+	local section = create("TextLabel", {
+		Text = title,
+		Size = UDim2.new(1, 0, 0, 28),
+		BackgroundColor3 = Color3.fromRGB(25, 120, 55),
+		TextColor3 = Color3.fromRGB(255, 255, 255),
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		LayoutOrder = order,
+		Parent = ResultScroll
+	})
+	create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = section })
+	return section
+end
+
+local function addItem(icon, name, detail, order)
+	local frame = create("Frame", {
+		Size = UDim2.new(1, 0, 0, 30),
+		BackgroundColor3 = Color3.fromRGB(28, 28, 36),
+		BorderSizePixel = 0,
+		LayoutOrder = order,
+		Parent = ResultScroll
+	})
+	create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = frame })
+
+	create("TextLabel", {
+		Text = icon .. " " .. name,
+		Size = UDim2.new(0.6, 0, 1, 0),
+		Position = UDim2.new(0, 8, 0, 0),
+		BackgroundTransparency = 1,
+		TextColor3 = Color3.fromRGB(220, 220, 230),
+		Font = Enum.Font.GothamMedium,
+		TextSize = 13,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = frame
+	})
+
+	create("TextLabel", {
+		Text = detail,
+		Size = UDim2.new(0.38, -8, 1, 0),
+		Position = UDim2.new(0.62, 0, 0, 0),
+		BackgroundTransparency = 1,
+		TextColor3 = Color3.fromRGB(140, 230, 140),
+		Font = Enum.Font.GothamMedium,
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = frame
+	})
+end
+
+-- ═══════════════════════════════
+--  كلمات للتصنيف
+-- ═══════════════════════════════
+local PET_KEYWORDS = {
+	"pet", "animal", "companion", "dog", "cat", "bunny", "bird",
+	"dragon", "fox", "bear", "butterfly", "bee", "frog", "snake",
+	"owl", "parrot", "hamster", "turtle", "fish", "unicorn", "wolf"
+}
+
+local PLANT_KEYWORDS = {
+	"plant", "seed", "flower", "tree", "crop", "garden", "grow",
+	"rose", "tulip", "sunflower", "cactus", "mushroom", "vine",
+	"fruit", "vegetable", "herb", "leaf", "sprout", "bloom", "weed",
+	"carrot", "potato", "tomato", "corn", "berry", "melon", "pumpkin"
+}
+
+local TOOL_KEYWORDS = {
+	"tool", "shovel", "watering", "hoe", "rake", "axe", "shears",
+	"bucket", "pot", "fertilizer", "spray", "can", "gloves"
+}
+
+local function matchesCategory(name, keywords)
+	local lower = name:lower()
+	for _, kw in keywords do
+		if lower:find(kw) then return true end
+	end
+	return false
+end
+
+local function categorize(name)
+	if matchesCategory(name, PET_KEYWORDS) then return "pet" end
+	if matchesCategory(name, PLANT_KEYWORDS) then return "plant" end
+	if matchesCategory(name, TOOL_KEYWORDS) then return "tool" end
+	return "other"
+end
+
+-- ═══════════════════════════════
+--  مسح بيانات اللاعب
+-- ═══════════════════════════════
+local function deepScan(instance, maxDepth, depth)
+	depth = depth or 0
+	if depth > (maxDepth or 8) then return {} end
+	local results = {}
+
+	for _, child in instance:GetChildren() do
+		local info = {
+			Name = child.Name,
+			Class = child.ClassName,
+			Value = nil,
+			Children = {}
+		}
+
+		-- قراءة القيم
+		if child:IsA("ValueBase") then
+			pcall(function()
+				info.Value = tostring(child.Value)
+			end)
+		end
+
+		-- فحص الأطفال
+		if #child:GetChildren() > 0 then
+			info.Children = deepScan(child, maxDepth, depth + 1)
+		end
+
+		table.insert(results, info)
+	end
+	return results
+end
+
+local function findTargetPlayer(name)
+	local lower = name:lower()
+	for _, p in Players:GetPlayers() do
+		if p.Name:lower() == lower or p.DisplayName:lower() == lower then
+			return p
+		end
+	end
+	-- بحث جزئي
+	for _, p in Players:GetPlayers() do
+		if p.Name:lower():find(lower) or p.DisplayName:lower():find(lower) then
+			return p
+		end
+	end
+	return nil
+end
+
+local function scanAndDisplay(playerName)
+	clearResults()
+	StatusLabel.Text = "🔍 جاري البحث عن: " .. playerName .. "..."
+	StatusLabel.TextColor3 = Color3.fromRGB(255, 220, 80)
+
+	task.wait(0.1)
+
+	local target = findTargetPlayer(playerName)
+	if not target then
+		StatusLabel.Text = "❌ اللاعب غير موجود في السيرفر!"
+		StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+		addSection("❌ لم يتم العثور على اللاعب", 1)
+		return
+	end
+
+	StatusLabel.Text = "✅ تم العثور على: " .. target.Name .. " | جاري المسح..."
+	StatusLabel.TextColor3 = Color3.fromRGB(120, 220, 120)
+
+	local pets = {}
+	local plants = {}
+	local tools = {}
+	local stats = {}
+	local other = {}
+	local order = 0
+
+	-- ═══ 1) مسح بيانات Player Object ═══
+	local function processItem(child, depth)
+		if depth > 6 then return end
+
+		local cat = categorize(child.Name)
+
+		-- ValueBase (IntValue, StringValue, etc.)
+		if child:IsA("ValueBase") then
+			local val = ""
+			pcall(function() val = tostring(child.Value) end)
+
+			local entry = { name = child.Name, detail = val, class = child.ClassName }
+
+			if cat == "pet" then
+				table.insert(pets, entry)
+			elseif cat == "plant" then
+				table.insert(plants, entry)
+			elseif cat == "tool" then
+				table.insert(tools, entry)
+			else
+				-- إذا كان رقم أو عملة = stats
+				if child:IsA("IntValue") or child:IsA("NumberValue") then
+					table.insert(stats, entry)
+				else
+					table.insert(other, entry)
+				end
+			end
+		end
+
+		-- مجلد / مودل
+		if child:IsA("Folder") or child:IsA("Model") or child:IsA("Configuration") then
+			local folderCat = categorize(child.Name)
+			local items = child:GetChildren()
+
+			if #items > 0 then
+				for _, sub in items do
+					-- إذا المجلد اسمه يدل على تصنيف، خذ كل أطفاله بهذا التصنيف
+					if folderCat == "pet" then
+						local val = ""
+						if sub:IsA("ValueBase") then pcall(function() val = tostring(sub.Value) end) end
+						table.insert(pets, { name = sub.Name, detail = val ~= "" and val or sub.ClassName, class = sub.ClassName })
+					elseif folderCat == "plant" then
+						local val = ""
+						if sub:IsA("ValueBase") then pcall(function() val = tostring(sub.Value) end) end
+						table.insert(plants, { name = sub.Name, detail = val ~= "" and val or sub.ClassName, class = sub.ClassName })
+					elseif folderCat == "tool" then
+						local val = ""
+						if sub:IsA("ValueBase") then pcall(function() val = tostring(sub.Value) end) end
+						table.insert(tools, { name = sub.Name, detail = val ~= "" and val or sub.ClassName, class = sub.ClassName })
+					else
+						processItem(sub, depth + 1)
+					end
+				end
+			else
+				-- مجلد فارغ
+				table.insert(other, { name = child.Name, detail = "📁 فارغ", class = child.ClassName })
+			end
+		end
+
+		-- أي شيء آخر (ObjectValue, Tool, etc.)
+		if child:IsA("Tool") then
+			table.insert(tools, { name = child.Name, detail = "Tool", class = "Tool" })
+		elseif child:IsA("ObjectValue") then
+			local val = ""
+			pcall(function() val = child.Value and child.Value.Name or "nil" end)
+			table.insert(other, { name = child.Name, detail = val, class = "ObjectValue" })
+		end
+	end
+
+	-- مسح اللاعب
+	for _, child in target:GetChildren() do
+		if child.Name ~= "PlayerGui" and child.Name ~= "PlayerScripts" and child.Name ~= "Backpack" then
+			processItem(child, 0)
+		end
+	end
+
+	-- مسح Backpack
+	if target:FindFirstChild("Backpack") then
+		for _, tool in target.Backpack:GetChildren() do
+			if tool:IsA("Tool") then
+				table.insert(tools, { name = tool.Name, detail = "Backpack", class = "Tool" })
+			end
+		end
+	end
+
+	-- مسح Character للأدوات
+	if target.Character then
+		for _, obj in target.Character:GetChildren() do
+			if obj:IsA("Tool") then
+				table.insert(tools, { name = obj.Name, detail = "مجهز", class = "Tool" })
+			end
+		end
+	end
+
+	-- ═══ 2) مسح Workspace لبيانات اللاعب ═══
+	local function scanWorkspaceForPlayer()
+		-- البحث عن plots أو gardens تحمل اسم اللاعب
+		for _, obj in workspace:GetDescendants() do
+			pcall(function()
+				if (obj.Name:find(target.Name) or obj.Name:find(target.UserId))
+					and (obj:IsA("Model") or obj:IsA("Folder")) then
+
+					for _, sub in obj:GetDescendants() do
+						if sub:IsA("ValueBase") then
+							local val = ""
+							pcall(function() val = tostring(sub.Value) end)
+							local cat = categorize(sub.Name)
+							local entry = { name = sub.Name, detail = val, class = sub.ClassName }
+
+							if cat == "pet" then table.insert(pets, entry)
+							elseif cat == "plant" then table.insert(plants, entry)
+							elseif cat == "tool" then table.insert(tools, entry)
+							else table.insert(other, entry) end
+						elseif sub:IsA("Model") and #sub:GetChildren() > 0 then
+							local cat = categorize(sub.Name)
+							local entry = { name = sub.Name, detail = "Model", class = "Model" }
+
+							if cat == "pet" then table.insert(pets, entry)
+							elseif cat == "plant" then table.insert(plants, entry)
+							else table.insert(other, entry) end
+						end
+					end
+				end
+			end)
+		end
+	end
+	scanWorkspaceForPlayer()
+
+	-- ═══ 3) بحث عميق في Plots / Gardens ═══
+	local plotFolders = {"Plots", "Gardens", "PlayerPlots", "PlayerGardens", "Farms"}
+	for _, folderName in plotFolders do
+		local folder = workspace:FindFirstChild(folderName)
+		if not folder then continue end
+
+		for _, plot in folder:GetChildren() do
+			local belongsToTarget = false
+			pcall(function()
+				-- التحقق بعدة طرق
+				if plot.Name:find(target.Name) or plot.Name:find(tostring(target.UserId)) then
+					belongsToTarget = true
+				end
+				local ownerVal = plot:FindFirstChild("Owner") or plot:FindFirstChild("OwnerId") or plot:FindFirstChild("PlayerName")
+				if ownerVal and ownerVal:IsA("ValueBase") then
+					local v = tostring(ownerVal.Value)
+					if v == target.Name or v == tostring(target.UserId) then
+						belongsToTarget = true
+					end
+				end
+			end)
+
+			if belongsToTarget then
+				for _, desc in plot:GetDescendants() do
+					pcall(function()
+						if desc:IsA("Model") or desc:IsA("MeshPart") or desc:IsA("ValueBase") then
+							local cat = categorize(desc.Name)
+							local val = ""
+							if desc:IsA("ValueBase") then
+								pcall(function() val = tostring(desc.Value) end)
+							else
+								val = desc.ClassName
+							end
+							local entry = { name = desc.Name, detail = val, class = desc.ClassName }
+
+							if cat == "pet" then table.insert(pets, entry)
+							elseif cat == "plant" then table.insert(plants, entry)
+							elseif cat == "tool" then table.insert(tools, entry)
+							else table.insert(other, entry) end
+						end
+					end)
+				end
+			end
+		end
+	end
+
+	-- ═══ عرض النتائج ═══
+	task.wait(0.1)
+
+	-- إزالة التكرار
+	local function deduplicate(list)
+		local seen, clean = {}, {}
+		for _, entry in list do
+			local key = entry.name .. "|" .. entry.detail
+			if not seen[key] then
+				seen[key] = true
+				table.insert(clean, entry)
+			end
+		end
+		return clean
+	end
+
+	pets = deduplicate(pets)
+	plants = deduplicate(plants)
+	tools = deduplicate(tools)
+	stats = deduplicate(stats)
+	other = deduplicate(other)
+
+	-- معلومات اللاعب
+	order += 1
+	addSection("👤 " .. target.Name .. " (@" .. target.DisplayName .. ")", order)
+	order += 1
+	addItem("🆔", "UserId", tostring(target.UserId), order)
+	order += 1
+	addItem("⏱️", "عمر الحساب", tostring(target.AccountAge) .. " يوم", order)
+
+	-- الحيوانات
+	if #pets > 0 then
+		order += 1
+		addSection("🐾 الحيوانات (" .. #pets .. ")", order)
+		for _, p in pets do
+			order += 1
+			addItem("🐾", p.name, p.detail, order)
+		end
+	end
+
+	-- النباتات
+	if #plants > 0 then
+		order += 1
+		addSection("🌿 النباتات / البذور (" .. #plants .. ")", order)
+		for _, p in plants do
+			order += 1
+			addItem("🌱", p.name, p.detail, order)
+		end
+	end
+
+	-- الأدوات
+	if #tools > 0 then
+		order += 1
+		addSection("🔧 الأدوات (" .. #tools .. ")", order)
+		for _, t in tools do
+			order += 1
+			addItem("🛠️", t.name, t.detail, order)
+		end
+	end
+
+	-- الإحصائيات
+	if #stats > 0 then
+		order += 1
+		addSection("📊 الإحصائيات (" .. #stats .. ")", order)
+		for _, s in stats do
+			order += 1
+			addItem("📈", s.name, s.detail, order)
+		end
+	end
+
+	-- أخرى
+	if #other > 0 then
+		order += 1
+		addSection("📦 بيانات أخرى (" .. #other .. ")", order)
+		for _, o in other do
+			order += 1
+			addItem("📄", o.name, o.detail, order)
+		end
+	end
+
+	local total = #pets + #plants + #tools + #stats + #other
+	if total == 0 then
+		order += 1
+		addSection("⚠️ لم يتم العثور على بيانات مرئية", order)
+		order += 1
+		addItem("💡", "ملاحظة", "البيانات قد تكون على السيرفر فقط", order)
+	end
+
+	StatusLabel.Text = "✅ اكتمل المسح! عناصر: " .. total
+	StatusLabel.TextColor3 = Color3.fromRGB(120, 220, 120)
+end
+
+-- ═══════════════════════════════
+--  البحث عن Mailbox
+-- ═══════════════════════════════
+local function findAndGoMailbox()
+	local char = LP.Character
+	if not char or not char:FindFirstChild("HumanoidRootPart") then
+		StatusLabel.Text = "❌ شخصيتك غير موجودة!"
+		StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+		return
+	end
+
+	local hrp = char.HumanoidRootPart
+	local closest, closestDist = nil, math.huge
+
+	for _, obj in workspace:GetDescendants() do
+		pcall(function()
+			local nameL = obj.Name:lower()
+			if (nameL:find("mail") or nameL:find("mailbox") or nameL:find("postbox") or nameL:find("letterbox"))
+				and (obj:IsA("BasePart") or obj:IsA("Model")) then
+
+				local pos
+				if obj:IsA("Model") then
+					local primary = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+					if primary then pos = primary.Position end
+				else
+					pos = obj.Position
+				end
+
+				if pos then
+					local dist = (pos - hrp.Position).Magnitude
+					if dist < closestDist then
+						closest = obj
+						closestDist = dist
+					end
+				end
+			end
+		end)
+	end
+
+	if closest then
+		local targetPos
+		if closest:IsA("Model") then
+			local p = closest.PrimaryPart or closest:FindFirstChildWhichIsA("BasePart")
+			targetPos = p and p.Position or nil
+		else
+			targetPos = closest.Position
+		end
+
+		if targetPos then
+			hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 5, 3))
+			StatusLabel.Text = "📬 تم الانتقال إلى Mailbox! (المسافة: " .. math.floor(closestDist) .. ")"
+			StatusLabel.TextColor3 = Color3.fromRGB(100, 180, 255)
+     end
+	 else
+      StatusLabel.Text = "❌ لم يتم العثور على Mailbox!"
+		StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+	end
+end
+
+-- ═══════════════════════════════
+--  EVENTOS
+-- ═══════════════════════════════
+ScanBtn.MouseButton1Click:Connect(function()
+	local name = PlayerInput.Text:gsub("%s+", "")
+	if name == "" then
+		StatusLabel.Text = "⚠️ اكتب اسم اللاعب أولاً!"
+		StatusLabel.TextColor3 = Color3.fromRGB(255, 220, 80)
+		return
+	end
+	task.spawn(scanAndDisplay, name)
+end)
+
+MailBtn.MouseButton1Click:Connect(function()
+	task.spawn(findAndGoMailbox)
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+	ScreenGui:Destroy()
+end)
+
+-- ═══════════════════════════════
+--  تأثير الظهور
+-- ═══════════════════════════════
+MainFrame.BackgroundTransparency = 1
+TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {
+	BackgroundTransparency = 0
+}):Play()
+
+StatusLabel.Text = "جاهز! اكتب اسم اللاعب واضغط بحث 🔍"
