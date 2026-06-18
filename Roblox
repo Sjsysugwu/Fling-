@@ -1,680 +1,603 @@
--- by 7yd7
 --[[
-getgenv().Settings = {
-    CopyButton = false,
-    -------------------
-    AutoButton = false,
-    AutoInterval = 0.1,
-    -------------------
-    InstantPurchase = false,
-    -------------------
-    AutoMassPurchase = false,
-    Debug = false
-}
+    ╔══════════════════════════════════════════════╗
+    ║  Grow a Garden 2 - Auto Hop & Best Fruit     ║
+    ║  • TP أقوى فاكهة تلقائي                      ║
+    ║  • Server Hop تلقائي                         ║
+    ║  • يعيد نفسه كل سيرفر                       ║
+    ╚══════════════════════════════════════════════╝
 ]]
 
-if not game:IsLoaded() then
-    game.Loaded:Wait()
+-- ══════════════════════════════════════
+-- CLEANUP
+-- ══════════════════════════════════════
+if _G.GAG2_STOP then
+    _G.GAG2_STOP()
+    task.wait(0.3)
 end
 
-local CoreGui = game:GetService("CoreGui")
-local MarketplaceService = game:GetService("MarketplaceService")
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local GuiService = game:GetService("GuiService")
-local UIS = game:GetService("UserInputService")
+-- ══════════════════════════════════════
+-- SERVICES
+-- ══════════════════════════════════════
+local Players           = game:GetService("Players")
+local TeleportService   = game:GetService("TeleportService")
+local HttpService       = game:GetService("HttpService")
+local TweenService      = game:GetService("TweenService")
+local UserInputService  = game:GetService("UserInputService")
+local RunService        = game:GetService("RunService")
 
-local LocalPlayer = Players.LocalPlayer
-while not LocalPlayer do
-    task.wait()
-    LocalPlayer = Players.LocalPlayer
-end
-local COLORS = {
-    IDLE = Color3.fromRGB(34, 214, 78),
-    HOVER = Color3.fromRGB(42, 232, 90),
-}
-local COPY_COLORS = {
-    IDLE = Color3.fromRGB(255, 154, 46),
-    HOVER = Color3.fromRGB(255, 176, 84),
-}
-local AUTO_COLORS = {
-    IDLE = Color3.fromRGB(210, 72, 72),
-    HOVER = Color3.fromRGB(232, 98, 98),
-}
-local TWEEN_SPEED = TweenInfo.new(0.045, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local SECONDARY_BUTTON_DELAY = 0.03
-local NEW_OVERLAY_BUTTON_INJECT_DELAY = 0
-local INSTANT_STATE_WATCH_INTERVAL = 0.03
-local OVERLAY_RESCAN_INTERVAL = 0.03
-local LastPrompt = { Id = nil, Type = nil, Nonce = 0 }
-local LastInstant = { PromptNonce = -1 }
-local SETTINGS_DEFAULTS = {
-    CopyButton = false,
-    AutoButton = false,
-    AutoInterval = 0.3,
-    InstantPurchase = false,
-    AutoMassPurchase = false,
-    Debug = false,
+local Player   = Players.LocalPlayer
+local CoreGui  = game:GetService("CoreGui")
+local PlaceId  = game.PlaceId
+local JobId    = game.JobId
+
+-- ══════════════════════════════════════
+-- CONFIG
+-- ══════════════════════════════════════
+local CONFIG = {
+    -- وقت الانتظار قبل ما يسوي هوب (بالثواني)
+    WaitBeforeHop    = 8,
+
+    -- وقت انتظار بعد دخول السيرفر قبل ما يبحث
+    WaitOnJoin       = 5,
+
+    -- كلمات تدل على الفواكه
+    FruitKeywords    = {"fruit", "plant", "tree", "flower", "berry", "crop", "rare", "legendary", "mythic", "divine", "cosmic"},
+    IgnoreKeywords   = {"gui", "ui", "button", "frame", "shop", "menu", "camera", "sound"},
+
+    -- اسماء اتربيوت القيمة
+    ValueAttributes  = {"Value", "Tier", "Rarity", "Power", "Level", "Worth", "Price", "Stars", "Multiplier"},
+
+    -- TP
+    TPOffset         = Vector3.new(0, 5, 0),
 }
 
-local function getSettings()
-    local resolved = table.clone(SETTINGS_DEFAULTS)
-    local ok, envSettings = pcall(function()
-        if type(getgenv) ~= "function" then return false end
-        local env = getgenv()
-        if type(env) ~= "table" then return false end
-        local settings = env.Settings
-        if type(settings) ~= "table" then return false end
-        return settings
-    end)
-    if not ok or envSettings == false then
-        return resolved
+-- ══════════════════════════════════════
+-- STATE
+-- ══════════════════════════════════════
+local alive       = true
+local connections = {}
+local isHopping   = false
+
+_G.GAG2_STOP = function()
+    alive = false
+    isHopping = false
+    for _, c in connections do
+        if c and c.Connected then c:Disconnect() end
     end
-    for key, defaultValue in pairs(SETTINGS_DEFAULTS) do
-        local expectedType = type(defaultValue)
-        if type(envSettings[key]) == expectedType then
-            resolved[key] = envSettings[key]
-        else
-            resolved[key] = defaultValue
+    table.clear(connections)
+    local g = CoreGui:FindFirstChild("GAG2_HOP_GUI")
+    if g then g:Destroy() end
+end
+
+-- ══════════════════════════════════════
+-- UTILITIES
+-- ══════════════════════════════════════
+local function getHRP()
+    local char = Player.Character
+    if not char then return nil end
+    return char:FindFirstChild("HumanoidRootPart"), char:FindFirstChildOfClass("Humanoid")
+end
+
+local function safeTP(targetCFrame)
+    local hrp, hum = getHRP()
+    if not hrp or not hum then return false end
+
+    hum.Sit = false
+    task.wait(0.1)
+
+    local dist = (hrp.Position - targetCFrame.Position).Magnitude
+
+    if dist > 400 then
+        local steps = math.ceil(dist / 80)
+        local start = hrp.CFrame
+        for i = 1, steps do
+            if not alive then return false end
+            hrp.CFrame = start:Lerp(targetCFrame + CONFIG.TPOffset, i / steps)
+            task.wait(0.06)
         end
+    else
+        hrp.CFrame = targetCFrame + CONFIG.TPOffset
     end
-    return resolved
+
+    return true
 end
 
-local function isSettingEnabled(name)
-    return getSettings()[name] == true
-end
-local RuntimeState = nil
-pcall(function()
-    local env = type(getgenv) == "function" and getgenv() or nil
-    if type(env) == "table" then
-        env.__FreeGamepassRuntime = env.__FreeGamepassRuntime or { runId = 0 }
-        if type(env.__FreeGamepassRuntime.connections) == "table" then
-            for _, conn in ipairs(env.__FreeGamepassRuntime.connections) do
-                pcall(function()
-                    if conn and conn.Disconnect then
-                        conn:Disconnect()
-                    end
-                end)
+-- ══════════════════════════════════════
+-- FRUIT SCANNER
+-- ══════════════════════════════════════
+local function isFruit(obj)
+    if not (obj:IsA("BasePart") or obj:IsA("Model")) then return false end
+    local name = obj.Name:lower()
+
+    for _, kw in CONFIG.IgnoreKeywords do
+        if name:find(kw) then return false end
+    end
+
+    for _, kw in CONFIG.FruitKeywords do
+        if name:find(kw) then return true end
+    end
+
+    for _, attr in CONFIG.ValueAttributes do
+        if obj:GetAttribute(attr) then return true end
+    end
+
+    for _, child in obj:GetChildren() do
+        if child:IsA("NumberValue") or child:IsA("IntValue") then
+            local cn = child.Name:lower()
+            if cn:find("value") or cn:find("tier") or cn:find("rarity") or cn:find("power") then
+                return true
             end
         end
-        env.__FreeGamepassRuntime.connections = {}
-        env.__FreeGamepassRuntime.runId = env.__FreeGamepassRuntime.runId + 1
-        RuntimeState = env.__FreeGamepassRuntime
     end
-end)
 
-local CURRENT_RUN_ID = RuntimeState and RuntimeState.runId or os.clock()
-local AutoLoopState = { Running = false, ThreadId = 0, StopGui = nil }
-local ParentButtonState = setmetatable({}, { __mode = "k" })
-local ScriptConnections = RuntimeState and RuntimeState.connections or {}
-local HiddenOverlays = setmetatable({}, { __mode = "k" })
-
-local function isCurrentRun()
-    return not RuntimeState or RuntimeState.runId == CURRENT_RUN_ID
+    return false
 end
 
-local function trackConnection(conn)
-    if conn then
-        table.insert(ScriptConnections, conn)
+local function getFruitValue(obj)
+    local val = 0
+
+    for _, attr in CONFIG.ValueAttributes do
+        local v = obj:GetAttribute(attr)
+        if type(v) == "number" then val = math.max(val, v) end
     end
-    return conn
-end
 
-local function toggleRobloxMenu()
-    pcall(function()
-        local foundOverlay = false
-        for _, child in ipairs(CoreGui:GetChildren()) do
-            if child:IsA("ScreenGui") and child.Name == "FoundationOverlay" and child.Enabled then
-                local saf = child:FindFirstChild("SafeAreaFrame")
-                local portal = saf and saf:FindFirstChild("OverlayPortal")
-                local backdrop = portal and portal:FindFirstChild("Backdrop")
-                local sheet = portal and portal:FindFirstChild("SheetContainer")
-
-                if backdrop and sheet then
-                    foundOverlay = true
-                    local info = TweenInfo.new(0.1, Enum.EasingStyle.Cubic, Enum.EasingDirection.In)
-                    TweenService:Create(backdrop, info, {BackgroundTransparency = 1}):Play()
-                    local t = TweenService:Create(sheet, info, {Position = UDim2.new(0.5, 0, 0.5, 32)})
-                    t:Play()
-                    t.Completed:Connect(function()
-                        GuiService:SetMenuIsOpen(true)
-                        GuiService:SetMenuIsOpen(false)
-                    end)
-                    break
-                end
-            end
-        end
-
-        if not foundOverlay then
-            GuiService:SetMenuIsOpen(true)
-            GuiService:SetMenuIsOpen(false)
-        end
-    end)
-end
-
-pcall(function()
-    local oldStopGui = CoreGui:FindFirstChild("AutoStopButton")
-    if oldStopGui then
-        oldStopGui:Destroy()
-    end
-end)
-
-local function trySet(obj, prop, value)
-    pcall(function()
-        obj[prop] = value
-    end)
-end
-
-local function tweenColor(target, color)
-    if not target or not target.Parent then return end
-
-    local props = {}
-    if target:IsA("GuiObject") then
-        props.BackgroundColor3 = color
-    end
-    if target:IsA("ImageButton") or target:IsA("ImageLabel") then
-        props.ImageColor3 = color
-    end
-    if next(props) then
-        TweenService:Create(target, TWEEN_SPEED, props):Play()
-    end
-end
-
-local function applyVisualState(root, color)
-    tweenColor(root, color)
-    for _, desc in ipairs(root:GetDescendants()) do
-        if desc:IsA("ImageLabel") or desc:IsA("ImageButton") or desc:IsA("Frame") then
-            tweenColor(desc, color)
+    for _, child in obj:GetChildren() do
+        if child:IsA("NumberValue") or child:IsA("IntValue") then
+            val = math.max(val, child.Value)
         end
     end
-end
 
-
-local function fireEventFallback(event, ...)
-    if type(firesignal) == "function" then
-        pcall(firesignal, event, ...)
-    end
-end
-
-local function finishPurchase(id)
-    if LastPrompt.Type == "GamePass" then
-        local success = pcall(function()
-            MarketplaceService:SignalPromptGamePassPurchaseFinished(LocalPlayer.UserId, id, true)
-        end)
-        if not success then
-            fireEventFallback(MarketplaceService.PromptGamePassPurchaseFinished, LocalPlayer, id, true)
-        end
-
-    elseif LastPrompt.Type == "Product" then
-        local success = pcall(function()
-            MarketplaceService:SignalPromptProductPurchaseFinished(LocalPlayer.UserId, id, true)
-        end)
-        if not success then
-            fireEventFallback(MarketplaceService.PromptProductPurchaseFinished, LocalPlayer.UserId, id, true)
-        end
-
-    elseif LastPrompt.Type == "Asset" then
-        local success = pcall(function()
-            MarketplaceService:SignalPromptPurchaseFinished(LocalPlayer.UserId, id, true)
-        end)
-        if not success then
-            fireEventFallback(MarketplaceService.PromptPurchaseFinished, LocalPlayer, id, true)
-        end
-
-    elseif LastPrompt.Type == "Bundle" then
-        local success = pcall(function()
-            MarketplaceService:SignalPromptBundlePurchaseFinished(LocalPlayer.UserId, id, true)
-        end)
-        if not success then
-            fireEventFallback(MarketplaceService.PromptBundlePurchaseFinished, LocalPlayer, id, true)
-        end
-
-    elseif LastPrompt.Type == "Premium" then
-        local success = pcall(function()
-            MarketplaceService:SignalPromptPremiumPurchaseFinished(true)
-        end)
-        if not success then
-            fireEventFallback(MarketplaceService.PromptPremiumPurchaseFinished, true)
-        end
-    end
-end
-
-local function restoreHiddenOverlays()
-    for overlay in pairs(HiddenOverlays) do
-        pcall(function()
-            if overlay and overlay.Parent and overlay:IsA("ScreenGui") then
-                overlay.Enabled = true
-            end
-        end)
-        HiddenOverlays[overlay] = nil
-    end
-end
-
-local function restoreFoundationOverlayVisibility()
-    for _, child in ipairs(CoreGui:GetDescendants()) do
-        if child:IsA("ScreenGui") and child.Name == "FoundationOverlay" then
+    -- Fallback: حجم = قوة (اللي طلبه اليوزر)
+    if val == 0 then
+        local size = Vector3.zero
+        if obj:IsA("BasePart") then
+            size = obj.Size
+        elseif obj:IsA("Model") then
             pcall(function()
-                child.Enabled = true
+                local _, sz = obj:GetBoundingBox()
+                size = sz
             end)
+            if size == Vector3.zero then
+                local p = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                if p then size = p.Size end
+            end
+        end
+        val = size.X * size.Y * size.Z
+    end
+
+    return val
+end
+
+local function getFruitCFrame(obj)
+    if obj:IsA("BasePart") then return obj.CFrame end
+    if obj:IsA("Model") then
+        if obj.PrimaryPart then return obj.PrimaryPart.CFrame end
+        local p = obj:FindFirstChildWhichIsA("BasePart")
+        if p then return p.CFrame end
+        local cf; pcall(function() cf = obj:GetBoundingBox() end)
+        return cf
+    end
+    return nil
+end
+
+local function findBestFruit()
+    local bestObj, bestVal, bestCF = nil, 0, nil
+
+    for _, obj in workspace:GetDescendants() do
+        if isFruit(obj) then
+            local val = getFruitValue(obj)
+            if val > bestVal then
+                local cf = getFruitCFrame(obj)
+                if cf then
+                    bestObj = obj
+                    bestVal = val
+                    bestCF  = cf
+                end
+            end
         end
     end
+
+    return bestObj, bestVal, bestCF
 end
 
-local function runInstantPurchase(id, options)
-    if not isCurrentRun() or not isSettingEnabled("InstantPurchase") then return end
+-- ══════════════════════════════════════
+-- SERVER HOP
+-- ══════════════════════════════════════
+local function getServerList()
+    local servers = {}
+    local cursor = ""
+    local attempts = 0
 
-    local opts = options or {}
-    if opts.hideOverlay and opts.overlay then
-        pcall(function()
-            if opts.overlay:IsA("ScreenGui") then
-                opts.overlay.Enabled = false
-                HiddenOverlays[opts.overlay] = true
+    repeat
+        attempts += 1
+        local url = string.format(
+            "https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true%s",
+            PlaceId,
+            cursor ~= "" and ("&cursor=" .. cursor) or ""
+        )
+
+        local ok, result = pcall(function()
+            if syn and syn.request then
+                return syn.request({Url = url, Method = "GET"})
+            elseif request then
+                return request({Url = url, Method = "GET"})
+            elseif http_request then
+                return http_request({Url = url, Method = "GET"})
+            elseif fluxus and fluxus.request then
+                return fluxus.request({Url = url, Method = "GET"})
             end
         end)
-    end
 
-    if opts.forceMenuToggle then
-        toggleRobloxMenu()
-    end
-
-    if not id then return end
-    if id ~= LastPrompt.Id then return end
-    local promptNonce = LastPrompt.Nonce or 0
-    if LastInstant.PromptNonce == promptNonce then
-        return
-    end
-    LastInstant.PromptNonce = promptNonce
-
-    finishPurchase(id)
-    if not opts.forceMenuToggle then
-        return
-    end
-end
-local function capturePrompt(player, id, promptType)
-    if not isCurrentRun() then return end
-    if player == LocalPlayer then
-        LastPrompt.Nonce = (LastPrompt.Nonce or 0) + 1
-        LastPrompt.Id = id
-        LastPrompt.Type = promptType
-
-        if isSettingEnabled("Debug") then
-            task.spawn(function()
-                local infoType
-                if promptType == "GamePass" then
-                    infoType = Enum.InfoType.GamePass
-                elseif promptType == "Product" then
-                    infoType = Enum.InfoType.Product
-                elseif promptType == "Asset" then
-                    infoType = Enum.InfoType.Asset
-                elseif promptType == "Bundle" then
-                    infoType = Enum.InfoType.Bundle
-                end
-                
-                if infoType then
-                    local success, info = pcall(function()
-                        return MarketplaceService:GetProductInfo(id, infoType)
-                    end)
-                    if success and info then
-                        print(string.format("%s | %s | %s", tostring(info.Name), tostring(id), tostring(info.PriceInRobux or 0)))
-                    else
-                        print(string.format("Unknown | %s | 0", tostring(id)))
+        if ok and result and result.Body then
+            local data = HttpService:JSONDecode(result.Body)
+            if data and data.data then
+                for _, server in data.data do
+                    if server.id ~= JobId and server.playing and server.maxPlayers and server.playing < server.maxPlayers then
+                        table.insert(servers, server.id)
                     end
-                else
-                    print(string.format("Unknown | %s | 0", tostring(id)))
                 end
-            end)
-        end
-
-        if isSettingEnabled("InstantPurchase") then
-            task.spawn(function()
-                runInstantPurchase(id, { forceMenuToggle = false })
-            end)
-        end
-    end
-end
-
-trackConnection(MarketplaceService.PromptGamePassPurchaseRequested:Connect(function(player, id)
-    capturePrompt(player, id, "GamePass")
-end))
-
-trackConnection(MarketplaceService.PromptProductPurchaseRequested:Connect(function(player, id)
-    capturePrompt(player, id, "Product")
-end))
-
-trackConnection(MarketplaceService.PromptPurchaseRequested:Connect(function(player, id)
-    capturePrompt(player, id, "Asset")
-end))
-
-trackConnection(MarketplaceService.PromptBundlePurchaseRequested:Connect(function(player, id)
-    capturePrompt(player, id, "Bundle")
-end))
-
-trackConnection(MarketplaceService.PromptPremiumPurchaseRequested:Connect(function(player)
-    capturePrompt(player, 0, "Premium")
-end))
-
-local function buildPurchaseOperation(id)
-    local code = "local MarketplaceService = game:GetService(\"MarketplaceService\")\n\n"
-
-    if LastPrompt.Type == "GamePass" then
-        return code .. string.format("MarketplaceService:SignalPromptGamePassPurchaseFinished(%d, %d, true)", LocalPlayer.UserId, id)
-    elseif LastPrompt.Type == "Product" then
-        return code .. string.format("MarketplaceService:SignalPromptProductPurchaseFinished(%d, %d, true)", LocalPlayer.UserId, id)
-    elseif LastPrompt.Type == "Asset" then
-        return code .. string.format("MarketplaceService:SignalPromptPurchaseFinished(%d, %d, true)", LocalPlayer.UserId, id)
-    elseif LastPrompt.Type == "Bundle" then
-        return code .. string.format("MarketplaceService:SignalPromptBundlePurchaseFinished(%d, %d, true)", LocalPlayer.UserId, id)
-    elseif LastPrompt.Type == "Premium" then
-        return code .. "MarketplaceService:SignalPromptPremiumPurchaseFinished(true)"
-    end
-    return ""
-end
-
-local function settleButtonPosition(anchorBtn, btn, parent, offsetY)
-    if not anchorBtn or not btn or not parent then return end
-    local hasListLayout = parent:FindFirstChildOfClass("UIListLayout") ~= nil
-    if hasListLayout then
-        btn.LayoutOrder = (anchorBtn.LayoutOrder or 0) + 1
-        return
-    end
-
-    btn.Position = anchorBtn.Position + UDim2.fromOffset(0, offsetY or 0)
-    task.defer(function()
-        if btn.Parent ~= parent or anchorBtn.Parent ~= parent then return end
-        btn.Position = anchorBtn.Position + UDim2.fromOffset(0, offsetY or 0)
-        task.defer(function()
-            if btn.Parent ~= parent or anchorBtn.Parent ~= parent then return end
-            btn.Position = anchorBtn.Position + UDim2.fromOffset(0, offsetY or 0)
-        end)
-    end)
-end
-
-local function settleFreeButtonPosition(originalBtn, freeBtn, parent)
-    if not originalBtn or not freeBtn or not parent then return end
-    local hasListLayout = parent:FindFirstChildOfClass("UIListLayout") ~= nil
-    if hasListLayout then
-        freeBtn.LayoutOrder = (originalBtn.LayoutOrder or 0) + 1
-        return
-    end
-
-    freeBtn.Position = originalBtn.Position
-    task.defer(function()
-        if freeBtn.Parent ~= parent or originalBtn.Parent ~= parent then return end
-        freeBtn.Position = originalBtn.Position
-        task.defer(function()
-            if freeBtn.Parent ~= parent or originalBtn.Parent ~= parent then return end
-            freeBtn.Position = originalBtn.Position
-        end)
-    end)
-end
-
-local function getInjectedButtonsBaseOrder(parent)
-    local maxOrder = 0
-    for _, child in ipairs(parent:GetChildren()) do
-        if child:IsA("GuiObject") and child.Name ~= "FreeButton" and child.Name ~= "CopyButton" and child.Name ~= "AutoButton" then
-            local order = child.LayoutOrder or 0
-            if order > maxOrder then
-                maxOrder = order
-            end
-        end
-    end
-    return maxOrder
-end
-
-local function getParentState(parent)
-    local state = ParentButtonState[parent]
-    if not state then
-        state = {}
-        ParentButtonState[parent] = state
-    end
-    return state
-end
-
-local function layoutInjectedButtons(parent)
-    if not parent then return end
-
-    local state = getParentState(parent)
-    local template = state.TemplateButton
-    if not (template and template.Parent == parent) then
-        template = nil
-        for _, child in ipairs(parent:GetChildren()) do
-            if child:IsA("ImageButton") and child.Name ~= "FreeButton" and child.Name ~= "CopyButton" and child.Name ~= "AutoButton" then
-                template = child
+                cursor = data.nextPageCursor or ""
+            else
                 break
             end
+        else
+            break
         end
-        state.TemplateButton = template
+    until cursor == "" or #servers >= 50 or attempts >= 3
+
+    return servers
+end
+
+local function hopToNewServer()
+    local servers = getServerList()
+
+    if #servers == 0 then
+        -- Fallback: rejoin random
+        TeleportService:Teleport(PlaceId, Player)
+        return true
     end
 
-    local freeBtn = parent:FindFirstChild("FreeButton")
-    local copyBtn = parent:FindFirstChild("CopyButton")
-    local autoBtn = parent:FindFirstChild("AutoButton")
-    local hasListLayout = parent:FindFirstChildOfClass("UIListLayout") ~= nil
+    local targetServer = servers[math.random(1, #servers)]
+    TeleportService:TeleportToPlaceInstance(PlaceId, targetServer, Player)
+    return true
+end
 
-    if hasListLayout then
-        local baseOrder = getInjectedButtonsBaseOrder(parent)
-        if freeBtn then freeBtn.LayoutOrder = baseOrder + 1 end
-        if copyBtn then copyBtn.LayoutOrder = baseOrder + 2 end
-        if autoBtn then autoBtn.LayoutOrder = baseOrder + 3 end
-        return
-    end
+-- ══════════════════════════════════════
+-- QUEUE ON TELEPORT (اعادة تشغيل بعد الهوب)
+-- ══════════════════════════════════════
+local SCRIPT_SOURCE = nil
 
-    if freeBtn and template then
-        settleFreeButtonPosition(template, freeBtn, parent)
-    end
-    if copyBtn and freeBtn then
-        settleButtonPosition(freeBtn, copyBtn, parent, 42)
-    end
-    if autoBtn then
-        local anchorBtn = copyBtn or freeBtn
-        if anchorBtn then
-            settleButtonPosition(anchorBtn, autoBtn, parent, 42)
-        end
+local function setupAutoRerun()
+    -- حفظ السورس للاعادة
+    if not SCRIPT_SOURCE then
+        -- نجرب نجيب السورس الحالي
+        pcall(function()
+            if getexecutorname then end -- check executor exists
+        end)
     end
 end
 
-local function stopAutoLoop()
-    AutoLoopState.Running = false
-    AutoLoopState.ThreadId = AutoLoopState.ThreadId + 1
-end
+local function queueRerun(scriptSource)
+    local queued = false
 
-local function destroyAutoStopButton()
-    if AutoLoopState.StopGui and AutoLoopState.StopGui.Parent then
-        AutoLoopState.StopGui:Destroy()
-    end
-    AutoLoopState.StopGui = nil
-end
-
-local function startAutoLoop()
-    if AutoLoopState.Running then return end
-    AutoLoopState.Running = true
-    AutoLoopState.ThreadId = AutoLoopState.ThreadId + 1
-    local myThreadId = AutoLoopState.ThreadId
-    task.spawn(function()
-        while AutoLoopState.Running and AutoLoopState.ThreadId == myThreadId do
-            local id = LastPrompt.Id
-            if id then
-                finishPurchase(id)
-                toggleRobloxMenu()
-            end
-            local interval = getSettings().AutoInterval
-            if type(interval) ~= "number" or interval <= 0 then
-                interval = 0.3
-            end
-            task.wait(interval)
-        end
-    end)
-end
-
-local function makeDraggable(frame)
-    local dragging = false
-    local dragInput = nil
-    local dragStart = nil
-    local startPos = nil
-    local didDrag = false
-    local DRAG_THRESHOLD = 6
-
-    local function update(input)
-        local delta = input.Position - dragStart
-        if math.abs(delta.X) > DRAG_THRESHOLD or math.abs(delta.Y) > DRAG_THRESHOLD then
-            didDrag = true
-        end
-        frame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+    -- محاولة queue_on_teleport
+    if queue_on_teleport then
+        pcall(function()
+            queue_on_teleport(scriptSource)
+            queued = true
+        end)
     end
 
-    frame.InputBegan:Connect(function(input)
+    -- Fallback: syn
+    if not queued and syn and syn.queue_on_teleport then
+        pcall(function()
+            syn.queue_on_teleport(scriptSource)
+            queued = true
+        end)
+    end
+
+    -- Fallback: fluxus
+    if not queued and fluxus and fluxus.queue_on_teleport then
+        pcall(function()
+            fluxus.queue_on_teleport(scriptSource)
+            queued = true
+        end)
+    end
+
+    return queued
+end
+
+-- ══════════════════════════════════════
+-- GUI
+-- ══════════════════════════════════════
+local function createGUI()
+    local old = CoreGui:FindFirstChild("GAG2_HOP_GUI")
+    if old then old:Destroy() end
+
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "GAG2_HOP_GUI"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    local ok = pcall(function() ScreenGui.Parent = CoreGui end)
+    if not ok then ScreenGui.Parent = Player:WaitForChild("PlayerGui") end
+
+    -- Main
+    local Main = Instance.new("Frame")
+    Main.Name = "Main"
+    Main.Size = UDim2.new(0, 280, 0, 240)
+    Main.Position = UDim2.new(0.5, -140, 0.5, -120)
+    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+    Main.BorderSizePixel = 0
+    Main.Active = true
+    Main.Parent = ScreenGui
+
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
+
+    local stroke = Instance.new("UIStroke", Main)
+    stroke.Color = Color3.fromRGB(50, 200, 100)
+    stroke.Thickness = 1.5
+    stroke.Transparency = 0.2
+
+    -- Title
+    local Title = Instance.new("Frame")
+    Title.Size = UDim2.new(1, 0, 0, 42)
+    Title.BackgroundColor3 = Color3.fromRGB(20, 160, 70)
+    Title.BorderSizePixel = 0
+    Title.Parent = Main
+    Instance.new("UICorner", Title).CornerRadius = UDim.new(0, 14)
+
+    local titleFix = Instance.new("Frame")
+    titleFix.Size = UDim2.new(1, 0, 0, 14)
+    titleFix.Position = UDim2.new(0, 0, 1, -14)
+    titleFix.BackgroundColor3 = Color3.fromRGB(20, 160, 70)
+    titleFix.BorderSizePixel = 0
+    titleFix.Parent = Title
+
+    local titleText = Instance.new("TextLabel")
+    titleText.Size = UDim2.new(1, -10, 1, 0)
+    titleText.Position = UDim2.new(0, 10, 0, 0)
+    titleText.BackgroundTransparency = 1
+    titleText.Text = "🌱 Auto Hop - Best Fruit"
+    titleText.TextColor3 = Color3.new(1, 1, 1)
+    titleText.Font = Enum.Font.GothamBold
+    titleText.TextSize = 15
+    titleText.TextXAlignment = Enum.TextXAlignment.Left
+    titleText.Parent = Title
+
+    -- Drag
+    local dragging, dragStart, startPos
+    Title.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
-            didDrag = false
             dragStart = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
+            startPos = Main.Position
+        end
+    end)
+    Title.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+    table.insert(connections, UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end))
+
+    -- Container
+    local Container = Instance.new("Frame")
+    Container.Size = UDim2.new(1, -20, 1, -56)
+    Container.Position = UDim2.new(0, 10, 0, 50)
+    Container.BackgroundTransparency = 1
+    Container.Parent = Main
+
+    local layout = Instance.new("UIListLayout", Container)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 8)
+
+    -- Status
+    local Status = Instance.new("TextLabel")
+    Status.Size = UDim2.new(1, 0, 0, 40)
+    Status.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    Status.TextColor3 = Color3.fromRGB(150, 255, 150)
+    Status.Font = Enum.Font.GothamBold
+    Status.TextSize = 13
+    Status.Text = "✅ جاهز - اضغط Start"
+    Status.TextWrapped = true
+    Status.LayoutOrder = 0
+    Status.Parent = Container
+    Instance.new("UICorner", Status).CornerRadius = UDim.new(0, 8)
+
+    local function setStatus(msg, color)
+        Status.Text = msg
+        Status.TextColor3 = color or Color3.fromRGB(150, 255, 150)
+    end
+
+    -- Helper: make button
+    local function makeBtn(text, order, color)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 42)
+        btn.BackgroundColor3 = color
+        btn.Text = text
+        btn.TextColor3 = Color3.new(1, 1, 1)
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 14
+        btn.BorderSizePixel = 0
+        btn.LayoutOrder = order
+        btn.AutoButtonColor = false
+        btn.Parent = Container
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
+
+        btn.MouseEnter:Connect(function()
+            TweenService:Create(btn, TweenInfo.new(0.15), {
+                BackgroundColor3 = Color3.new(math.min(color.R + 0.12, 1), math.min(color.G + 0.12, 1), math.min(color.B + 0.12, 1))
+            }):Play()
+        end)
+        btn.MouseLeave:Connect(function()
+            TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = color}):Play()
+        end)
+
+        return btn
+    end
+
+    -- ═══ START BUTTON ═══
+    local startBtn = makeBtn("🚀 START - ابدأ الهوب", 1, Color3.fromRGB(30, 140, 60))
+
+    -- ═══ STOP BUTTON ═══
+    local stopBtn = makeBtn("⛔ STOP - وقف", 2, Color3.fromRGB(160, 40, 40))
+
+    -- ═══ TP ONLY (بدون هوب) ═══
+    local tpOnlyBtn = makeBtn("🍎 TP أقوى فاكهة (بدون هوب)", 3, Color3.fromRGB(40, 80, 160))
+
+    -- ══════════════════════════════════════
+    -- MAIN LOOP
+    -- ══════════════════════════════════════
+    local function mainLoop()
+        if isHopping then return end
+        isHopping = true
+
+        while alive and isHopping do
+            -- 1. انتظر تحميل الماب
+            setStatus("⏳ جاري تحميل الماب...", Color3.fromRGB(255, 255, 100))
+            task.wait(CONFIG.WaitOnJoin)
+
+            if not alive or not isHopping then break end
+
+            -- 2. انتظر الكراكتر
+            local attempts = 0
+            while not getHRP() and attempts < 30 do
+                task.wait(0.5)
+                attempts += 1
+            end
+
+            if not alive or not isHopping then break end
+
+            -- 3. ابحث عن أقوى فاكهة
+            setStatus("🔍 جاري البحث عن أقوى فاكهة...", Color3.fromRGB(100, 200, 255))
+            task.wait(1)
+
+            local fruitObj, fruitVal, fruitCF = findBestFruit()
+
+            if fruitObj and fruitCF then
+                setStatus(string.format("🍎 لقيت: %s (%.0f)\n🚀 جاري التلبرت...", fruitObj.Name, fruitVal), Color3.fromRGB(100, 255, 150))
+                task.wait(0.5)
+
+                safeTP(fruitCF)
+
+                setStatus(string.format("✅ وصلت! %s\n⏱️ هوب بعد %ds...", fruitObj.Name, CONFIG.WaitBeforeHop), Color3.fromRGB(150, 255, 150))
+            else
+                setStatus(string.format("❌ ما لقيت فواكه!\n⏱️ هوب بعد %ds...", CONFIG.WaitBeforeHop), Color3.fromRGB(255, 150, 80))
+            end
+
+            if not alive or not isHopping then break end
+
+            -- 4. عد تنازلي قبل الهوب
+            for i = CONFIG.WaitBeforeHop, 1, -1 do
+                if not alive or not isHopping then break end
+                setStatus(string.format("⏱️ هوب بعد %d ثانية...", i), Color3.fromRGB(255, 200, 50))
+                task.wait(1)
+            end
+
+            if not alive or not isHopping then break end
+
+            -- 5. Queue rerun + Hop
+            setStatus("🔄 جاري السيرفر هوب...", Color3.fromRGB(255, 150, 50))
+
+            -- جهز اعادة التشغيل بعد الهوب
+            local scriptCode = [[
+-- Auto-rerun after hop
+task.wait(3)
+loadstring(game:HttpGet("GAG2_SCRIPT_URL_HERE"))()
+]]
+            -- اذا السكربت محفوظ محلي، نستخدم السورس الاصلي
+            pcall(function()
+                -- نحاول نرسل السكربت الحالي
+                if queue_on_teleport then
+                    -- ملاحظة: لازم تحط لينك السكربت هنا لو تبيه يشتغل تلقائي بعد الهوب
+                    -- queue_on_teleport('loadstring(game:HttpGet("YOUR_RAW_LINK"))()') 
                 end
             end)
-        end
-    end)
 
-    frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    UIS.InputChanged:Connect(function(input)
-        if dragging and input == dragInput then
-            update(input)
-        end
-    end)
-
-    return function()
-        local wasDragged = didDrag
-        didDrag = false
-        return wasDragged
-    end
-end
-
-local function createAutoStopButton()
-    destroyAutoStopButton()
-
-    local gui = Instance.new("ScreenGui")
-    local button = Instance.new("TextButton")
-    local corner = Instance.new("UICorner")
-    local icon = Instance.new("ImageLabel")
-    local aspect = Instance.new("UIAspectRatioConstraint")
-
-    gui.Name = "AutoStopButton"
-    gui.IgnoreGuiInset = true
-    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    gui.Parent = CoreGui
-
-    button.Name = "Button"
-    button.Parent = gui
-    button.AnchorPoint = Vector2.new(0.5, 0.5)
-    button.Position = UDim2.new(0.5, 0, 0, 34)
-    button.Size = UDim2.new(0.039, 0, 0.069, 0)
-    button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    button.BackgroundTransparency = 0.4
-    button.BorderSizePixel = 0
-    button.AutoButtonColor = false
-    button.ZIndex = 99999999
-    button.Text = ""
-
-    corner.CornerRadius = UDim.new(0, 99999)
-    corner.Parent = button
-
-    icon.Parent = button
-    icon.BackgroundTransparency = 1
-    icon.Position = UDim2.new(0.1, 0, 0.1, 0)
-    icon.Size = UDim2.new(0.8, 0, 0.8, 0)
-    icon.Image = "rbxassetid://98003862321782"
-    icon.ImageColor3 = Color3.fromRGB(255, 90, 90)
-
-    aspect.Parent = button
-    aspect.AspectRatio = 1
-
-    local wasDragged = makeDraggable(button)
-
-    button.Activated:Connect(function()
-        if wasDragged() then
-            return
-        end
-        stopAutoLoop()
-        destroyAutoStopButton()
-    end)
-
-    AutoLoopState.StopGui = gui
-end
-
-local function decorateButton(btn, text, zIndex, palette)
-    local colors = palette or COLORS
-    btn.Visible = true
-    btn.Active = true
-    btn.Selectable = true
-    btn.AutoButtonColor = false
-    btn.ZIndex = zIndex
-    btn.BackgroundColor3 = colors.IDLE
-    btn.BackgroundTransparency = 0.1
-    trySet(btn, "Interactable", true)
-    if btn:IsA("ImageButton") then
-        btn.ImageColor3 = colors.IDLE
-    end
-
-    for _, desc in ipairs(btn:GetDescendants()) do
-        if desc:IsA("LocalScript") or desc:IsA("Script") or desc:IsA("ModuleScript") then
-            desc:Destroy()
-        elseif desc:IsA("GuiObject") then
-            desc.ZIndex = math.max(desc.ZIndex, btn.ZIndex)
-            desc.Active = true
-            trySet(desc, "Interactable", true)
-            if desc:IsA("TextLabel") or desc:IsA("TextButton") then
-                desc.Text = text
-                desc.TextTransparency = 0
-            end
-        end
-    end
-end
-
-local function wireHover(btn, palette)
-    local colors = palette or COLORS
-    btn.MouseEnter:Connect(function()
-        applyVisualState(btn, colors.HOVER)
-    end)
-
-    btn.MouseLeave:Connect(function()
-        applyVisualState(btn, colors.IDLE)
-    end)
-end
-
-local function processParentButtons(parent)
-    if not parent then return end
-    local state = getParentState(parent)
-    if state.Injecting then
-        state.Dirty = true
-        return
-    end
-    state.Injecting = true
-
-    task.spawn(function()
-        repeat
-            state.Dirty = false
-            local template = state.TemplateButton
-            if not (template and template.Parent == parent) then
-                state.Injecting = false
-                return
+            -- هوب!
+            local hopOk = pcall(hopToNewServer)
+            if not hopOk then
+                setStatus("❌ فشل الهوب! اعادة المحاولة...", Color3.fromRGB(255, 80, 80))
+                task.wait(3)
+                pcall(function()
+                    TeleportService:Teleport(PlaceId, Player)
+                end)
             end
 
-            if not parent:FindFirstChild("FreeButton") then
-                local freeBtn = template:Clone()
-                freeBtn.Name = "FreeButton"
-                freeBtn.Parent = parent
-                decorateButton(freeBtn, "Free", (template.ZIndex or 1) + 10)
-                settleFreeButtonPosition(template, freeBtn, parent)
-                wireHo
+            -- انتظر الهوب يكتمل
+            task.wait(10)
+        end
+
+        isHopping = false
+        if alive then
+            setStatus("⛔ متوقف", Color3.fromRGB(200, 200, 200))
+        end
+    end
+
+    -- ══════════════════════════════════════
+    -- BUTTON EVENTS
+    -- ══════════════════════════════════════
+    startBtn.MouseButton1Click:Connect(function()
+        if isHopping then return end
+        task.spawn(mainLoop)
+    end)
+
+    stopBtn.MouseButton1Click:Connect(function()
+        isHopping = false
+        setStatus("⛔ جاري الإيقاف...", Color3.fromRGB(255, 100, 100))
+    end)
+
+    tpOnlyBtn.MouseButton1Click:Connect(function()
+        task.spawn(function()
+            setStatus("🔍 جاري البحث...", Color3.fromRGB(100, 200, 255))
+            local obj, val, cf = findBestFruit()
+            if obj and cf then
+                setStatus(string.format("🚀 تلبرت → %s (%.0f)", obj.Name, val), Color3.fromRGB(100, 255, 150))
+                safeTP(cf)
+                setStatus(string.format("✅ %s (%.0f)", obj.Name, val), Color3.fromRGB(150, 255, 150))
+            else
+                setStatus("❌ ما لقيت فواكه بالسيرفر!", Color3.fromRGB(255, 80, 80))
+            end
+        end)
+    end)
+
+    -- Open anim
+    Main.Position = UDim2.new(0.5, -140, -0.5, 0)
+    TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Back), {
+        Position = UDim2.new(0.5, -140, 0.5, -120)
+    }):Play()
+
+    return ScreenGui
+end
+
+-- ══════════════════════════════════════
+-- AUTO-START (لو جاي من هوب)
+-- ══════════════════════════════════════
+local function checkAutoStart()
+    -- لو جاي من هوب سابق، ابدأ تلقائي
+    if _G.GAG2_AUTO_HOP then
+        task.wait(CONFIG.WaitOnJoin)
+        local obj, val, cf = findBestFruit()
+        if obj and cf then
+            safeTP(cf)
+        end
+        -- كمل الهوب
+        task.wait(CONFIG.WaitBeforeHop)
+        pcall(hopToNewServer)
+    end
+end
+
+-- ══════════════════════════════════════
+-- INIT
+-- ══════════════════════════════════════
+createGUI()
+task.spawn(checkAutoStart)
+
+print("[GAG2] ✅ Auto Hop Script Loaded!")
+print("[GAG2] 🌱 Press START to begin hopping!")
