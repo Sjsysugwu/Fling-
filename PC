@@ -130,10 +130,10 @@ ok.MouseButton1Click:Connect(function()sg:Destroy()startScript()end)
 nah.MouseButton1Click:Connect(function()sg:Destroy()end)
 task.wait(1)
 local messages = {
-    "AintMyCrib",
-    "IsdaBest!?",
-    "KEYLESS PCMOBILE DETECTOR",
-    "HAS BEEN EXECUTED!?"
+    "",
+    "",
+    "",
+    ""
 }
 
 local TextChatService = game:GetService("TextChatService")
