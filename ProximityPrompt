@@ -1,0 +1,41 @@
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "PromptToggle"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0,100,0,40)
+button.Position = UDim2.new(1,-110,0,10)
+button.Text = "ON"
+button.Parent = gui
+
+local enabled = true
+
+local function updatePrompts()
+	for _, v in ipairs(workspace:GetDescendants()) do
+		if v:IsA("ProximityPrompt") then
+			if enabled then
+				v.HoldDuration = 0
+			end
+		end
+	end
+end
+
+updatePrompts()
+
+workspace.DescendantAdded:Connect(function(v)
+	if enabled and v:IsA("ProximityPrompt") then
+		v.HoldDuration = 0
+	end
+end)
+
+button.MouseButton1Click:Connect(function()
+	enabled = not enabled
+	if enabled then
+		button.Text = "ON"
+		updatePrompts()
+	else
+		button.Text = "OFF"
+	end
+end)
