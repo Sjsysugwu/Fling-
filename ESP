@@ -2,8 +2,8 @@
 --// By YT: ALi_BOOSS919
 
 -- 🔒 CREDIT LOCK
-local CREDIT = "By YT: ALi_BOOSS919"
-if CREDIT ~= "By YT: ALi_BOOSS919" then return end
+local CREDIT = "By YT: A_A"
+if CREDIT ~= "By YT: A_A" then return end
 
 repeat task.wait() until game:IsLoaded()
 
