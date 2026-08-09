@@ -1,5 +1,5 @@
--- Animal Rarity Hub
--- ESP + Spawn + ProximityPrompt
+--Animal Rarity Hub
+-- ESP + Spawn + ProximityPrompt + Speed 100
 -- Key: 062965
 
 local Players = game:GetService("Players")
@@ -33,10 +33,13 @@ local GREEN = Color3.fromRGB(45,180,75)
 local ACTIVE = Color3.fromRGB(255,190,0)
 
 local ESP_MAX_DISTANCE = 230
+local SPEED_VALUE = 100
+local NORMAL_SPEED = 16
 
 local enabledESP = false
 local enabledSpawn = false
 local enabledPrompt = false
+local enabledSpeed = false
 
 local rarityEnabled = {}
 
@@ -49,7 +52,7 @@ end
 --==================================================
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "AnimalRarityHub"
+gui.Name = "A_A🤔"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
@@ -60,7 +63,7 @@ gui.Parent = player:WaitForChild("PlayerGui")
 local pButton = Instance.new("TextButton")
 pButton.Size = UDim2.fromOffset(50,50)
 pButton.Position = UDim2.fromOffset(10,10)
-pButton.Text = "P"
+pButton.Text = "🥶"
 pButton.TextSize = 30
 pButton.Font = Enum.Font.Fantasy
 pButton.TextColor3 = Color3.fromRGB(255,0,0)
@@ -88,7 +91,7 @@ Instance.new("UICorner",keyFrame).CornerRadius = UDim.new(0,10)
 local keyTitle = Instance.new("TextLabel")
 keyTitle.Size = UDim2.new(1,0,0,35)
 keyTitle.BackgroundTransparency = 1
-keyTitle.Text = "Enter Key"
+keyTitle.Text = "A_A 🖕🏿 Key"
 keyTitle.TextColor3 = Color3.new(1,1,1)
 keyTitle.TextSize = 20
 keyTitle.Font = Enum.Font.GothamBold
@@ -160,7 +163,7 @@ copyKeyButton.MouseButton1Click:Connect(copyKey)
 --==================================================
 
 local main = Instance.new("Frame")
-main.Size = UDim2.fromOffset(300,230)
+main.Size = UDim2.fromOffset(300,275)
 main.Position = UDim2.fromOffset(70,80)
 main.BackgroundColor3 = Color3.fromRGB(30,30,30)
 main.BorderSizePixel = 0
@@ -232,12 +235,29 @@ promptButton.Parent = main
 Instance.new("UICorner",promptButton).CornerRadius = UDim.new(0,8)
 
 --==================================================
+-- SPEED BUTTON
+--==================================================
+
+local speedButton = Instance.new("TextButton")
+speedButton.Size = UDim2.fromOffset(270,40)
+speedButton.Position = UDim2.fromOffset(15,155)
+speedButton.Text = "🏃 Speed 100 OFF"
+speedButton.TextColor3 = Color3.new(1,1,1)
+speedButton.TextSize = 15
+speedButton.Font = Enum.Font.GothamBold
+speedButton.BackgroundColor3 = NORMAL
+speedButton.BorderSizePixel = 0
+speedButton.Parent = main
+
+Instance.new("UICorner",speedButton).CornerRadius = UDim.new(0,8)
+
+--==================================================
 -- CLOSE
 --==================================================
 
 local closeButton = Instance.new("TextButton")
 closeButton.Size = UDim2.fromOffset(270,35)
-closeButton.Position = UDim2.fromOffset(15,165)
+closeButton.Position = UDim2.fromOffset(15,210)
 closeButton.Text = "Close GUI"
 closeButton.TextColor3 = Color3.new(1,1,1)
 closeButton.TextSize = 15
@@ -247,6 +267,55 @@ closeButton.BorderSizePixel = 0
 closeButton.Parent = main
 
 Instance.new("UICorner",closeButton).CornerRadius = UDim.new(0,8)
+
+--==================================================
+-- SPEED SYSTEM
+--==================================================
+
+local function applySpeed()
+
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+	if not humanoid then
+		return
+	end
+
+	if enabledSpeed then
+		humanoid.WalkSpeed = SPEED_VALUE
+	else
+		humanoid.WalkSpeed = NORMAL_SPEED
+	end
+end
+
+speedButton.MouseButton1Click:Connect(function()
+
+	enabledSpeed = not enabledSpeed
+
+	if enabledSpeed then
+
+		speedButton.Text = "🏃 Speed 100 ON"
+		speedButton.BackgroundColor3 = GREEN
+
+		applySpeed()
+
+	else
+
+		speedButton.Text = "🏃 Speed 100 OFF"
+		speedButton.BackgroundColor3 = NORMAL
+
+		applySpeed()
+	end
+end)
+
+player.CharacterAdded:Connect(function(character)
+
+	local humanoid = character:WaitForChild("Humanoid",10)
+
+	if humanoid and enabledSpeed then
+		humanoid.WalkSpeed = SPEED_VALUE
+	end
+end)
 
 --==================================================
 -- ESP PANEL
@@ -363,11 +432,13 @@ local function cleanText(text)
 end
 
 local function getPosition(model)
+
 	if not model or not model.Parent then
 		return nil
 	end
 
 	if model:IsA("Model") then
+
 		local ok,pivot = pcall(function()
 			return model:GetPivot()
 		end)
@@ -387,6 +458,7 @@ local function getPosition(model)
 end
 
 local function getAnimalFromBoard(board)
+
 	local current = board.Parent
 
 	while current and current ~= Workspace do
@@ -406,6 +478,7 @@ local function getAnimalFromBoard(board)
 end
 
 local function hasRarity(board,rarity)
+
 	for _,obj in ipairs(board:GetDescendants()) do
 
 		if obj:IsA("TextLabel")
@@ -421,6 +494,7 @@ local function hasRarity(board,rarity)
 end
 
 local function getAnimalName(animal,board)
+
 	for _,obj in ipairs(board:GetDescendants()) do
 
 		if obj:IsA("TextLabel")
@@ -494,12 +568,14 @@ end
 local function clearESP()
 
 	for _,v in pairs(tags) do
+
 		if v then
 			v:Destroy()
 		end
 	end
 
 	for _,v in pairs(highlights) do
+
 		if v then
 			v:Destroy()
 		end
@@ -510,6 +586,7 @@ local function clearESP()
 end
 
 local function getRainbow()
+
 	return Color3.fromHSV(
 		(os.clock()*0.25)%1,
 		1,
@@ -569,11 +646,13 @@ end
 local function updateESP()
 
 	if not enabledESP then
+
 		clearESP()
 		return
 	end
 
 	local character = player.Character
+
 	local root =
 		character and
 		character:FindFirstChild("HumanoidRootPart")
@@ -596,8 +675,10 @@ local function updateESP()
 			tags[model] = nil
 
 			if highlights[model] then
+
 				highlights[model]:Destroy()
 				highlights[model] = nil
+
 			end
 		end
 	end
@@ -631,18 +712,23 @@ local function updateESP()
 							.. " | 📏 "
 							.. math.floor(distance)
 							.. " Stud"
+
 					end
 
 				else
 
 					if tags[model] then
+
 						tags[model]:Destroy()
 						tags[model] = nil
+
 					end
 
 					if highlights[model] then
+
 						highlights[model]:Destroy()
 						highlights[model] = nil
+
 					end
 				end
 			end
@@ -657,6 +743,7 @@ end
 for _,rarity in ipairs(RARITIES) do
 
 	local button = Instance.new("TextButton")
+
 	button.Size = UDim2.new(1,0,0,40)
 	button.BackgroundColor3 = RED
 	button.Text = rarity
@@ -694,6 +781,7 @@ end
 for _,rarity in ipairs(RARITIES) do
 
 	local button = Instance.new("TextButton")
+
 	button.Size = UDim2.new(1,0,0,40)
 	button.BackgroundColor3 = NORMAL
 	button.Text = rarity
@@ -713,6 +801,7 @@ for _,rarity in ipairs(RARITIES) do
 		end
 
 		local character = player.Character
+
 		local root =
 			character and
 			character:FindFirstChild("HumanoidRootPart")
@@ -742,8 +831,10 @@ for _,rarity in ipairs(RARITIES) do
 						(root.Position-position).Magnitude
 
 					if distance <= closestDistance then
+
 						closestDistance = distance
 						closest = model
+
 					end
 				end
 			end
@@ -754,10 +845,12 @@ for _,rarity in ipairs(RARITIES) do
 			local position = getPosition(closest)
 
 			if position then
+
 				root.CFrame =
 					CFrame.new(
 						position + Vector3.new(0,3,0)
 					)
+
 			end
 		end
 	end)
@@ -802,6 +895,7 @@ Workspace.DescendantAdded:Connect(function(v)
 
 		originalHoldDurations[v] = v.HoldDuration
 		v.HoldDuration = 0
+
 	end
 end)
 
@@ -913,9 +1007,17 @@ closeButton.MouseButton1Click:Connect(function()
 	enabledESP = false
 	enabledSpawn = false
 
+	-- Reset Speed
+	if enabledSpeed then
+		enabledSpeed = false
+		applySpeed()
+	end
+
 	if enabledPrompt then
+
 		enabledPrompt = false
 		restorePrompts()
+
 	end
 
 	clearESP()
@@ -932,16 +1034,20 @@ local menuVisible = false
 pButton.MouseButton1Click:Connect(function()
 
 	if not UNLOCKED then
+
 		keyFrame.Visible = not keyFrame.Visible
 		return
+
 	end
 
 	menuVisible = not menuVisible
 	main.Visible = menuVisible
 
 	if not menuVisible then
+
 		espPanel.Visible = false
 		spawnPanel.Visible = false
+
 	end
 end)
 
@@ -959,6 +1065,16 @@ RunService.Heartbeat:Connect(function(dt)
 		return
 	end
 
+	-- Keep Speed 100 active
+	if enabledSpeed then
+		local character = player.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+		if humanoid and humanoid.WalkSpeed ~= SPEED_VALUE then
+			humanoid.WalkSpeed = SPEED_VALUE
+		end
+	end
+
 	if not enabledESP then
 		return
 	end
@@ -968,13 +1084,17 @@ RunService.Heartbeat:Connect(function(dt)
 	rainbowTimer += dt
 
 	if scanTimer >= 0.5 then
+
 		scanTimer = 0
 		scanAnimals()
+
 	end
 
 	if espTimer >= 0.1 then
+
 		espTimer = 0
 		updateESP()
+
 	end
 
 	if rainbowTimer >= 0.03 then
