@@ -1,5 +1,5 @@
 -- Animal Rarity Hub
--- Roblox Studio - داخل لعبتك
+-- ESP + Spawn + ProximityPrompt
 -- Key: 062965
 
 local Players = game:GetService("Players")
@@ -33,8 +33,10 @@ local GREEN = Color3.fromRGB(45,180,75)
 local ACTIVE = Color3.fromRGB(255,190,0)
 
 local ESP_MAX_DISTANCE = 230
+
 local enabledESP = false
 local enabledSpawn = false
+local enabledPrompt = false
 
 local rarityEnabled = {}
 
@@ -43,7 +45,7 @@ for _, rarity in ipairs(RARITIES) do
 end
 
 --==================================================
--- GUI
+-- MAIN GUI
 --==================================================
 
 local gui = Instance.new("ScreenGui")
@@ -58,7 +60,7 @@ gui.Parent = player:WaitForChild("PlayerGui")
 local pButton = Instance.new("TextButton")
 pButton.Size = UDim2.fromOffset(50,50)
 pButton.Position = UDim2.fromOffset(10,10)
-pButton.Text = "A_A"
+pButton.Text = "P"
 pButton.TextSize = 30
 pButton.Font = Enum.Font.Fantasy
 pButton.TextColor3 = Color3.fromRGB(255,0,0)
@@ -105,8 +107,6 @@ keyBox.Parent = keyFrame
 
 Instance.new("UICorner",keyBox).CornerRadius = UDim.new(0,7)
 
--- UNLOCK
-
 local unlockButton = Instance.new("TextButton")
 unlockButton.Size = UDim2.fromOffset(100,30)
 unlockButton.Position = UDim2.fromOffset(80,82)
@@ -120,8 +120,6 @@ unlockButton.Parent = keyFrame
 
 Instance.new("UICorner",unlockButton).CornerRadius = UDim.new(0,7)
 
--- GET KEY
-
 local getKeyButton = Instance.new("TextButton")
 getKeyButton.Size = UDim2.fromOffset(100,25)
 getKeyButton.Position = UDim2.fromOffset(25,125)
@@ -134,8 +132,6 @@ getKeyButton.BorderSizePixel = 0
 getKeyButton.Parent = keyFrame
 
 Instance.new("UICorner",getKeyButton).CornerRadius = UDim.new(0,6)
-
--- COPY KEY
 
 local copyKeyButton = Instance.new("TextButton")
 copyKeyButton.Size = UDim2.fromOffset(100,25)
@@ -164,8 +160,8 @@ copyKeyButton.MouseButton1Click:Connect(copyKey)
 --==================================================
 
 local main = Instance.new("Frame")
-main.Size = UDim2.fromOffset(300,170)
-main.Position = UDim2.fromOffset(70,10)
+main.Size = UDim2.fromOffset(300,230)
+main.Position = UDim2.fromOffset(70,80)
 main.BackgroundColor3 = Color3.fromRGB(30,30,30)
 main.BorderSizePixel = 0
 main.Visible = false
@@ -184,11 +180,13 @@ title.TextSize = 20
 title.Font = Enum.Font.GothamBold
 title.Parent = main
 
--- ESP BUTTON - نازل لتحت
+--==================================================
+-- ESP BUTTON
+--==================================================
 
 local espButton = Instance.new("TextButton")
-espButton.Size = UDim2.fromOffset(135,45)
-espButton.Position = UDim2.new(0,15,0.5,30)
+espButton.Size = UDim2.fromOffset(135,40)
+espButton.Position = UDim2.fromOffset(15,55)
 espButton.Text = "ESP OFF"
 espButton.TextColor3 = Color3.new(1,1,1)
 espButton.TextSize = 15
@@ -199,11 +197,13 @@ espButton.Parent = main
 
 Instance.new("UICorner",espButton).CornerRadius = UDim.new(0,8)
 
--- SPAWN BUTTON - نازل لتحت
+--==================================================
+-- SPAWN BUTTON
+--==================================================
 
 local spawnButton = Instance.new("TextButton")
-spawnButton.Size = UDim2.fromOffset(135,45)
-spawnButton.Position = UDim2.new(0,160,0.5,30)
+spawnButton.Size = UDim2.fromOffset(135,40)
+spawnButton.Position = UDim2.fromOffset(160,55)
 spawnButton.Text = "SPAWN OFF"
 spawnButton.TextColor3 = Color3.new(1,1,1)
 spawnButton.TextSize = 15
@@ -215,12 +215,46 @@ spawnButton.Parent = main
 Instance.new("UICorner",spawnButton).CornerRadius = UDim.new(0,8)
 
 --==================================================
+-- PROXIMITY PROMPT BUTTON
+--==================================================
+
+local promptButton = Instance.new("TextButton")
+promptButton.Size = UDim2.fromOffset(270,40)
+promptButton.Position = UDim2.fromOffset(15,105)
+promptButton.Text = "ProximityPrompt OFF"
+promptButton.TextColor3 = Color3.new(1,1,1)
+promptButton.TextSize = 15
+promptButton.Font = Enum.Font.GothamBold
+promptButton.BackgroundColor3 = NORMAL
+promptButton.BorderSizePixel = 0
+promptButton.Parent = main
+
+Instance.new("UICorner",promptButton).CornerRadius = UDim.new(0,8)
+
+--==================================================
+-- CLOSE
+--==================================================
+
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.fromOffset(270,35)
+closeButton.Position = UDim2.fromOffset(15,165)
+closeButton.Text = "Close GUI"
+closeButton.TextColor3 = Color3.new(1,1,1)
+closeButton.TextSize = 15
+closeButton.Font = Enum.Font.GothamBold
+closeButton.BackgroundColor3 = Color3.fromRGB(100,35,35)
+closeButton.BorderSizePixel = 0
+closeButton.Parent = main
+
+Instance.new("UICorner",closeButton).CornerRadius = UDim.new(0,8)
+
+--==================================================
 -- ESP PANEL
 --==================================================
 
 local espPanel = Instance.new("Frame")
 espPanel.Size = UDim2.fromOffset(260,385)
-espPanel.Position = UDim2.new(0,380,0.5,-150)
+espPanel.Position = UDim2.fromOffset(380,80)
 espPanel.BackgroundColor3 = Color3.fromRGB(25,25,30)
 espPanel.BorderSizePixel = 0
 espPanel.Visible = false
@@ -270,7 +304,7 @@ espLayout.Parent = espList
 
 local spawnPanel = Instance.new("Frame")
 spawnPanel.Size = UDim2.fromOffset(260,390)
-spawnPanel.Position = UDim2.new(0,650,0.5,-150)
+spawnPanel.Position = UDim2.fromOffset(650,80)
 spawnPanel.BackgroundColor3 = Color3.fromRGB(25,25,30)
 spawnPanel.BorderSizePixel = 0
 spawnPanel.Visible = false
@@ -315,7 +349,7 @@ spawnLayout.Padding = UDim.new(0,6)
 spawnLayout.Parent = spawnList
 
 --==================================================
--- HELPERS
+-- ANIMAL HELPERS
 --==================================================
 
 local cachedAnimals = {}
@@ -397,6 +431,7 @@ local function getAnimalName(animal,board)
 				local isRarity = false
 
 				for _,rarity in ipairs(RARITIES) do
+
 					if cleanText(obj.Text) == cleanText(rarity) then
 						isRarity = true
 						break
@@ -588,6 +623,7 @@ local function updateESP()
 						tags[model]:FindFirstChildOfClass("TextLabel")
 
 					if label then
+
 						label.Text =
 							data.Name
 							.. "\n⭐ "
@@ -615,7 +651,7 @@ local function updateESP()
 end
 
 --==================================================
--- ESP RARITY BUTTONS
+-- ESP RARITIES
 --==================================================
 
 for _,rarity in ipairs(RARITIES) do
@@ -652,7 +688,7 @@ for _,rarity in ipairs(RARITIES) do
 end
 
 --==================================================
--- SPAWN BUTTONS
+-- SPAWN RARITIES
 --==================================================
 
 for _,rarity in ipairs(RARITIES) do
@@ -728,6 +764,68 @@ for _,rarity in ipairs(RARITIES) do
 end
 
 --==================================================
+-- PROXIMITY PROMPT
+--==================================================
+
+local originalHoldDurations = {}
+
+local function setPromptsInstant()
+
+	for _,v in ipairs(Workspace:GetDescendants()) do
+
+		if v:IsA("ProximityPrompt") then
+
+			if originalHoldDurations[v] == nil then
+				originalHoldDurations[v] = v.HoldDuration
+			end
+
+			v.HoldDuration = 0
+		end
+	end
+end
+
+local function restorePrompts()
+
+	for prompt,duration in pairs(originalHoldDurations) do
+
+		if prompt and prompt.Parent then
+			prompt.HoldDuration = duration
+		end
+	end
+
+	table.clear(originalHoldDurations)
+end
+
+Workspace.DescendantAdded:Connect(function(v)
+
+	if enabledPrompt and v:IsA("ProximityPrompt") then
+
+		originalHoldDurations[v] = v.HoldDuration
+		v.HoldDuration = 0
+	end
+end)
+
+promptButton.MouseButton1Click:Connect(function()
+
+	enabledPrompt = not enabledPrompt
+
+	if enabledPrompt then
+
+		promptButton.Text = "ProximityPrompt ON"
+		promptButton.BackgroundColor3 = GREEN
+
+		setPromptsInstant()
+
+	else
+
+		promptButton.Text = "ProximityPrompt OFF"
+		promptButton.BackgroundColor3 = NORMAL
+
+		restorePrompts()
+	end
+end)
+
+--==================================================
 -- ESP TOGGLE
 --==================================================
 
@@ -755,6 +853,7 @@ espButton.MouseButton1Click:Connect(function()
 		end
 
 		for _,button in ipairs(espList:GetChildren()) do
+
 			if button:IsA("TextButton") then
 				button.BackgroundColor3 = RED
 			end
@@ -803,6 +902,25 @@ unlockButton.MouseButton1Click:Connect(function()
 		keyBox.Text = ""
 		keyBox.PlaceholderText = "Wrong Key!"
 	end
+end)
+
+--==================================================
+-- CLOSE GUI
+--==================================================
+
+closeButton.MouseButton1Click:Connect(function()
+
+	enabledESP = false
+	enabledSpawn = false
+
+	if enabledPrompt then
+		enabledPrompt = false
+		restorePrompts()
+	end
+
+	clearESP()
+
+	gui:Destroy()
 end)
 
 --==================================================
