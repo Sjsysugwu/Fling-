@@ -27,13 +27,13 @@ gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 --------------------------------------------------
--- Animals Button
+-- ESP Button
 --------------------------------------------------
 
 local animalsButton = Instance.new("TextButton")
 animalsButton.Size = UDim2.fromOffset(105,45)
 animalsButton.Position = UDim2.new(0,15,0.5,-55)
-animalsButton.Text = "🤫ESP🤫"
+animalsButton.Text = "🤫by A_A {ESP}"
 animalsButton.TextColor3 = Color3.new(1,1,1)
 animalsButton.TextSize = 15
 animalsButton.Font = Enum.Font.GothamBold
@@ -44,13 +44,13 @@ animalsButton.Parent = gui
 Instance.new("UICorner",animalsButton).CornerRadius = UDim.new(0,8)
 
 --------------------------------------------------
--- Rarities Button
+-- Spawn Button
 --------------------------------------------------
 
 local raritiesButton = Instance.new("TextButton")
 raritiesButton.Size = UDim2.fromOffset(105,45)
 raritiesButton.Position = UDim2.new(0,15,0.5,5)
-raritiesButton.Text = "😁spawn😁"
+raritiesButton.Text = "😁by A_A {spawn}"
 raritiesButton.TextColor3 = Color3.new(1,1,1)
 raritiesButton.TextSize = 15
 raritiesButton.Font = Enum.Font.GothamBold
@@ -208,7 +208,6 @@ local function getAnimalName(animal,board)
 						isRarity = true
 						break
 					end
-
 				end
 
 				if not isRarity then
@@ -385,7 +384,7 @@ for _,rarity in ipairs(RARITIES) do
 end
 
 --------------------------------------------------
--- Animals Toggle
+-- ESP Toggle
 --------------------------------------------------
 
 animalsButton.MouseButton1Click:Connect(function()
@@ -407,7 +406,7 @@ animalsButton.MouseButton1Click:Connect(function()
 end)
 
 --------------------------------------------------
--- Rarities Toggle
+-- Spawn Toggle
 --------------------------------------------------
 
 raritiesButton.MouseButton1Click:Connect(function()
