@@ -1,8 +1,15 @@
+-- Animal Rarity Hub
+-- Roblox Studio - داخل لعبتك
+-- Key: 062965
+
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
+
+local CORRECT_KEY = "062965"
+local UNLOCKED = false
 
 local RARITIES = {
 	"Legendary",
@@ -12,13 +19,20 @@ local RARITIES = {
 	"Kitty God"
 }
 
+local RARITY_COLORS = {
+	Legendary = Color3.fromRGB(255,210,0),
+	Mythic = Color3.fromRGB(255,0,0),
+	Secret = Color3.fromRGB(0,0,0),
+	Exclusive = Color3.fromRGB(170,0,255),
+	["Kitty God"] = Color3.fromRGB(255,0,0)
+}
+
 local NORMAL = Color3.fromRGB(45,45,55)
 local RED = Color3.fromRGB(190,45,45)
 local GREEN = Color3.fromRGB(45,180,75)
 local ACTIVE = Color3.fromRGB(255,190,0)
 
 local ESP_MAX_DISTANCE = 230
-
 local enabledESP = false
 local enabledSpawn = false
 
@@ -28,142 +42,190 @@ for _, rarity in ipairs(RARITIES) do
 	rarityEnabled[rarity] = false
 end
 
---------------------------------------------------
--- RARITY COLORS
---------------------------------------------------
-
-local RARITY_COLORS = {
-	Legendary = Color3.fromRGB(255,210,0), -- أصفر
-	Mythic = Color3.fromRGB(255,0,0),      -- أحمر
-	Secret = Color3.fromRGB(0,0,0),        -- أسود
-	Exclusive = Color3.fromRGB(170,0,255), -- بنفسجي
-	["Kitty God"] = Color3.fromRGB(255,0,0)
-}
-
---------------------------------------------------
--- MAIN GUI
---------------------------------------------------
+--==================================================
+-- GUI
+--==================================================
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "AnimalRarityUI"
+gui.Name = "AnimalRarityHub"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
---------------------------------------------------
--- INTRO: by A_A + 5 4 3 2 1
---------------------------------------------------
+--==================================================
+-- P BUTTON
+--==================================================
 
-local introGui = Instance.new("ScreenGui")
-introGui.Name = "A_A_Intro"
-introGui.ResetOnSpawn = false
-introGui.IgnoreGuiInset = true
-introGui.DisplayOrder = 999
-introGui.Parent = player.PlayerGui
+local pButton = Instance.new("TextButton")
+pButton.Size = UDim2.fromOffset(50,50)
+pButton.Position = UDim2.fromOffset(10,10)
+pButton.Text = "by A_A☠️"
+pButton.TextSize = 30
+pButton.Font = Enum.Font.Fantasy
+pButton.TextColor3 = Color3.fromRGB(255,0,0)
+pButton.BackgroundColor3 = Color3.fromRGB(20,20,20)
+pButton.BorderSizePixel = 0
+pButton.Parent = gui
 
-local countdownLabel = Instance.new("TextLabel")
-countdownLabel.Size = UDim2.new(1,0,0,70)
-countdownLabel.Position = UDim2.new(0,0,0.5,-105)
-countdownLabel.BackgroundTransparency = 1
-countdownLabel.Text = "5"
-countdownLabel.TextColor3 = Color3.new(1,1,1)
-countdownLabel.TextStrokeColor3 = Color3.new(0,0,0)
-countdownLabel.TextStrokeTransparency = 0
-countdownLabel.TextScaled = true
-countdownLabel.Font = Enum.Font.GothamBlack
-countdownLabel.Parent = introGui
+Instance.new("UICorner",pButton).CornerRadius = UDim.new(0,12)
 
-local introLabel = Instance.new("TextLabel")
-introLabel.Size = UDim2.new(1,0,0,90)
-introLabel.Position = UDim2.new(0,0,0.5,-25)
-introLabel.BackgroundTransparency = 1
-introLabel.Text = "by A_A"
-introLabel.TextColor3 = Color3.new(1,1,1)
-introLabel.TextStrokeColor3 = Color3.new(0,0,0)
-introLabel.TextStrokeTransparency = 0
-introLabel.TextScaled = true
-introLabel.Font = Enum.Font.GothamBlack
-introLabel.Parent = introGui
+--==================================================
+-- KEY FRAME
+--==================================================
 
-task.spawn(function()
+local keyFrame = Instance.new("Frame")
+keyFrame.Size = UDim2.fromOffset(260,185)
+keyFrame.Position = UDim2.fromOffset(70,10)
+keyFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+keyFrame.BorderSizePixel = 0
+keyFrame.Active = true
+keyFrame.Draggable = true
+keyFrame.Parent = gui
 
-	while introGui.Parent do
+Instance.new("UICorner",keyFrame).CornerRadius = UDim.new(0,10)
 
-		local hue = (os.clock() * 0.25) % 1
+local keyTitle = Instance.new("TextLabel")
+keyTitle.Size = UDim2.new(1,0,0,35)
+keyTitle.BackgroundTransparency = 1
+keyTitle.Text = "Enter Key"
+keyTitle.TextColor3 = Color3.new(1,1,1)
+keyTitle.TextSize = 20
+keyTitle.Font = Enum.Font.GothamBold
+keyTitle.Parent = keyFrame
 
-		introLabel.TextColor3 =
-			Color3.fromHSV(hue,1,1)
+local keyBox = Instance.new("TextBox")
+keyBox.Size = UDim2.fromOffset(210,35)
+keyBox.Position = UDim2.fromOffset(25,42)
+keyBox.PlaceholderText = "Enter Key"
+keyBox.Text = ""
+keyBox.TextColor3 = Color3.new(1,1,1)
+keyBox.TextSize = 17
+keyBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
+keyBox.ClearTextOnFocus = false
+keyBox.Parent = keyFrame
 
-		task.wait(0.03)
+Instance.new("UICorner",keyBox).CornerRadius = UDim.new(0,7)
+
+-- UNLOCK
+
+local unlockButton = Instance.new("TextButton")
+unlockButton.Size = UDim2.fromOffset(100,30)
+unlockButton.Position = UDim2.fromOffset(80,82)
+unlockButton.Text = "Unlock"
+unlockButton.TextColor3 = Color3.new(1,1,1)
+unlockButton.TextSize = 17
+unlockButton.Font = Enum.Font.GothamBold
+unlockButton.BackgroundColor3 = Color3.fromRGB(60,60,60)
+unlockButton.BorderSizePixel = 0
+unlockButton.Parent = keyFrame
+
+Instance.new("UICorner",unlockButton).CornerRadius = UDim.new(0,7)
+
+-- GET KEY
+
+local getKeyButton = Instance.new("TextButton")
+getKeyButton.Size = UDim2.fromOffset(100,25)
+getKeyButton.Position = UDim2.fromOffset(25,125)
+getKeyButton.Text = "Get Key"
+getKeyButton.TextColor3 = Color3.new(1,1,1)
+getKeyButton.TextSize = 14
+getKeyButton.Font = Enum.Font.GothamBold
+getKeyButton.BackgroundColor3 = Color3.fromRGB(45,45,55)
+getKeyButton.BorderSizePixel = 0
+getKeyButton.Parent = keyFrame
+
+Instance.new("UICorner",getKeyButton).CornerRadius = UDim.new(0,6)
+
+-- COPY KEY
+
+local copyKeyButton = Instance.new("TextButton")
+copyKeyButton.Size = UDim2.fromOffset(100,25)
+copyKeyButton.Position = UDim2.fromOffset(135,125)
+copyKeyButton.Text = "Copy Key"
+copyKeyButton.TextColor3 = Color3.new(1,1,1)
+copyKeyButton.TextSize = 14
+copyKeyButton.Font = Enum.Font.GothamBold
+copyKeyButton.BackgroundColor3 = Color3.fromRGB(45,45,55)
+copyKeyButton.BorderSizePixel = 0
+copyKeyButton.Parent = keyFrame
+
+Instance.new("UICorner",copyKeyButton).CornerRadius = UDim.new(0,6)
+
+local function copyKey()
+	if typeof(setclipboard) == "function" then
+		setclipboard(CORRECT_KEY)
 	end
-end)
+end
 
-task.spawn(function()
+getKeyButton.MouseButton1Click:Connect(copyKey)
+copyKeyButton.MouseButton1Click:Connect(copyKey)
 
-	for number = 5,1,-1 do
+--==================================================
+-- MAIN MENU
+--==================================================
 
-		countdownLabel.Text = tostring(number)
+local main = Instance.new("Frame")
+main.Size = UDim2.fromOffset(300,170)
+main.Position = UDim2.fromOffset(70,10)
+main.BackgroundColor3 = Color3.fromRGB(30,30,30)
+main.BorderSizePixel = 0
+main.Visible = false
+main.Active = true
+main.Draggable = true
+main.Parent = gui
 
-		task.wait(1)
-	end
+Instance.new("UICorner",main).CornerRadius = UDim.new(0,10)
 
-	for transparency = 0,1,0.05 do
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,40)
+title.BackgroundColor3 = Color3.fromRGB(20,20,20)
+title.Text = "Animal Rarity Hub"
+title.TextColor3 = Color3.new(1,1,1)
+title.TextSize = 20
+title.Font = Enum.Font.GothamBold
+title.Parent = main
 
-		countdownLabel.TextTransparency = transparency
-		countdownLabel.TextStrokeTransparency = transparency
-
-		introLabel.TextTransparency = transparency
-		introLabel.TextStrokeTransparency = transparency
-
-		task.wait(0.03)
-	end
-
-	introGui:Destroy()
-end)
-
---------------------------------------------------
--- ESP BUTTON
---------------------------------------------------
+-- ESP BUTTON - نازل لتحت
 
 local espButton = Instance.new("TextButton")
 espButton.Size = UDim2.fromOffset(135,45)
-espButton.Position = UDim2.new(0,15,0.5,-55)
-espButton.Text = "🤫by A_A {ESP} OFF"
+espButton.Position = UDim2.new(0,15,0.5,30)
+espButton.Text = "ESP OFF"
 espButton.TextColor3 = Color3.new(1,1,1)
-espButton.TextSize = 14
+espButton.TextSize = 15
 espButton.Font = Enum.Font.GothamBold
 espButton.BackgroundColor3 = NORMAL
 espButton.BorderSizePixel = 0
-espButton.Parent = gui
+espButton.Parent = main
 
 Instance.new("UICorner",espButton).CornerRadius = UDim.new(0,8)
 
---------------------------------------------------
--- SPAWN BUTTON
---------------------------------------------------
+-- SPAWN BUTTON - نازل لتحت
 
 local spawnButton = Instance.new("TextButton")
 spawnButton.Size = UDim2.fromOffset(135,45)
-spawnButton.Position = UDim2.new(0,15,0.5,5)
-spawnButton.Text = "😁by A_A {spawn}"
+spawnButton.Position = UDim2.new(0,160,0.5,30)
+spawnButton.Text = "SPAWN OFF"
 spawnButton.TextColor3 = Color3.new(1,1,1)
-spawnButton.TextSize = 14
+spawnButton.TextSize = 15
 spawnButton.Font = Enum.Font.GothamBold
 spawnButton.BackgroundColor3 = NORMAL
 spawnButton.BorderSizePixel = 0
-spawnButton.Parent = gui
+spawnButton.Parent = main
 
 Instance.new("UICorner",spawnButton).CornerRadius = UDim.new(0,8)
 
---------------------------------------------------
+--==================================================
 -- ESP PANEL
---------------------------------------------------
+--==================================================
 
 local espPanel = Instance.new("Frame")
 espPanel.Size = UDim2.fromOffset(260,385)
-espPanel.Position = UDim2.new(0,160,0.5,-192)
+espPanel.Position = UDim2.new(0,380,0.5,-150)
 espPanel.BackgroundColor3 = Color3.fromRGB(25,25,30)
 espPanel.BorderSizePixel = 0
 espPanel.Visible = false
+espPanel.Active = true
+espPanel.Draggable = true
 espPanel.Parent = gui
 
 Instance.new("UICorner",espPanel).CornerRadius = UDim.new(0,10)
@@ -171,48 +233,28 @@ Instance.new("UICorner",espPanel).CornerRadius = UDim.new(0,10)
 local espTitle = Instance.new("TextLabel")
 espTitle.Size = UDim2.new(1,0,0,45)
 espTitle.BackgroundTransparency = 1
-espTitle.Text = "🤫by A_A {ESP}"
+espTitle.Text = "Animal ESP"
 espTitle.TextColor3 = Color3.new(1,1,1)
 espTitle.TextSize = 20
 espTitle.Font = Enum.Font.GothamBold
 espTitle.Parent = espPanel
 
---------------------------------------------------
--- ESP DISTANCE
---------------------------------------------------
+local distanceBox = Instance.new("TextBox")
+distanceBox.Size = UDim2.new(1,-20,0,40)
+distanceBox.Position = UDim2.fromOffset(10,55)
+distanceBox.Text = "230"
+distanceBox.PlaceholderText = "ESP Distance"
+distanceBox.TextColor3 = Color3.new(1,1,1)
+distanceBox.TextSize = 15
+distanceBox.BackgroundColor3 = Color3.fromRGB(45,45,55)
+distanceBox.ClearTextOnFocus = false
+distanceBox.Parent = espPanel
 
-local espDistanceLabel = Instance.new("TextLabel")
-espDistanceLabel.Size = UDim2.new(1,-20,0,25)
-espDistanceLabel.Position = UDim2.new(0,10,0,45)
-espDistanceLabel.BackgroundTransparency = 1
-espDistanceLabel.Text = "ESP Distance (Max 230)"
-espDistanceLabel.TextColor3 = Color3.new(1,1,1)
-espDistanceLabel.TextSize = 14
-espDistanceLabel.Font = Enum.Font.GothamBold
-espDistanceLabel.TextXAlignment = Enum.TextXAlignment.Left
-espDistanceLabel.Parent = espPanel
-
-local espDistanceInput = Instance.new("TextBox")
-espDistanceInput.Size = UDim2.new(1,-20,0,40)
-espDistanceInput.Position = UDim2.new(0,10,0,72)
-espDistanceInput.BackgroundColor3 = Color3.fromRGB(45,45,55)
-espDistanceInput.TextColor3 = Color3.new(1,1,1)
-espDistanceInput.PlaceholderText = "100 / 200 / 230"
-espDistanceInput.Text = "230"
-espDistanceInput.TextSize = 15
-espDistanceInput.Font = Enum.Font.GothamBold
-espDistanceInput.ClearTextOnFocus = false
-espDistanceInput.Parent = espPanel
-
-Instance.new("UICorner",espDistanceInput).CornerRadius = UDim.new(0,7)
-
---------------------------------------------------
--- ESP LIST
---------------------------------------------------
+Instance.new("UICorner",distanceBox).CornerRadius = UDim.new(0,7)
 
 local espList = Instance.new("ScrollingFrame")
-espList.Size = UDim2.new(1,-20,1,-125)
-espList.Position = UDim2.new(0,10,0,120)
+espList.Size = UDim2.new(1,-20,1,-110)
+espList.Position = UDim2.fromOffset(10,105)
 espList.BackgroundTransparency = 1
 espList.BorderSizePixel = 0
 espList.ScrollBarThickness = 5
@@ -222,16 +264,18 @@ local espLayout = Instance.new("UIListLayout")
 espLayout.Padding = UDim.new(0,6)
 espLayout.Parent = espList
 
---------------------------------------------------
+--==================================================
 -- SPAWN PANEL
---------------------------------------------------
+--==================================================
 
 local spawnPanel = Instance.new("Frame")
 spawnPanel.Size = UDim2.fromOffset(260,390)
-spawnPanel.Position = UDim2.new(0,440,0.5,-195)
+spawnPanel.Position = UDim2.new(0,650,0.5,-150)
 spawnPanel.BackgroundColor3 = Color3.fromRGB(25,25,30)
 spawnPanel.BorderSizePixel = 0
 spawnPanel.Visible = false
+spawnPanel.Active = true
+spawnPanel.Draggable = true
 spawnPanel.Parent = gui
 
 Instance.new("UICorner",spawnPanel).CornerRadius = UDim.new(0,10)
@@ -239,48 +283,28 @@ Instance.new("UICorner",spawnPanel).CornerRadius = UDim.new(0,10)
 local spawnTitle = Instance.new("TextLabel")
 spawnTitle.Size = UDim2.new(1,0,0,45)
 spawnTitle.BackgroundTransparency = 1
-spawnTitle.Text = "😁by A_A {spawn}"
+spawnTitle.Text = "Animal Spawn"
 spawnTitle.TextColor3 = Color3.new(1,1,1)
 spawnTitle.TextSize = 20
 spawnTitle.Font = Enum.Font.GothamBold
 spawnTitle.Parent = spawnPanel
 
---------------------------------------------------
--- SPAWN DISTANCE
---------------------------------------------------
+local spawnDistance = Instance.new("TextBox")
+spawnDistance.Size = UDim2.new(1,-20,0,40)
+spawnDistance.Position = UDim2.fromOffset(10,55)
+spawnDistance.Text = "240"
+spawnDistance.PlaceholderText = "Spawn Distance"
+spawnDistance.TextColor3 = Color3.new(1,1,1)
+spawnDistance.TextSize = 15
+spawnDistance.BackgroundColor3 = Color3.fromRGB(45,45,55)
+spawnDistance.ClearTextOnFocus = false
+spawnDistance.Parent = spawnPanel
 
-local spawnDistanceLabel = Instance.new("TextLabel")
-spawnDistanceLabel.Size = UDim2.new(1,-20,0,25)
-spawnDistanceLabel.Position = UDim2.new(0,10,0,48)
-spawnDistanceLabel.BackgroundTransparency = 1
-spawnDistanceLabel.Text = "Spawn Distance"
-spawnDistanceLabel.TextColor3 = Color3.new(1,1,1)
-spawnDistanceLabel.TextSize = 14
-spawnDistanceLabel.Font = Enum.Font.GothamBold
-spawnDistanceLabel.TextXAlignment = Enum.TextXAlignment.Left
-spawnDistanceLabel.Parent = spawnPanel
-
-local spawnDistanceInput = Instance.new("TextBox")
-spawnDistanceInput.Size = UDim2.new(1,-20,0,40)
-spawnDistanceInput.Position = UDim2.new(0,10,0,75)
-spawnDistanceInput.BackgroundColor3 = Color3.fromRGB(45,45,55)
-spawnDistanceInput.TextColor3 = Color3.new(1,1,1)
-spawnDistanceInput.PlaceholderText = "100 / 200 / 300"
-spawnDistanceInput.Text = "240"
-spawnDistanceInput.TextSize = 15
-spawnDistanceInput.Font = Enum.Font.GothamBold
-spawnDistanceInput.ClearTextOnFocus = false
-spawnDistanceInput.Parent = spawnPanel
-
-Instance.new("UICorner",spawnDistanceInput).CornerRadius = UDim.new(0,7)
-
---------------------------------------------------
--- SPAWN LIST
---------------------------------------------------
+Instance.new("UICorner",spawnDistance).CornerRadius = UDim.new(0,7)
 
 local spawnList = Instance.new("ScrollingFrame")
-spawnList.Size = UDim2.new(1,-20,1,-130)
-spawnList.Position = UDim2.new(0,10,0,125)
+spawnList.Size = UDim2.new(1,-20,1,-110)
+spawnList.Position = UDim2.fromOffset(10,105)
 spawnList.BackgroundTransparency = 1
 spawnList.BorderSizePixel = 0
 spawnList.ScrollBarThickness = 5
@@ -290,29 +314,31 @@ local spawnLayout = Instance.new("UIListLayout")
 spawnLayout.Padding = UDim.new(0,6)
 spawnLayout.Parent = spawnList
 
---------------------------------------------------
+--==================================================
 -- HELPERS
---------------------------------------------------
+--==================================================
+
+local cachedAnimals = {}
+local tags = {}
+local highlights = {}
 
 local function cleanText(text)
 	return string.lower(
-		string.gsub(text or "", "^%s*(.-)%s*$", "%1")
+		string.gsub(text or "","^%s*(.-)%s*$","%1")
 	)
 end
 
 local function getPosition(model)
-
 	if not model or not model.Parent then
 		return nil
 	end
 
 	if model:IsA("Model") then
-
-		local success,pivot = pcall(function()
+		local ok,pivot = pcall(function()
 			return model:GetPivot()
 		end)
 
-		if success and pivot then
+		if ok and pivot then
 			return pivot.Position
 		end
 	end
@@ -327,7 +353,6 @@ local function getPosition(model)
 end
 
 local function getAnimalFromBoard(board)
-
 	local current = board.Parent
 
 	while current and current ~= Workspace do
@@ -346,11 +371,11 @@ local function getAnimalFromBoard(board)
 	return nil
 end
 
-local function boardHasRarity(board,rarity)
-
+local function hasRarity(board,rarity)
 	for _,obj in ipairs(board:GetDescendants()) do
 
-		if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+		if obj:IsA("TextLabel")
+			or obj:IsA("TextButton") then
 
 			if cleanText(obj.Text) == cleanText(rarity) then
 				return true
@@ -362,27 +387,24 @@ local function boardHasRarity(board,rarity)
 end
 
 local function getAnimalName(animal,board)
-
 	for _,obj in ipairs(board:GetDescendants()) do
 
-		if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+		if obj:IsA("TextLabel")
+			or obj:IsA("TextButton") then
 
-			local text = obj.Text
-
-			if text ~= "" then
+			if obj.Text ~= "" then
 
 				local isRarity = false
 
 				for _,rarity in ipairs(RARITIES) do
-
-					if cleanText(text) == cleanText(rarity) then
+					if cleanText(obj.Text) == cleanText(rarity) then
 						isRarity = true
 						break
 					end
 				end
 
 				if not isRarity then
-					return text
+					return obj.Text
 				end
 			end
 		end
@@ -391,11 +413,9 @@ local function getAnimalName(animal,board)
 	return animal.Name
 end
 
---------------------------------------------------
+--==================================================
 -- SCAN
---------------------------------------------------
-
-local cachedAnimals = {}
+--==================================================
 
 local function scanAnimals()
 
@@ -408,7 +428,7 @@ local function scanAnimals()
 
 			for _,rarity in ipairs(RARITIES) do
 
-				if boardHasRarity(board,rarity) then
+				if hasRarity(board,rarity) then
 
 					local animal = getAnimalFromBoard(board)
 
@@ -432,24 +452,21 @@ local function scanAnimals()
 	cachedAnimals = found
 end
 
---------------------------------------------------
--- TAGS
---------------------------------------------------
+--==================================================
+-- ESP
+--==================================================
 
-local tags = {}
-local highlights = {}
+local function clearESP()
 
-local function clearTags()
-
-	for _,tag in pairs(tags) do
-		if tag then
-			tag:Destroy()
+	for _,v in pairs(tags) do
+		if v then
+			v:Destroy()
 		end
 	end
 
-	for _,highlight in pairs(highlights) do
-		if highlight then
-			highlight:Destroy()
+	for _,v in pairs(highlights) do
+		if v then
+			v:Destroy()
 		end
 	end
 
@@ -457,15 +474,17 @@ local function clearTags()
 	table.clear(highlights)
 end
 
-local function getRainbowColor()
-
-	local hue = (os.clock() * 0.25) % 1
-	return Color3.fromHSV(hue,1,1)
+local function getRainbow()
+	return Color3.fromHSV(
+		(os.clock()*0.25)%1,
+		1,
+		1
+	)
 end
 
-local function createTag(data)
+local function createESP(data)
 
-	local rarityColor =
+	local color =
 		RARITY_COLORS[data.Rarity]
 		or Color3.new(1,1,1)
 
@@ -480,36 +499,30 @@ local function createTag(data)
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.fromScale(1,1)
 	label.BackgroundTransparency = 1
-	label.TextColor3 = rarityColor
+	label.TextColor3 = color
 	label.TextStrokeColor3 = Color3.new(1,1,1)
 	label.TextStrokeTransparency = 0
 	label.TextScaled = true
 	label.Font = Enum.Font.GothamBold
-	label.Text = data.Rarity
 	label.Parent = tag
 
 	tags[data.Model] = tag
 
 	local highlight = Instance.new("Highlight")
 	highlight.Name = "AnimalESPHighlight"
-	highlight.FillColor = rarityColor
-	highlight.OutlineColor = rarityColor
-	highlight.FillTransparency = 0.75
-	highlight.OutlineTransparency = 0
-	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 	highlight.Adornee = data.Model
+	highlight.FillColor = color
+	highlight.OutlineColor = color
+	highlight.FillTransparency = 0.75
+	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 	highlight.Parent = data.Model
 
 	highlights[data.Model] = highlight
 end
 
---------------------------------------------------
--- ESP DISTANCE
---------------------------------------------------
-
 local function getESPDistance()
 
-	local value = tonumber(espDistanceInput.Text)
+	local value = tonumber(distanceBox.Text)
 
 	if not value or value <= 0 then
 		return ESP_MAX_DISTANCE
@@ -518,25 +531,23 @@ local function getESPDistance()
 	return math.min(value,ESP_MAX_DISTANCE)
 end
 
---------------------------------------------------
--- UPDATE TAGS
---------------------------------------------------
-
-local function updateTags()
+local function updateESP()
 
 	if not enabledESP then
-		clearTags()
+		clearESP()
 		return
 	end
 
-	local maxDistance = getESPDistance()
-
 	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local root =
+		character and
+		character:FindFirstChild("HumanoidRootPart")
 
 	if not root then
 		return
 	end
+
+	local maxDistance = getESPDistance()
 
 	for model,tag in pairs(tags) do
 
@@ -558,8 +569,7 @@ local function updateTags()
 
 	for model,data in pairs(cachedAnimals) do
 
-		if model.Parent
-			and rarityEnabled[data.Rarity] then
+		if model.Parent and rarityEnabled[data.Rarity] then
 
 			local position = getPosition(model)
 
@@ -571,7 +581,20 @@ local function updateTags()
 				if distance <= maxDistance then
 
 					if not tags[model] then
-						createTag(data)
+						createESP(data)
+					end
+
+					local label =
+						tags[model]:FindFirstChildOfClass("TextLabel")
+
+					if label then
+						label.Text =
+							data.Name
+							.. "\n⭐ "
+							.. data.Rarity
+							.. " | 📏 "
+							.. math.floor(distance)
+							.. " Stud"
 					end
 
 				else
@@ -591,95 +614,13 @@ local function updateTags()
 	end
 end
 
---------------------------------------------------
--- UPDATE TEXT
---------------------------------------------------
-
-local function updateDistance()
-
-	if not enabledESP then
-		return
-	end
-
-	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-
-	if not root then
-		return
-	end
-
-	for model,tag in pairs(tags) do
-
-		local data = cachedAnimals[model]
-
-		if data and model.Parent then
-
-			local position = getPosition(model)
-			local label = tag:FindFirstChildOfClass("TextLabel")
-
-			if position and label then
-
-				local distance =
-					math.floor(
-						(root.Position-position).Magnitude
-					)
-
-				label.Text =
-					data.Name
-					.. "\n⭐ "
-					.. data.Rarity
-					.. " | 📏 "
-					.. distance
-					.. " Stud"
-			end
-		end
-	end
-end
-
---------------------------------------------------
--- KITTY GOD RAINBOW
---------------------------------------------------
-
-local function updateKittyGodColor()
-
-	if not enabledESP then
-		return
-	end
-
-	local color = getRainbowColor()
-
-	for model,data in pairs(cachedAnimals) do
-
-		if data.Rarity == "Kitty God"
-			and rarityEnabled["Kitty God"]
-			and tags[model] then
-
-			local label =
-				tags[model]:FindFirstChildOfClass("TextLabel")
-
-			local highlight =
-				highlights[model]
-
-			if label then
-				label.TextColor3 = color
-			end
-
-			if highlight then
-				highlight.FillColor = color
-				highlight.OutlineColor = color
-			end
-		end
-	end
-end
-
---------------------------------------------------
--- ESP BUTTONS
---------------------------------------------------
+--==================================================
+-- ESP RARITY BUTTONS
+--==================================================
 
 for _,rarity in ipairs(RARITIES) do
 
 	local button = Instance.new("TextButton")
-
 	button.Size = UDim2.new(1,0,0,40)
 	button.BackgroundColor3 = RED
 	button.Text = rarity
@@ -701,24 +642,22 @@ for _,rarity in ipairs(RARITIES) do
 		rarityEnabled[rarity] =
 			not rarityEnabled[rarity]
 
-		if rarityEnabled[rarity] then
-			button.BackgroundColor3 = GREEN
-		else
-			button.BackgroundColor3 = RED
-		end
+		button.BackgroundColor3 =
+			rarityEnabled[rarity]
+			and GREEN
+			or RED
 
-		updateTags()
+		updateESP()
 	end)
 end
 
---------------------------------------------------
+--==================================================
 -- SPAWN BUTTONS
---------------------------------------------------
+--==================================================
 
 for _,rarity in ipairs(RARITIES) do
 
 	local button = Instance.new("TextButton")
-
 	button.Size = UDim2.new(1,0,0,40)
 	button.BackgroundColor3 = NORMAL
 	button.Text = rarity
@@ -733,24 +672,25 @@ for _,rarity in ipairs(RARITIES) do
 
 	button.MouseButton1Click:Connect(function()
 
+		if not enabledSpawn then
+			return
+		end
+
 		local character = player.Character
-		local root = character and character:FindFirstChild("HumanoidRootPart")
+		local root =
+			character and
+			character:FindFirstChild("HumanoidRootPart")
 
 		if not root then
 			return
 		end
 
 		local maxDistance =
-			tonumber(spawnDistanceInput.Text)
-
-		if not maxDistance or maxDistance <= 0 then
-			spawnDistanceInput.Text = "240"
-			maxDistance = 240
-		end
+			tonumber(spawnDistance.Text) or 240
 
 		scanAnimals()
 
-		local closestModel = nil
+		local closest = nil
 		local closestDistance = maxDistance
 
 		for model,data in pairs(cachedAnimals) do
@@ -766,33 +706,30 @@ for _,rarity in ipairs(RARITIES) do
 						(root.Position-position).Magnitude
 
 					if distance <= closestDistance then
-
 						closestDistance = distance
-						closestModel = model
+						closest = model
 					end
 				end
 			end
 		end
 
-		if closestModel then
+		if closest then
 
-			local position =
-				getPosition(closestModel)
+			local position = getPosition(closest)
 
 			if position then
-
 				root.CFrame =
 					CFrame.new(
-						position+Vector3.new(0,3,0)
+						position + Vector3.new(0,3,0)
 					)
 			end
 		end
 	end)
 end
 
---------------------------------------------------
--- ESP ON / OFF
---------------------------------------------------
+--==================================================
+-- ESP TOGGLE
+--==================================================
 
 espButton.MouseButton1Click:Connect(function()
 
@@ -800,20 +737,16 @@ espButton.MouseButton1Click:Connect(function()
 
 	if enabledESP then
 
-		espButton.Text =
-			"🤫by A_A {ESP} ON"
-
+		espButton.Text = "ESP ON"
 		espButton.BackgroundColor3 = GREEN
 		espPanel.Visible = true
 
 		scanAnimals()
-		updateTags()
+		updateESP()
 
 	else
 
-		espButton.Text =
-			"🤫by A_A {ESP} OFF"
-
+		espButton.Text = "ESP OFF"
 		espButton.BackgroundColor3 = NORMAL
 		espPanel.Visible = false
 
@@ -822,19 +755,18 @@ espButton.MouseButton1Click:Connect(function()
 		end
 
 		for _,button in ipairs(espList:GetChildren()) do
-
 			if button:IsA("TextButton") then
 				button.BackgroundColor3 = RED
 			end
 		end
 
-		clearTags()
+		clearESP()
 	end
 end)
 
---------------------------------------------------
--- SPAWN ON / OFF
---------------------------------------------------
+--==================================================
+-- SPAWN TOGGLE
+--==================================================
 
 spawnButton.MouseButton1Click:Connect(function()
 
@@ -842,50 +774,118 @@ spawnButton.MouseButton1Click:Connect(function()
 
 	if enabledSpawn then
 
+		spawnButton.Text = "SPAWN ON"
 		spawnButton.BackgroundColor3 = ACTIVE
 		spawnPanel.Visible = true
 
 	else
 
+		spawnButton.Text = "SPAWN OFF"
 		spawnButton.BackgroundColor3 = NORMAL
 		spawnPanel.Visible = false
 	end
 end)
 
---------------------------------------------------
+--==================================================
+-- UNLOCK
+--==================================================
+
+unlockButton.MouseButton1Click:Connect(function()
+
+	if keyBox.Text == CORRECT_KEY then
+
+		UNLOCKED = true
+		keyFrame.Visible = false
+		main.Visible = true
+
+	else
+
+		keyBox.Text = ""
+		keyBox.PlaceholderText = "Wrong Key!"
+	end
+end)
+
+--==================================================
+-- P BUTTON
+--==================================================
+
+local menuVisible = false
+
+pButton.MouseButton1Click:Connect(function()
+
+	if not UNLOCKED then
+		keyFrame.Visible = not keyFrame.Visible
+		return
+	end
+
+	menuVisible = not menuVisible
+	main.Visible = menuVisible
+
+	if not menuVisible then
+		espPanel.Visible = false
+		spawnPanel.Visible = false
+	end
+end)
+
+--==================================================
 -- UPDATE LOOP
---------------------------------------------------
+--==================================================
 
 local scanTimer = 0
-local distanceTimer = 0
+local espTimer = 0
 local rainbowTimer = 0
 
-RunService.Heartbeat:Connect(function(deltaTime)
+RunService.Heartbeat:Connect(function(dt)
+
+	if not UNLOCKED then
+		return
+	end
 
 	if not enabledESP then
 		return
 	end
 
-	scanTimer += deltaTime
-	distanceTimer += deltaTime
-	rainbowTimer += deltaTime
+	scanTimer += dt
+	espTimer += dt
+	rainbowTimer += dt
 
 	if scanTimer >= 0.5 then
-
 		scanTimer = 0
 		scanAnimals()
-		updateTags()
 	end
 
-	if distanceTimer >= 0.1 then
-
-		distanceTimer = 0
-		updateDistance()
+	if espTimer >= 0.1 then
+		espTimer = 0
+		updateESP()
 	end
 
 	if rainbowTimer >= 0.03 then
 
 		rainbowTimer = 0
-		updateKittyGodColor()
+
+		for model,data in pairs(cachedAnimals) do
+
+			if data.Rarity == "Kitty God"
+				and rarityEnabled["Kitty God"]
+				and tags[model] then
+
+				local color = getRainbow()
+
+				local label =
+					tags[model]:FindFirstChildOfClass("TextLabel")
+
+				local highlight =
+					highlights[model]
+
+				if label then
+					label.TextColor3 = color
+				end
+
+				if highlight then
+					highlight.FillColor = color
+					highlight.OutlineColor = color
+				end
+			end
+		end
 	end
 end)
