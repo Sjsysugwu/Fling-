@@ -1,17 +1,20 @@
 --==================================================
--- Animal Rarity Hub
--- IMAGE BUTTON + ESP + Spawn + ProximityPrompt + Speed 100
--- Exclusive + Kitty God
+-- ALIBOOSS
+-- 1 = Animal Rarity Hub
+-- 2 = ALIBOOSS HORROR INTRO
 --==================================================
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
 --==================================================
--- SETTINGS
+-- ANIMAL RARITY HUB
 --==================================================
 
 local RARITIES = {
@@ -44,41 +47,13 @@ local rarityEnabled = {
 }
 
 --==================================================
--- GUI
+-- HUB GUI
 --==================================================
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "AnimalRarityHub"
 gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
-
---==================================================
--- COUNTDOWN
---==================================================
-
-local countdown = Instance.new("TextLabel")
-countdown.Size = UDim2.fromOffset(50,25)
-countdown.Position = UDim2.fromScale(0.5,0.44)
-countdown.AnchorPoint = Vector2.new(0.5,0.5)
-countdown.BackgroundTransparency = 1
-countdown.Text = "5"
-countdown.TextColor3 = Color3.new(1,1,1)
-countdown.TextSize = 18
-countdown.Font = Enum.Font.GothamBold
-countdown.TextStrokeTransparency = 0
-countdown.Parent = gui
-
-task.spawn(function()
-	for i = 5,1,-1 do
-		if not gui.Parent then return end
-		countdown.Text = tostring(i)
-		task.wait(1)
-	end
-
-	if gui.Parent then
-		countdown.Text = ""
-	end
-end)
+gui.Parent = playerGui
 
 --==================================================
 -- IMAGE BUTTON
@@ -86,10 +61,7 @@ end)
 
 local cornerButton = Instance.new("ImageButton")
 cornerButton.Name = "CornerImage"
-
--- الحجم الجديد
 cornerButton.Size = UDim2.fromOffset(36,36)
-
 cornerButton.Position = UDim2.fromOffset(5,5)
 cornerButton.BackgroundTransparency = 1
 cornerButton.BorderSizePixel = 0
@@ -105,10 +77,6 @@ cornerCorner.Parent = cornerButton
 local cornerStroke = Instance.new("UIStroke")
 cornerStroke.Thickness = 2
 cornerStroke.Parent = cornerButton
-
---==================================================
--- RAINBOW IMAGE BORDER
---==================================================
 
 local function getRainbow()
 	return Color3.fromHSV(
@@ -369,7 +337,6 @@ local function cleanText(text)
 end
 
 local function getPosition(model)
-
 	if not model or not model.Parent then
 		return nil
 	end
@@ -690,23 +657,12 @@ local spawnOpen = false
 
 local function updateLayout()
 
-	if espOpen then
+	if espOpen or spawnOpen then
 
 		main.Size = UDim2.fromOffset(190,275)
 
-		espContent.Visible = true
-		spawnContent.Visible = false
-
-		promptButton.Position = UDim2.fromOffset(7,175)
-		speedButton.Position = UDim2.fromOffset(7,207)
-		closeButton.Position = UDim2.fromOffset(7,239)
-
-	elseif spawnOpen then
-
-		main.Size = UDim2.fromOffset(190,275)
-
-		espContent.Visible = false
-		spawnContent.Visible = true
+		espContent.Visible = espOpen
+		spawnContent.Visible = spawnOpen
 
 		promptButton.Position = UDim2.fromOffset(7,175)
 		speedButton.Position = UDim2.fromOffset(7,207)
@@ -729,7 +685,6 @@ espButton.MouseButton1Click:Connect(function()
 
 	espOpen = not espOpen
 	spawnOpen = false
-
 	enabledSpawn = false
 
 	espButton.BackgroundColor3 =
@@ -747,11 +702,8 @@ spawnButton.MouseButton1Click:Connect(function()
 
 	enabledSpawn = spawnOpen
 
-	if spawnOpen then
-		spawnButton.BackgroundColor3 = ACTIVE
-	else
-		spawnButton.BackgroundColor3 = NORMAL
-	end
+	spawnButton.BackgroundColor3 =
+		spawnOpen and ACTIVE or NORMAL
 
 	espButton.BackgroundColor3 = GREEN
 
@@ -759,7 +711,7 @@ spawnButton.MouseButton1Click:Connect(function()
 end)
 
 --==================================================
--- SPAWN / TELEPORT FIX
+-- SPAWN / TELEPORT
 --==================================================
 
 local function getSpawnDistance()
@@ -780,11 +732,14 @@ local function teleportToAnimal(rarity)
 	end
 
 	local character = player.Character
+
 	if not character then
 		return
 	end
 
-	local root = character:FindFirstChild("HumanoidRootPart")
+	local root =
+		character:FindFirstChild("HumanoidRootPart")
+
 	if not root then
 		return
 	end
@@ -793,7 +748,6 @@ local function teleportToAnimal(rarity)
 
 	local maxDistance = getSpawnDistance()
 
-	local closestAnimal = nil
 	local closestPosition = nil
 	local closestDistance = math.huge
 
@@ -809,26 +763,27 @@ local function teleportToAnimal(rarity)
 			if position then
 
 				local distance =
-					(root.Position - position).Magnitude
+					(root.Position-position).Magnitude
 
 				if distance <= maxDistance
 					and distance < closestDistance then
 
 					closestDistance = distance
-					closestAnimal = model
 					closestPosition = position
 				end
 			end
 		end
 	end
 
-	if closestAnimal and closestPosition then
+	if closestPosition then
 
 		local humanoid =
 			character:FindFirstChildOfClass("Humanoid")
 
 		if humanoid then
-			humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+			humanoid:ChangeState(
+				Enum.HumanoidStateType.Physics
+			)
 		end
 
 		root.CFrame =
@@ -839,20 +794,14 @@ local function teleportToAnimal(rarity)
 		task.delay(0.15,function()
 
 			if humanoid and humanoid.Parent then
-				humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+				humanoid:ChangeState(
+					Enum.HumanoidStateType.GettingUp
+				)
 			end
 
 		end)
-
-		return true
 	end
-
-	return false
 end
-
---==================================================
--- SPAWN BUTTONS
---==================================================
 
 spawnExclusive.MouseButton1Click:Connect(function()
 	teleportToAnimal("Exclusive")
@@ -932,6 +881,7 @@ end)
 local function applySpeed()
 
 	local character = player.Character
+
 	local humanoid =
 		character and character:FindFirstChildOfClass("Humanoid")
 
@@ -939,11 +889,8 @@ local function applySpeed()
 		return
 	end
 
-	if enabledSpeed then
-		humanoid.WalkSpeed = SPEED_VALUE
-	else
-		humanoid.WalkSpeed = NORMAL_SPEED
-	end
+	humanoid.WalkSpeed =
+		enabledSpeed and SPEED_VALUE or NORMAL_SPEED
 end
 
 speedButton.MouseButton1Click:Connect(function()
@@ -975,7 +922,7 @@ player.CharacterAdded:Connect(function(character)
 end)
 
 --==================================================
--- CLOSE GUI
+-- CLOSE HUB
 --==================================================
 
 closeButton.MouseButton1Click:Connect(function()
@@ -996,7 +943,7 @@ closeButton.MouseButton1Click:Connect(function()
 end)
 
 --==================================================
--- IMAGE BUTTON OPEN / CLOSE
+-- IMAGE OPEN / CLOSE
 --==================================================
 
 local menuVisible = true
@@ -1008,19 +955,15 @@ cornerButton.MouseButton1Click:Connect(function()
 end)
 
 --==================================================
--- START
+-- START HUB FIRST
 --==================================================
 
-task.defer(function()
-
-	scanAnimals()
-	updateESP()
-	updateLayout()
-
-end)
+scanAnimals()
+updateESP()
+updateLayout()
 
 --==================================================
--- UPDATE LOOP
+-- HUB UPDATE LOOP
 --==================================================
 
 local scanTimer = 0
@@ -1032,8 +975,6 @@ RunService.Heartbeat:Connect(function(dt)
 	if not gui.Parent then
 		return
 	end
-
-	-- SPEED
 
 	if enabledSpeed then
 
@@ -1049,8 +990,6 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 	end
 
-	-- ESP
-
 	if not enabledESP then
 		return
 	end
@@ -1060,18 +999,14 @@ RunService.Heartbeat:Connect(function(dt)
 	rainbowTimer += dt
 
 	if scanTimer >= 0.5 then
-
 		scanTimer = 0
 		scanAnimals()
 	end
 
 	if espTimer >= 0.1 then
-
 		espTimer = 0
 		updateESP()
 	end
-
-	-- KITTY GOD RAINBOW
 
 	if rainbowTimer >= 0.03 then
 
@@ -1103,3 +1038,859 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 	end
 end)
+
+--==================================================
+-- WAIT BEFORE HORROR INTRO
+--==================================================
+
+task.wait(1)
+
+--==================================================
+-- ALIBOOSS HORROR INTRO
+-- SECOND PART
+--==================================================
+
+local SOUND_ID = "rbxassetid://39990584758486"
+
+local NAME = "ALIBOOSS"
+local NAME2 = "by A_A"
+
+local LETTER_DELAY = 0.9
+local LETTER_FADE = 0.8
+
+--==================================================
+-- HORROR GUI
+--==================================================
+
+local horrorGui = Instance.new("ScreenGui")
+horrorGui.Name = "ALIBOOSS_Horror"
+horrorGui.ResetOnSpawn = false
+horrorGui.IgnoreGuiInset = true
+horrorGui.Parent = playerGui
+
+--==================================================
+-- LIGHT RED SCREEN
+--==================================================
+
+local bloodScreen = Instance.new("Frame")
+bloodScreen.Name = "BloodScreen"
+bloodScreen.Size = UDim2.fromScale(1,1)
+bloodScreen.Position = UDim2.fromScale(0,0)
+bloodScreen.BackgroundColor3 = Color3.fromRGB(110,0,0)
+bloodScreen.BackgroundTransparency = 0.88
+bloodScreen.BorderSizePixel = 0
+bloodScreen.ZIndex = 0
+bloodScreen.Parent = horrorGui
+
+--==================================================
+-- MAIN
+--==================================================
+
+local horrorMain = Instance.new("Frame")
+horrorMain.Name = "NameContainer"
+horrorMain.AnchorPoint = Vector2.new(0.5,0.5)
+horrorMain.Position = UDim2.fromScale(0.5,0.5)
+horrorMain.Size = UDim2.fromScale(0.9,0.4)
+horrorMain.BackgroundTransparency = 1
+horrorMain.ZIndex = 30
+horrorMain.Parent = horrorGui
+
+--==================================================
+-- SOUND
+--==================================================
+
+local sound = Instance.new("Sound")
+sound.Name = "ALIBOOSS_Music"
+sound.SoundId = SOUND_ID
+sound.Volume = 1
+sound.Looped = true
+sound.Parent = SoundService
+sound:Play()
+
+--==================================================
+-- SHAKE
+--==================================================
+
+local function shake(frame,power,duration)
+
+	local original = frame.Position
+	local start = os.clock()
+
+	while os.clock() - start < duration do
+
+		frame.Position =
+			original +
+			UDim2.fromOffset(
+				math.random(-power,power),
+				math.random(-power,power)
+			)
+
+		task.wait(0.025)
+	end
+
+	frame.Position = original
+end
+
+--==================================================
+-- ALIBOOSS CONTAINER
+--==================================================
+
+local nameContainer = Instance.new("Frame")
+nameContainer.Name = "ALIBOOSS_Name"
+nameContainer.AnchorPoint = Vector2.new(0.5,0.5)
+nameContainer.Position = UDim2.fromScale(0.5,0.57)
+nameContainer.Size = UDim2.fromOffset(500,90)
+nameContainer.BackgroundTransparency = 1
+nameContainer.ZIndex = 35
+nameContainer.Parent = horrorMain
+
+local layout = Instance.new("UIListLayout")
+layout.FillDirection = Enum.FillDirection.Horizontal
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.VerticalAlignment = Enum.VerticalAlignment.Center
+layout.Padding = UDim.new(0,2)
+layout.Parent = nameContainer
+
+--==================================================
+-- BY A_A
+--==================================================
+
+local secondContainer = Instance.new("Frame")
+secondContainer.Name = "ByAA_Name"
+secondContainer.AnchorPoint = Vector2.new(0.5,0.5)
+secondContainer.Position = UDim2.fromScale(0.5,0.28)
+secondContainer.Size = UDim2.fromOffset(350,70)
+secondContainer.BackgroundTransparency = 1
+secondContainer.ZIndex = 35
+secondContainer.Parent = horrorMain
+
+local secondLayout = Instance.new("UIListLayout")
+secondLayout.FillDirection = Enum.FillDirection.Horizontal
+secondLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+secondLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+secondLayout.Padding = UDim.new(0,2)
+secondLayout.Parent = secondContainer
+
+--==================================================
+-- RAINBOW
+--==================================================
+
+task.spawn(function()
+
+	local hue = 0
+
+	while horrorGui.Parent do
+
+		hue = (hue + 0.008) % 1
+
+		local color =
+			Color3.fromHSV(hue,1,1)
+
+		for _,obj in ipairs(nameContainer:GetChildren()) do
+
+			if obj:IsA("TextLabel") then
+				obj.TextColor3 = color
+			end
+		end
+
+		for _,obj in ipairs(secondContainer:GetChildren()) do
+
+			if obj:IsA("TextLabel") then
+				obj.TextColor3 = color
+			end
+		end
+
+		task.wait(0.03)
+	end
+end)
+
+--==================================================
+-- LETTER BLOOD
+--==================================================
+
+local function createBloodDrip(letterLabel)
+
+	local drip = Instance.new("Frame")
+	drip.Name = "LetterBlood"
+	drip.AnchorPoint = Vector2.new(0.5,0)
+
+	drip.Position =
+		UDim2.new(0.5,0,1,-2)
+
+	drip.Size = UDim2.fromOffset(7,0)
+	drip.BackgroundColor3 = Color3.fromRGB(130,0,0)
+	drip.BackgroundTransparency = 0.15
+	drip.BorderSizePixel = 0
+	drip.ZIndex = 38
+	drip.Parent = letterLabel
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1,0)
+	corner.Parent = drip
+
+	local drop = Instance.new("Frame")
+	drop.Name = "BloodDrop"
+	drop.AnchorPoint = Vector2.new(0.5,0.5)
+
+	drop.Position =
+		UDim2.new(
+			0.5,
+			math.random(-8,8),
+			1,
+			0
+		)
+
+	drop.Size = UDim2.fromOffset(9,9)
+	drop.BackgroundColor3 = Color3.fromRGB(150,0,0)
+	drop.BackgroundTransparency = 0.1
+	drop.BorderSizePixel = 0
+	drop.ZIndex = 39
+	drop.Parent = letterLabel
+
+	local dropCorner = Instance.new("UICorner")
+	dropCorner.CornerRadius = UDim.new(1,0)
+	dropCorner.Parent = drop
+
+	TweenService:Create(
+		drip,
+		TweenInfo.new(
+			0.35,
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.Out
+		),
+		{
+			Size = UDim2.fromOffset(
+				math.random(5,9),
+				math.random(18,35)
+			)
+		}
+	):Play()
+
+	TweenService:Create(
+		drop,
+		TweenInfo.new(
+			0.45,
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.In
+		),
+		{
+			Position =
+				UDim2.new(
+					0.5,
+					math.random(-8,8),
+					1,
+					math.random(25,45)
+				)
+		}
+	):Play()
+
+	task.delay(0.45,function()
+
+		if drip.Parent then
+
+			TweenService:Create(
+				drip,
+				TweenInfo.new(0.35),
+				{
+					BackgroundTransparency = 1
+				}
+			):Play()
+		end
+
+		if drop.Parent then
+
+			TweenService:Create(
+				drop,
+				TweenInfo.new(0.35),
+				{
+					BackgroundTransparency = 1
+				}
+			):Play()
+		end
+
+		task.wait(0.4)
+
+		if drip then
+			drip:Destroy()
+		end
+
+		if drop then
+			drop:Destroy()
+		end
+	end)
+end
+
+--==================================================
+-- CREATE LETTER
+--==================================================
+
+local function createLetter(parent,letter,index)
+
+	local label = Instance.new("TextLabel")
+
+	label.Name = "Letter_" .. index
+	label.Size = UDim2.fromOffset(55,80)
+	label.BackgroundTransparency = 1
+	label.Text = letter
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	label.TextColor3 = Color3.new(1,1,1)
+	label.TextTransparency = 1
+	label.TextStrokeTransparency = 1
+	label.TextStrokeColor3 = Color3.new(0,0,0)
+	label.ZIndex = 40
+	label.Parent = parent
+
+	TweenService:Create(
+		label,
+		TweenInfo.new(
+			LETTER_FADE,
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.Out
+		),
+		{
+			TextTransparency = 0,
+			TextStrokeTransparency = 0
+		}
+	):Play()
+
+	task.spawn(function()
+		shake(horrorMain,7,0.18)
+	end)
+
+	task.delay(0.18,function()
+
+		if label.Parent then
+			createBloodDrip(label)
+		end
+	end)
+
+	return label
+end
+
+--==================================================
+-- ALIBOOSS
+--==================================================
+
+for i = 1,#NAME do
+
+	local letter =
+		string.sub(NAME,i,i)
+
+	createLetter(
+		nameContainer,
+		letter,
+		i
+	)
+
+	task.wait(LETTER_DELAY)
+end
+
+task.wait(0.8)
+
+--==================================================
+-- BY A_A
+--==================================================
+
+for i = 1,#NAME2 do
+
+	local letter =
+		string.sub(NAME2,i,i)
+
+	createLetter(
+		secondContainer,
+		letter,
+		i
+	)
+
+	task.wait(LETTER_DELAY)
+end
+
+--==================================================
+-- BLOOD EDGES
+--==================================================
+
+local bloodFolder = Instance.new("Folder")
+bloodFolder.Name = "BloodAroundScreen"
+bloodFolder.Parent = horrorGui
+
+local bloodObjects = {}
+
+for side = 1,2 do
+
+	for i = 1,25 do
+
+		local blood = Instance.new("Frame")
+
+		local width = math.random(25,100)
+		local height = math.random(20,90)
+
+		blood.Size =
+			UDim2.fromOffset(width,0)
+
+		if side == 1 then
+
+			blood.Position =
+				UDim2.fromScale(
+					math.random(-5,105)/100,
+					math.random(-2,12)/100
+				)
+
+		else
+
+			blood.Position =
+				UDim2.fromScale(
+					math.random(-5,105)/100,
+					math.random(88,102)/100
+				)
+		end
+
+		blood.BackgroundColor3 =
+			Color3.fromRGB(
+				math.random(90,160),
+				0,
+				0
+			)
+
+		blood.BackgroundTransparency =
+			math.random(10,35)/100
+
+		blood.BorderSizePixel = 0
+		blood.Rotation = math.random(-20,20)
+		blood.ZIndex = 10
+		blood.Parent = bloodFolder
+
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.8,0)
+		corner.Parent = blood
+
+		table.insert(bloodObjects,blood)
+
+		TweenService:Create(
+			blood,
+			TweenInfo.new(
+				math.random(25,50)/100,
+				Enum.EasingStyle.Back,
+				Enum.EasingDirection.Out
+			),
+			{
+				Size =
+					UDim2.fromOffset(
+						width,
+						height
+					)
+			}
+		):Play()
+	end
+end
+
+--==================================================
+-- LEFT + RIGHT BLOOD
+--==================================================
+
+for side = 1,2 do
+
+	for i = 1,25 do
+
+		local blood = Instance.new("Frame")
+
+		local width = math.random(20,75)
+		local height = math.random(25,100)
+
+		blood.Size =
+			UDim2.fromOffset(0,height)
+
+		local x
+
+		if side == 1 then
+			x = math.random(-2,12)/100
+		else
+			x = math.random(88,102)/100
+		end
+
+		blood.Position =
+			UDim2.fromScale(
+				x,
+				math.random(-5,105)/100
+			)
+
+		blood.BackgroundColor3 =
+			Color3.fromRGB(
+				math.random(90,160),
+				0,
+				0
+			)
+
+		blood.BackgroundTransparency =
+			math.random(10,35)/100
+
+		blood.BorderSizePixel = 0
+		blood.Rotation = math.random(-20,20)
+		blood.ZIndex = 10
+		blood.Parent = bloodFolder
+
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.8,0)
+		corner.Parent = blood
+
+		table.insert(bloodObjects,blood)
+
+		TweenService:Create(
+			blood,
+			TweenInfo.new(
+				math.random(25,50)/100,
+				Enum.EasingStyle.Back,
+				Enum.EasingDirection.Out
+			),
+			{
+				Size =
+					UDim2.fromOffset(
+						width,
+						height
+					)
+			}
+		):Play()
+	end
+end
+
+--==================================================
+-- BLOOD DRIPS
+--==================================================
+
+for i = 1,35 do
+
+	local drip = Instance.new("Frame")
+
+	drip.Name = "BloodDrip_" .. i
+
+	drip.Size =
+		UDim2.fromOffset(
+			math.random(6,18),
+			math.random(30,130)
+		)
+
+	drip.Position =
+		UDim2.fromScale(
+			math.random(0,100)/100,
+			math.random(0,25)/100
+		)
+
+	drip.BackgroundColor3 =
+		Color3.fromRGB(120,0,0)
+
+	drip.BackgroundTransparency =
+		math.random(15,40)/100
+
+	drip.BorderSizePixel = 0
+	drip.ZIndex = 11
+	drip.Parent = bloodFolder
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1,0)
+	corner.Parent = drip
+
+	table.insert(bloodObjects,drip)
+end
+
+--==================================================
+-- FIRE
+--==================================================
+
+task.wait(0.6)
+
+local fireFolder = Instance.new("Folder")
+fireFolder.Name = "NameFire"
+fireFolder.Parent = horrorGui
+
+local fireObjects = {}
+
+for i = 1,10 do
+
+	local fire = Instance.new("TextLabel")
+
+	fire.Name = "Fire_" .. i
+	fire.AnchorPoint = Vector2.new(0.5,0.5)
+
+	local x =
+		0.23 + ((i - 1) * 0.06)
+
+	fire.Position =
+		UDim2.fromScale(x,0.52)
+
+	fire.Size =
+		UDim2.fromOffset(45,45)
+
+	fire.BackgroundTransparency = 1
+	fire.Text = "🔥"
+	fire.TextScaled = true
+	fire.Font = Enum.Font.GothamBold
+	fire.TextTransparency = 1
+	fire.ZIndex = 45
+	fire.Parent = fireFolder
+
+	table.insert(fireObjects,fire)
+
+	TweenService:Create(
+		fire,
+		TweenInfo.new(0.3),
+		{
+			TextTransparency = 0
+		}
+	):Play()
+end
+
+--==================================================
+-- FIRE MOVEMENT
+--==================================================
+
+task.spawn(function()
+
+	while fireFolder.Parent do
+
+		for i,fire in ipairs(fireObjects) do
+
+			local baseX =
+				0.23 + ((i - 1) * 0.06)
+
+			fire.Position =
+				UDim2.fromScale(
+					baseX,
+					0.52 +
+					math.sin(
+						os.clock() * 5 + i
+					) * 0.025
+				)
+		end
+
+		task.wait(0.03)
+	end
+end)
+
+--==================================================
+-- STRONG SHAKE
+--==================================================
+
+task.spawn(function()
+	shake(horrorMain,12,0.5)
+end)
+
+task.wait(0.8)
+
+--==================================================
+-- DEVIL
+--==================================================
+
+local devil = Instance.new("TextLabel")
+
+devil.Name = "Devil"
+devil.AnchorPoint = Vector2.new(0.5,0.5)
+devil.Position = UDim2.fromScale(0.5,0.5)
+devil.Size = UDim2.fromScale(0.35,0.35)
+devil.BackgroundTransparency = 1
+devil.Text = "😈"
+devil.TextScaled = true
+devil.Font = Enum.Font.GothamBold
+devil.TextTransparency = 1
+devil.ZIndex = 50
+devil.Parent = horrorGui
+
+TweenService:Create(
+	devil,
+	TweenInfo.new(
+		0.25,
+		Enum.EasingStyle.Back,
+		Enum.EasingDirection.Out
+	),
+	{
+		TextTransparency = 0
+	}
+):Play()
+
+shake(horrorMain,18,0.8)
+
+task.wait(1.2)
+
+--==================================================
+-- FADE EVERYTHING
+--==================================================
+
+for _,obj in ipairs(nameContainer:GetChildren()) do
+
+	if obj:IsA("TextLabel") then
+
+		TweenService:Create(
+			obj,
+			TweenInfo.new(0.5),
+			{
+				TextTransparency = 1,
+				TextStrokeTransparency = 1
+			}
+		):Play()
+	end
+end
+
+for _,obj in ipairs(secondContainer:GetChildren()) do
+
+	if obj:IsA("TextLabel") then
+
+		TweenService:Create(
+			obj,
+			TweenInfo.new(0.5),
+			{
+				TextTransparency = 1,
+				TextStrokeTransparency = 1
+			}
+		):Play()
+	end
+end
+
+for _,fire in ipairs(fireObjects) do
+
+	TweenService:Create(
+		fire,
+		TweenInfo.new(0.5),
+		{
+			TextTransparency = 1
+		}
+	):Play()
+end
+
+TweenService:Create(
+	devil,
+	TweenInfo.new(0.5),
+	{
+		TextTransparency = 1
+	}
+):Play()
+
+for _,blood in ipairs(bloodObjects) do
+
+	TweenService:Create(
+		blood,
+		TweenInfo.new(0.6),
+		{
+			BackgroundTransparency = 1
+		}
+	):Play()
+end
+
+TweenService:Create(
+	bloodScreen,
+	TweenInfo.new(0.6),
+	{
+		BackgroundTransparency = 1
+	}
+):Play()
+
+task.wait(0.8)
+
+--==================================================
+-- FIRST END EMOJI
+--==================================================
+
+local emoji1 = Instance.new("TextLabel")
+
+emoji1.Name = "HappyEmoji"
+emoji1.AnchorPoint = Vector2.new(0.5,0.5)
+emoji1.Position = UDim2.fromScale(0.5,0.5)
+emoji1.Size = UDim2.fromOffset(130,130)
+emoji1.BackgroundTransparency = 1
+emoji1.Text = "🙂"
+emoji1.TextScaled = true
+emoji1.Font = Enum.Font.GothamBold
+emoji1.TextTransparency = 1
+emoji1.ZIndex = 100
+emoji1.Parent = horrorGui
+
+TweenService:Create(
+	emoji1,
+	TweenInfo.new(
+		0.45,
+		Enum.EasingStyle.Back,
+		Enum.EasingDirection.Out
+	),
+	{
+		TextTransparency = 0,
+		Size = UDim2.fromOffset(160,160)
+	}
+):Play()
+
+task.wait(1)
+
+TweenService:Create(
+	emoji1,
+	TweenInfo.new(0.35),
+	{
+		TextTransparency = 1,
+		Size = UDim2.fromOffset(80,80)
+	}
+):Play()
+
+task.wait(0.4)
+
+emoji1:Destroy()
+
+--==================================================
+-- BIG FINAL EMOJIS
+--==================================================
+
+local finalEmoji = Instance.new("TextLabel")
+
+finalEmoji.Name = "FinalEmoji"
+finalEmoji.AnchorPoint = Vector2.new(0.5,0.5)
+finalEmoji.Position = UDim2.fromScale(0.5,0.5)
+finalEmoji.Size = UDim2.fromOffset(250,180)
+finalEmoji.BackgroundTransparency = 1
+finalEmoji.Text = "🖕🏿🤫🖕🏿"
+finalEmoji.TextScaled = true
+finalEmoji.Font = Enum.Font.GothamBold
+finalEmoji.TextTransparency = 1
+finalEmoji.ZIndex = 110
+finalEmoji.Parent = horrorGui
+
+TweenService:Create(
+	finalEmoji,
+	TweenInfo.new(
+		0.3,
+		Enum.EasingStyle.Back,
+		Enum.EasingDirection.Out
+	),
+	{
+		TextTransparency = 0,
+		Size = UDim2.fromOffset(420,300)
+	}
+):Play()
+
+task.spawn(function()
+	shake(finalEmoji,8,0.7)
+end)
+
+task.wait(1.5)
+
+--==================================================
+-- FINAL FADE
+--==================================================
+
+TweenService:Create(
+	finalEmoji,
+	TweenInfo.new(0.6),
+	{
+		TextTransparency = 1,
+		Size = UDim2.fromOffset(500,350)
+	}
+):Play()
+
+task.wait(0.7)
+
+--==================================================
+-- CLEAN HORROR ONLY
+--==================================================
+
+sound:Stop()
+sound:Destroy()
+
+horrorGui:Destroy()
+
+--==================================================
+-- END
+--==================================================
