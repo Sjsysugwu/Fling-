@@ -1,6 +1,6 @@
 --==================================================
 -- Animal Rarity Hub
--- ESP + Spawn + ProximityPrompt + Speed 100
+-- IMAGE BUTTON + ESP + Spawn + ProximityPrompt + Speed 100
 -- Exclusive + Kitty God
 --==================================================
 
@@ -81,21 +81,49 @@ task.spawn(function()
 end)
 
 --==================================================
--- P BUTTON
+-- IMAGE BUTTON
 --==================================================
 
-local pButton = Instance.new("TextButton")
-pButton.Size = UDim2.fromOffset(36,36)
-pButton.Position = UDim2.fromOffset(6,6)
-pButton.Text = "P"
-pButton.TextSize = 20
-pButton.Font = Enum.Font.Fantasy
-pButton.TextColor3 = Color3.fromRGB(255,0,0)
-pButton.BackgroundColor3 = Color3.fromRGB(20,20,20)
-pButton.BorderSizePixel = 0
-pButton.Parent = gui
+local cornerButton = Instance.new("ImageButton")
+cornerButton.Name = "CornerImage"
 
-Instance.new("UICorner",pButton).CornerRadius = UDim.new(0,8)
+-- الحجم الجديد
+cornerButton.Size = UDim2.fromOffset(36,36)
+
+cornerButton.Position = UDim2.fromOffset(5,5)
+cornerButton.BackgroundTransparency = 1
+cornerButton.BorderSizePixel = 0
+cornerButton.Image = "rbxassetid://124079604372236"
+cornerButton.ScaleType = Enum.ScaleType.Stretch
+cornerButton.ZIndex = 100
+cornerButton.Parent = gui
+
+local cornerCorner = Instance.new("UICorner")
+cornerCorner.CornerRadius = UDim.new(0,6)
+cornerCorner.Parent = cornerButton
+
+local cornerStroke = Instance.new("UIStroke")
+cornerStroke.Thickness = 2
+cornerStroke.Parent = cornerButton
+
+--==================================================
+-- RAINBOW IMAGE BORDER
+--==================================================
+
+local function getRainbow()
+	return Color3.fromHSV(
+		(os.clock() * 0.25) % 1,
+		1,
+		1
+	)
+end
+
+task.spawn(function()
+	while cornerButton.Parent do
+		cornerStroke.Color = getRainbow()
+		task.wait(0.03)
+	end
+end)
 
 --==================================================
 -- MAIN
@@ -491,15 +519,6 @@ local function clearESP()
 	table.clear(highlights)
 end
 
-local function getRainbow()
-
-	return Color3.fromHSV(
-		(os.clock()*0.25)%1,
-		1,
-		1
-	)
-end
-
 local function createESP(data)
 
 	local color =
@@ -726,7 +745,6 @@ spawnButton.MouseButton1Click:Connect(function()
 	spawnOpen = not spawnOpen
 	espOpen = false
 
-	-- مهم: Spawn يصير فعال فقط عندما تكون نافذة Spawn مفتوحة
 	enabledSpawn = spawnOpen
 
 	if spawnOpen then
@@ -757,7 +775,6 @@ end
 
 local function teleportToAnimal(rarity)
 
-	-- لازم تكون قائمة Spawn مفتوحة
 	if not spawnOpen then
 		return
 	end
@@ -772,7 +789,6 @@ local function teleportToAnimal(rarity)
 		return
 	end
 
-	-- تحديث الحيوانات قبل البحث
 	scanAnimals()
 
 	local maxDistance = getSpawnDistance()
@@ -781,7 +797,6 @@ local function teleportToAnimal(rarity)
 	local closestPosition = nil
 	local closestDistance = math.huge
 
-	-- البحث فقط عن نفس الـ Rarity
 	for model,data in pairs(cachedAnimals) do
 
 		if model
@@ -807,10 +822,8 @@ local function teleportToAnimal(rarity)
 		end
 	end
 
-	-- إذا وجد الحيوان انقل اللاعب إليه
 	if closestAnimal and closestPosition then
 
-		-- إلغاء سرعة الحركة مؤقتاً أثناء النقل
 		local humanoid =
 			character:FindFirstChildOfClass("Humanoid")
 
@@ -818,13 +831,11 @@ local function teleportToAnimal(rarity)
 			humanoid:ChangeState(Enum.HumanoidStateType.Physics)
 		end
 
-		-- النقل فوق الحيوان بقليل حتى لا يدخل اللاعب داخله
 		root.CFrame =
 			CFrame.new(
 				closestPosition + Vector3.new(0,4,0)
 			)
 
-		-- إعادة الحالة الطبيعية
 		task.delay(0.15,function()
 
 			if humanoid and humanoid.Parent then
@@ -844,15 +855,11 @@ end
 --==================================================
 
 spawnExclusive.MouseButton1Click:Connect(function()
-
 	teleportToAnimal("Exclusive")
-
 end)
 
 spawnKitty.MouseButton1Click:Connect(function()
-
 	teleportToAnimal("Kitty God")
-
 end)
 
 --==================================================
@@ -989,15 +996,14 @@ closeButton.MouseButton1Click:Connect(function()
 end)
 
 --==================================================
--- P BUTTON
+-- IMAGE BUTTON OPEN / CLOSE
 --==================================================
 
 local menuVisible = true
 
-pButton.MouseButton1Click:Connect(function()
+cornerButton.MouseButton1Click:Connect(function()
 
 	menuVisible = not menuVisible
-
 	main.Visible = menuVisible
 end)
 
