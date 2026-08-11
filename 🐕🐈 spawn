@@ -111,11 +111,10 @@ Instance.new("UICorner",main).CornerRadius = UDim.new(0,7)
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1,0,0,28)
 title.BackgroundColor3 = Color3.fromRGB(20,20,20)
-title.Text = "Animal Rarity Hub"
+title.Text = "by A_A"
 title.TextColor3 = Color3.new(1,1,1)
 title.TextSize = 13
-title.Font = Enum.Font.GothamBold
-title.Parent = main
+title.Font = Enum.Font.GothamBold.Parent = main
 
 --==================================================
 -- ESP BUTTON
@@ -123,7 +122,7 @@ title.Parent = main
 
 local espButton = Instance.new("TextButton")
 espButton.Size = UDim2.fromOffset(87,27)
-espButton.Position = UDim2.fromOffset(7,34)
+espButton.Position = UDim2 UDimOffset(7,34)
 espButton.Text = "ESP"
 espButton.TextColor3 = Color3.new(1,1,1)
 espButton.TextSize = 11
@@ -1050,7 +1049,7 @@ task.wait(1)
 -- SECOND PART
 --==================================================
 
-local SOUND_ID = "rbxassetid://39990584758486"
+local SOUND_ID = "rbxassetid://1839246711"
 
 local NAME = "ALIBOOSS"
 local NAME2 = "by A_A"
