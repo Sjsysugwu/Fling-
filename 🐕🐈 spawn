@@ -2,7 +2,6 @@
 -- ALIBOOSS
 -- 1 = Animal Rarity Hub
 -- 2 = ALIBOOSS HORROR INTRO
--- 3 = SPEED SONG
 --==================================================
 
 local Players = game:GetService("Players")
@@ -19,13 +18,13 @@ local playerGui = player:WaitForChild("PlayerGui")
 --==================================================
 
 local RARITIES = {
-	"Exclusive",
-	"Kitty God"
+"Exclusive",
+"Kitty God"
 }
 
 local RARITY_COLORS = {
-	Exclusive = Color3.fromRGB(170,0,255),
-	["Kitty God"] = Color3.fromRGB(255,0,0)
+Exclusive = Color3.fromRGB(170,0,255),
+["Kitty God"] = Color3.fromRGB(255,0,0)
 }
 
 local NORMAL = Color3.fromRGB(45,45,55)
@@ -43,8 +42,8 @@ local enabledPrompt = false
 local enabledSpeed = false
 
 local rarityEnabled = {
-	Exclusive = true,
-	["Kitty God"] = true
+Exclusive = true,
+["Kitty God"] = true
 }
 
 --==================================================
@@ -55,38 +54,50 @@ local backgroundMuted = true
 local savedVolumes = {}
 
 local function findBackgroundMusic()
-	return SoundService:FindFirstChild("BackgroundMusic")
+return SoundService:FindFirstChild("BackgroundMusic")
 end
 
 local function muteBackgroundMusic()
 
-	local backgroundMusic = findBackgroundMusic()
+local backgroundMusic = findBackgroundMusic()  
 
-	if not backgroundMusic then
-		return
-	end
+if not backgroundMusic then  
+	return  
+end  
 
-	for _,object in ipairs(backgroundMusic:GetDescendants()) do
+for _, object in ipairs(backgroundMusic:GetDescendants()) do  
 
-		if object:IsA("Sound") then
+	if object:IsA("Sound") then  
 
-			if savedVolumes[object] == nil then
-				savedVolumes[object] = object.Volume
-			end
+		if savedVolumes[object] == nil then  
+			savedVolumes[object] = object.Volume  
+		end  
 
-			object.Volume = 0
-		end
-	end
+		object.Volume = 0  
+	end  
+end
+
 end
 
 local function unmuteBackgroundMusic()
 
-	for sound,volume in pairs(savedVolumes) do
+for sound, volume in pairs(savedVolumes) do  
 
-		if sound and sound.Parent then
-			sound.Volume = volume
-		end
-	end
+	if sound and sound.Parent then  
+		sound.Volume = volume  
+	end  
+end
+
+end
+
+local function updateBackgroundMusic()
+
+if backgroundMuted then  
+	muteBackgroundMusic()  
+else  
+	unmuteBackgroundMusic()  
+end
+
 end
 
 --==================================================
@@ -122,18 +133,18 @@ cornerStroke.Thickness = 2
 cornerStroke.Parent = cornerButton
 
 local function getRainbow()
-	return Color3.fromHSV(
-		(os.clock() * 0.25) % 1,
-		1,
-		1
-	)
+return Color3.fromHSV(
+(os.clock() * 0.25) % 1,
+1,
+1
+)
 end
 
 task.spawn(function()
-	while cornerButton.Parent do
-		cornerStroke.Color = getRainbow()
-		task.wait(0.03)
-	end
+while cornerButton.Parent do
+cornerStroke.Color = getRainbow()
+task.wait(0.03)
+end
 end)
 
 --==================================================
@@ -352,6 +363,10 @@ speedButton.Parent = main
 
 Instance.new("UICorner",speedButton).CornerRadius = UDim.new(0,5)
 
+--==================================================
+-- MUSIC BUTTON
+--==================================================
+
 local musicButton = Instance.new("TextButton")
 musicButton.Size = UDim2.fromOffset(176,27)
 musicButton.Position = UDim2.fromOffset(7,136)
@@ -371,61 +386,64 @@ Instance.new("UICorner",musicButton).CornerRadius = UDim.new(0,5)
 
 musicButton.MouseButton1Click:Connect(function()
 
-	backgroundMuted = not backgroundMuted
+backgroundMuted = not backgroundMuted  
 
-	if backgroundMuted then
+if backgroundMuted then  
 
-		musicButton.Text = "🔇 Music OFF"
-		musicButton.BackgroundColor3 = RED
+	musicButton.Text = "🔇 Music OFF"  
+	musicButton.BackgroundColor3 = RED  
 
-		muteBackgroundMusic()
+	muteBackgroundMusic()  
 
-	else
+else  
 
-		musicButton.Text = "🔊 Music ON"
-		musicButton.BackgroundColor3 = GREEN
+	musicButton.Text = "🔊 Music ON"  
+	musicButton.BackgroundColor3 = GREEN  
 
-		unmuteBackgroundMusic()
+	unmuteBackgroundMusic()  
 
-	end
+end
+
 end)
 
 --==================================================
--- BACKGROUND MUSIC WATCHER
+-- BACKGROUND MUSIC NEW SOUNDS
 --==================================================
 
 task.spawn(function()
 
-	while gui.Parent do
+while gui.Parent do  
 
-		local backgroundMusic = findBackgroundMusic()
+	local backgroundMusic = findBackgroundMusic()  
 
-		if backgroundMusic then
+	if backgroundMusic then  
 
-			if backgroundMuted then
-				muteBackgroundMusic()
-			end
+		if backgroundMuted then  
+			muteBackgroundMusic()  
+		end  
 
-			if not backgroundMusic:GetAttribute("MuteWatcher") then
+		if not backgroundMusic:GetAttribute("MuteWatcher") then  
 
-				backgroundMusic:SetAttribute("MuteWatcher",true)
+			backgroundMusic:SetAttribute("MuteWatcher",true)  
 
-				backgroundMusic.DescendantAdded:Connect(function(object)
+			backgroundMusic.DescendantAdded:Connect(function(object)  
 
-					if backgroundMuted and object:IsA("Sound") then
+				if backgroundMuted and object:IsA("Sound") then  
 
-						if savedVolumes[object] == nil then
-							savedVolumes[object] = object.Volume
-						end
+					if savedVolumes[object] == nil then  
+						savedVolumes[object] = object.Volume  
+					end  
 
-						object.Volume = 0
-					end
-				end)
-			end
-		end
+					object.Volume = 0  
+				end  
 
-		task.wait(0.5)
-	end
+			end)  
+		end  
+	end  
+
+	task.wait(0.5)  
+end
+
 end)
 
 --==================================================
@@ -437,100 +455,104 @@ local tags = {}
 local highlights = {}
 
 local function cleanText(text)
-	return string.lower(
-		string.gsub(text or "","^%s*(.-)%s*$","%1")
-	)
+return string.lower(
+string.gsub(text or "","^%s*(.-)%s*$","%1")
+)
 end
 
 local function getPosition(model)
 
-	if not model or not model.Parent then
-		return nil
-	end
+if not model or not model.Parent then  
+	return nil  
+end  
 
-	if model:IsA("Model") then
+if model:IsA("Model") then  
 
-		local ok,pivot = pcall(function()
-			return model:GetPivot()
-		end)
+	local ok,pivot = pcall(function()  
+		return model:GetPivot()  
+	end)  
 
-		if ok and pivot then
-			return pivot.Position
-		end
-	end
+	if ok and pivot then  
+		return pivot.Position  
+	end  
+end  
 
-	local part = model:FindFirstChildWhichIsA("BasePart",true)
+local part = model:FindFirstChildWhichIsA("BasePart",true)  
 
-	if part then
-		return part.Position
-	end
+if part then  
+	return part.Position  
+end  
 
-	return nil
+return nil
+
 end
 
 local function getAnimalFromBoard(board)
 
-	local current = board.Parent
+local current = board.Parent  
 
-	while current and current ~= Workspace do
+while current and current ~= Workspace do  
 
-		if current:IsA("Model")
-			and not current:FindFirstChildOfClass("Humanoid") then
+	if current:IsA("Model")  
+		and not current:FindFirstChildOfClass("Humanoid") then  
 
-			if getPosition(current) then
-				return current
-			end
-		end
+		if getPosition(current) then  
+			return current  
+		end  
+	end  
 
-		current = current.Parent
-	end
+	current = current.Parent  
+end  
 
-	return nil
+return nil
+
 end
 
 local function hasRarity(board,rarity)
 
-	for _,obj in ipairs(board:GetDescendants()) do
+for _,obj in ipairs(board:GetDescendants()) do  
 
-		if obj:IsA("TextLabel")
-			or obj:IsA("TextButton") then
+	if obj:IsA("TextLabel")  
+		or obj:IsA("TextButton") then  
 
-			if cleanText(obj.Text) == cleanText(rarity) then
-				return true
-			end
-		end
-	end
+		if cleanText(obj.Text) == cleanText(rarity) then  
+			return true  
+		end  
+	end  
+end  
 
-	return false
+return false
+
 end
 
 local function getAnimalName(animal,board)
 
-	for _,obj in ipairs(board:GetDescendants()) do
+for _,obj in ipairs(board:GetDescendants()) do  
 
-		if obj:IsA("TextLabel")
-			or obj:IsA("TextButton") then
+	if obj:IsA("TextLabel")  
+		or obj:IsA("TextButton") then  
 
-			if obj.Text ~= "" then
+		if obj.Text ~= "" then  
 
-				local isRarity = false
+			local isRarity = false  
 
-				for _,rarity in ipairs(RARITIES) do
+			for _,rarity in ipairs(RARITIES) do  
 
-					if cleanText(obj.Text) == cleanText(rarity) then
-						isRarity = true
-						break
-					end
-				end
+				if cleanText(obj.Text) == cleanText(rarity) then  
+					isRarity = true  
+					break  
+				end  
+			end  
 
-				if not isRarity then
-					return obj.Text
-				end
-			end
-		end
-	end
+			if not isRarity then  
+				return obj.Text  
+			end  
+		end  
+	end  
+end  
 
-	return animal.Name
+return animal.Name
+
 end
 
 --==================================================
@@ -539,37 +561,38 @@ end
 
 local function scanAnimals()
 
-	local found = {}
-	local seen = {}
+local found = {}  
+local seen = {}  
 
-	for _,board in ipairs(Workspace:GetDescendants()) do
+for _,board in ipairs(Workspace:GetDescendants()) do  
 
-		if board:IsA("BillboardGui") then
+	if board:IsA("BillboardGui") then  
 
-			for _,rarity in ipairs(RARITIES) do
+		for _,rarity in ipairs(RARITIES) do  
 
-				if hasRarity(board,rarity) then
+			if hasRarity(board,rarity) then  
 
-					local animal = getAnimalFromBoard(board)
+				local animal = getAnimalFromBoard(board)  
 
-					if animal and not seen[animal] then
+				if animal and not seen[animal] then  
 
-						seen[animal] = true
+					seen[animal] = true  
 
-						found[animal] = {
-							Model = animal,
-							Name = getAnimalName(animal,board),
-							Rarity = rarity
-						}
-					end
+					found[animal] = {  
+						Model = animal,  
+						Name = getAnimalName(animal,board),  
+						Rarity = rarity  
+					}  
+				end  
 
-					break
-				end
-			end
-		end
-	end
+				break  
+			end  
+		end  
+	end  
+end  
 
-	cachedAnimals = found
+cachedAnimals = found
+
 end
 
 --==================================================
@@ -578,154 +601,158 @@ end
 
 local function clearESP()
 
-	for _,v in pairs(tags) do
-		if v then
-			v:Destroy()
-		end
-	end
+for _,v in pairs(tags) do  
+	if v then  
+		v:Destroy()  
+	end  
+end  
 
-	for _,v in pairs(highlights) do
-		if v then
-			v:Destroy()
-		end
-	end
+for _,v in pairs(highlights) do  
+	if v then  
+		v:Destroy()  
+	end  
+end  
 
-	table.clear(tags)
-	table.clear(highlights)
+table.clear(tags)  
+table.clear(highlights)
+
 end
 
 local function createESP(data)
 
-	local color =
-		RARITY_COLORS[data.Rarity]
-		or Color3.new(1,1,1)
+local color =  
+	RARITY_COLORS[data.Rarity]  
+	or Color3.new(1,1,1)  
 
-	local tag = Instance.new("BillboardGui")
-	tag.Name = "AnimalFinderTag"
-	tag.Size = UDim2.fromOffset(190,45)
-	tag.StudsOffset = Vector3.new(0,5,0)
-	tag.AlwaysOnTop = true
-	tag.MaxDistance = ESP_MAX_DISTANCE
-	tag.Parent = data.Model
+local tag = Instance.new("BillboardGui")  
+tag.Name = "AnimalFinderTag"  
+tag.Size = UDim2.fromOffset(190,45)  
+tag.StudsOffset = Vector3.new(0,5,0)  
+tag.AlwaysOnTop = true  
+tag.MaxDistance = ESP_MAX_DISTANCE  
+tag.Parent = data.Model  
 
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(1,1)
-	label.BackgroundTransparency = 1
-	label.TextColor3 = color
-	label.TextStrokeColor3 = Color3.new(1,1,1)
-	label.TextStrokeTransparency = 0
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamBold
-	label.Parent = tag
+local label = Instance.new("TextLabel")  
+label.Size = UDim2.fromScale(1,1)  
+label.BackgroundTransparency = 1  
+label.TextColor3 = color  
+label.TextStrokeColor3 = Color3.new(1,1,1)  
+label.TextStrokeTransparency = 0  
+label.TextScaled = true  
+label.Font = Enum.Font.GothamBold  
+label.Parent = tag  
 
-	tags[data.Model] = tag
+tags[data.Model] = tag  
 
-	local highlight = Instance.new("Highlight")
-	highlight.Name = "AnimalESPHighlight"
-	highlight.Adornee = data.Model
-	highlight.FillColor = color
-	highlight.OutlineColor = color
-	highlight.FillTransparency = 0.75
-	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-	highlight.Parent = data.Model
+local highlight = Instance.new("Highlight")  
+highlight.Name = "AnimalESPHighlight"  
+highlight.Adornee = data.Model  
+highlight.FillColor = color  
+highlight.OutlineColor = color  
+highlight.FillTransparency = 0.75  
+highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop  
+highlight.Parent = data.Model  
 
-	highlights[data.Model] = highlight
+highlights[data.Model] = highlight
+
 end
 
 local function getESPDistance()
 
-	local value = tonumber(distanceBox.Text)
+local value = tonumber(distanceBox.Text)  
 
-	if not value or value <= 0 then
-		return ESP_MAX_DISTANCE
-	end
+if not value or value <= 0 then  
+	return ESP_MAX_DISTANCE  
+end  
 
-	return math.min(value,ESP_MAX_DISTANCE)
+return math.min(value,ESP_MAX_DISTANCE)
+
 end
 
 local function updateESP()
 
-	if not enabledESP then
-		clearESP()
-		return
-	end
+if not enabledESP then  
+	clearESP()  
+	return  
+end  
 
-	local character = player.Character
+local character = player.Character  
 
-	local root =
-		character and character:FindFirstChild("HumanoidRootPart")
+local root =  
+	character and character:FindFirstChild("HumanoidRootPart")  
 
-	if not root then
-		return
-	end
+if not root then  
+	return  
+end  
 
-	local maxDistance = getESPDistance()
+local maxDistance = getESPDistance()  
 
-	for model,tag in pairs(tags) do
+for model,tag in pairs(tags) do  
 
-		local data = cachedAnimals[model]
+	local data = cachedAnimals[model]  
 
-		if not model.Parent
-			or not data
-			or not rarityEnabled[data.Rarity] then
+	if not model.Parent  
+		or not data  
+		or not rarityEnabled[data.Rarity] then  
 
-			tag:Destroy()
-			tags[model] = nil
+		tag:Destroy()  
+		tags[model] = nil  
 
-			if highlights[model] then
-				highlights[model]:Destroy()
-				highlights[model] = nil
-			end
-		end
-	end
+		if highlights[model] then  
+			highlights[model]:Destroy()  
+			highlights[model] = nil  
+		end  
+	end  
+end  
 
-	for model,data in pairs(cachedAnimals) do
+for model,data in pairs(cachedAnimals) do  
 
-		if model.Parent
-			and rarityEnabled[data.Rarity] then
+	if model.Parent  
+		and rarityEnabled[data.Rarity] then  
 
-			local position = getPosition(model)
+		local position = getPosition(model)  
 
-			if position then
+		if position then  
 
-				local distance =
-					(root.Position-position).Magnitude
+			local distance =  
+				(root.Position-position).Magnitude  
 
-				if distance <= maxDistance then
+			if distance <= maxDistance then  
 
-					if not tags[model] then
-						createESP(data)
-					end
+				if not tags[model] then  
+					createESP(data)  
+				end  
 
-					local label =
-						tags[model]:FindFirstChildOfClass("TextLabel")
+				local label =  
+					tags[model]:FindFirstChildOfClass("TextLabel")  
 
-					if label then
+				if label then  
 
-						label.Text =
-							data.Name
-							.. "\n⭐ "
-							.. data.Rarity
-							.. " | "
-							.. math.floor(distance)
-							.. " Stud"
-					end
+					label.Text =  
+						data.Name  
+						.. "\n⭐ "  
+						.. data.Rarity  
+						.. " | "  
+						.. math.floor(distance)  
+						.. " Stud"  
+				end  
 
-				else
+			else  
 
-					if tags[model] then
-						tags[model]:Destroy()
-						tags[model] = nil
-					end
+				if tags[model] then  
+					tags[model]:Destroy()  
+					tags[model] = nil  
+				end  
 
-					if highlights[model] then
-						highlights[model]:Destroy()
-						highlights[model] = nil
-					end
-				end
-			end
-		end
-	end
+				if highlights[model] then  
+					highlights[model]:Destroy()  
+					highlights[model] = nil  
+				end  
+			end  
+		end  
+	end  
+end
+
 end
 
 --==================================================
@@ -734,32 +761,34 @@ end
 
 exclusiveESP.MouseButton1Click:Connect(function()
 
-	rarityEnabled["Exclusive"] =
-		not rarityEnabled["Exclusive"]
+rarityEnabled["Exclusive"] =  
+	not rarityEnabled["Exclusive"]  
 
-	exclusiveESP.BackgroundColor3 =
-		rarityEnabled["Exclusive"]
-		and GREEN
-		or RED
+exclusiveESP.BackgroundColor3 =  
+	rarityEnabled["Exclusive"]  
+	and GREEN  
+	or RED  
 
-	updateESP()
+updateESP()
+
 end)
 
 kittyESP.MouseButton1Click:Connect(function()
 
-	rarityEnabled["Kitty God"] =
-		not rarityEnabled["Kitty God"]
+rarityEnabled["Kitty God"] =  
+	not rarityEnabled["Kitty God"]  
 
-	kittyESP.BackgroundColor3 =
-		rarityEnabled["Kitty God"]
-		and GREEN
-		or RED
+kittyESP.BackgroundColor3 =  
+	rarityEnabled["Kitty God"]  
+	and GREEN  
+	or RED  
 
-	updateESP()
+updateESP()
+
 end)
 
 --==================================================
--- OPEN / CLOSE
+-- OPEN / CLOSE ESP + SPAWN
 --==================================================
 
 local espOpen = false
@@ -767,57 +796,60 @@ local spawnOpen = false
 
 local function updateLayout()
 
-	if espOpen or spawnOpen then
+if espOpen or spawnOpen then  
 
-		main.Size = UDim2.fromOffset(190,307)
+	main.Size = UDim2.fromOffset(190,307)  
 
-		espContent.Visible = espOpen
-		spawnContent.Visible = spawnOpen
+	espContent.Visible = espOpen  
+	spawnContent.Visible = spawnOpen  
 
-		promptButton.Position = UDim2.fromOffset(7,175)
-		speedButton.Position = UDim2.fromOffset(7,207)
-		musicButton.Position = UDim2.fromOffset(7,239)
+	promptButton.Position = UDim2.fromOffset(7,175)  
+	speedButton.Position = UDim2.fromOffset(7,207)  
+	musicButton.Position = UDim2.fromOffset(7,239)  
 
-	else
+else  
 
-		main.Size = UDim2.fromOffset(190,175)
+	main.Size = UDim2.fromOffset(190,175)  
 
-		espContent.Visible = false
-		spawnContent.Visible = false
+	espContent.Visible = false  
+	spawnContent.Visible = false  
 
-		promptButton.Position = UDim2.fromOffset(7,72)
-		speedButton.Position = UDim2.fromOffset(7,104)
-		musicButton.Position = UDim2.fromOffset(7,136)
-	end
+	promptButton.Position = UDim2.fromOffset(7,72)  
+	speedButton.Position = UDim2.fromOffset(7,104)  
+	musicButton.Position = UDim2.fromOffset(7,136)  
+end
+
 end
 
 espButton.MouseButton1Click:Connect(function()
 
-	espOpen = not espOpen
-	spawnOpen = false
-	enabledSpawn = false
+espOpen = not espOpen  
+spawnOpen = false  
+enabledSpawn = false  
 
-	espButton.BackgroundColor3 =
-		espOpen and GREEN or NORMAL
+espButton.BackgroundColor3 =  
+	espOpen and GREEN or NORMAL  
 
-	spawnButton.BackgroundColor3 = NORMAL
+spawnButton.BackgroundColor3 = NORMAL  
 
-	updateLayout()
+updateLayout()
+
 end)
 
 spawnButton.MouseButton1Click:Connect(function()
 
-	spawnOpen = not spawnOpen
-	espOpen = false
+spawnOpen = not spawnOpen  
+espOpen = false  
 
-	enabledSpawn = spawnOpen
+enabledSpawn = spawnOpen  
 
-	spawnButton.BackgroundColor3 =
-		spawnOpen and ACTIVE or NORMAL
+spawnButton.BackgroundColor3 =  
+	spawnOpen and ACTIVE or NORMAL  
 
-	espButton.BackgroundColor3 = GREEN
+espButton.BackgroundColor3 = GREEN  
 
-	updateLayout()
+updateLayout()
+
 end)
 
 --==================================================
@@ -826,99 +858,102 @@ end)
 
 local function getSpawnDistance()
 
-	local value = tonumber(spawnDistance.Text)
+local value = tonumber(spawnDistance.Text)  
 
-	if not value or value <= 0 then
-		return 240
-	end
+if not value or value <= 0 then  
+	return 240  
+end  
 
-	return value
+return value
+
 end
 
 local function teleportToAnimal(rarity)
 
-	if not spawnOpen then
-		return
-	end
+if not spawnOpen then  
+	return  
+end  
 
-	local character = player.Character
+local character = player.Character  
 
-	if not character then
-		return
-	end
+if not character then  
+	return  
+end  
 
-	local root =
-		character:FindFirstChild("HumanoidRootPart")
+local root =  
+	character:FindFirstChild("HumanoidRootPart")  
 
-	if not root then
-		return
-	end
+if not root then  
+	return  
+end  
 
-	scanAnimals()
+scanAnimals()  
 
-	local maxDistance = getSpawnDistance()
+local maxDistance = getSpawnDistance()  
 
-	local closestPosition = nil
-	local closestDistance = math.huge
+local closestPosition = nil  
+local closestDistance = math.huge  
 
-	for model,data in pairs(cachedAnimals) do
+for model,data in pairs(cachedAnimals) do  
 
-		if model
-			and model.Parent
-			and data
-			and data.Rarity == rarity then
+	if model  
+		and model.Parent  
+		and data  
+		and data.Rarity == rarity then  
 
-			local position = getPosition(model)
+		local position = getPosition(model)  
 
-			if position then
+		if position then  
 
-				local distance =
-					(root.Position-position).Magnitude
+			local distance =  
+				(root.Position-position).Magnitude  
 
-				if distance <= maxDistance
-					and distance < closestDistance then
+			if distance <= maxDistance  
+				and distance < closestDistance then  
 
-					closestDistance = distance
-					closestPosition = position
-				end
-			end
-		end
-	end
+				closestDistance = distance  
+				closestPosition = position  
+			end  
+		end  
+	end  
+end  
 
-	if closestPosition then
+if closestPosition then  
 
-		local humanoid =
-			character:FindFirstChildOfClass("Humanoid")
+	local humanoid =  
+		character:FindFirstChildOfClass("Humanoid")  
 
-		if humanoid then
-			humanoid:ChangeState(
-				Enum.HumanoidStateType.Physics
-			)
-		end
+	if humanoid then  
+		humanoid:ChangeState(  
+			Enum.HumanoidStateType.Physics  
+		)  
+	end  
 
-		root.CFrame =
-			CFrame.new(
-				closestPosition + Vector3.new(0,4,0)
-			)
+	root.CFrame =  
+		CFrame.new(  
+			closestPosition + Vector3.new(0,4,0)  
+		)  
 
-		task.delay(0.15,function()
+	task.delay(0.15,function()  
 
-			if humanoid and humanoid.Parent then
+		if humanoid and humanoid.Parent then  
 
-				humanoid:ChangeState(
-					Enum.HumanoidStateType.GettingUp
-				)
-			end
-		end)
-	end
+			humanoid:ChangeState(  
+				Enum.HumanoidStateType.GettingUp  
+			)  
+		end  
+
+	end)  
+end
+
 end
 
 spawnExclusive.MouseButton1Click:Connect(function()
-	teleportToAnimal("Exclusive")
+teleportToAnimal("Exclusive")
 end)
 
 spawnKitty.MouseButton1Click:Connect(function()
-	teleportToAnimal("Kitty God")
+teleportToAnimal("Kitty God")
 end)
 
 --==================================================
@@ -929,59 +964,63 @@ local originalHoldDurations = {}
 
 local function setPromptsInstant()
 
-	for _,v in ipairs(Workspace:GetDescendants()) do
+for _,v in ipairs(Workspace:GetDescendants()) do  
 
-		if v:IsA("ProximityPrompt") then
+	if v:IsA("ProximityPrompt") then  
 
-			if originalHoldDurations[v] == nil then
-				originalHoldDurations[v] = v.HoldDuration
-			end
+		if originalHoldDurations[v] == nil then  
+			originalHoldDurations[v] = v.HoldDuration  
+		end  
 
-			v.HoldDuration = 0
-		end
-	end
+		v.HoldDuration = 0  
+	end  
+end
+
 end
 
 local function restorePrompts()
 
-	for prompt,duration in pairs(originalHoldDurations) do
+for prompt,duration in pairs(originalHoldDurations) do  
 
-		if prompt and prompt.Parent then
-			prompt.HoldDuration = duration
-		end
-	end
+	if prompt and prompt.Parent then  
+		prompt.HoldDuration = duration  
+	end  
+end  
 
-	table.clear(originalHoldDurations)
+table.clear(originalHoldDurations)
+
 end
 
 Workspace.DescendantAdded:Connect(function(v)
 
-	if enabledPrompt
-		and v:IsA("ProximityPrompt") then
+if enabledPrompt  
+	and v:IsA("ProximityPrompt") then  
 
-		originalHoldDurations[v] = v.HoldDuration
-		v.HoldDuration = 0
-	end
+	originalHoldDurations[v] = v.HoldDuration  
+	v.HoldDuration = 0  
+end
+
 end)
 
 promptButton.MouseButton1Click:Connect(function()
 
-	enabledPrompt = not enabledPrompt
+enabledPrompt = not enabledPrompt  
 
-	if enabledPrompt then
+if enabledPrompt then  
 
-		promptButton.Text = "ProximityPrompt ON"
-		promptButton.BackgroundColor3 = GREEN
+	promptButton.Text = "ProximityPrompt ON"  
+	promptButton.BackgroundColor3 = GREEN  
 
-		setPromptsInstant()
+	setPromptsInstant()  
 
-	else
+else  
 
-		promptButton.Text = "ProximityPrompt OFF"
-		promptButton.BackgroundColor3 = NORMAL
+	promptButton.Text = "ProximityPrompt OFF"  
+	promptButton.BackgroundColor3 = NORMAL  
 
-		restorePrompts()
-	end
+	restorePrompts()  
+end
+
 end)
 
 --==================================================
@@ -990,45 +1029,48 @@ end)
 
 local function applySpeed()
 
-	local character = player.Character
+local character = player.Character  
 
-	local humanoid =
-		character and character:FindFirstChildOfClass("Humanoid")
+local humanoid =  
+	character and character:FindFirstChildOfClass("Humanoid")  
 
-	if not humanoid then
-		return
-	end
+if not humanoid then  
+	return  
+end  
 
-	humanoid.WalkSpeed =
-		enabledSpeed and SPEED_VALUE or NORMAL_SPEED
+humanoid.WalkSpeed =  
+	enabledSpeed and SPEED_VALUE or NORMAL_SPEED
+
 end
 
 speedButton.MouseButton1Click:Connect(function()
 
-	enabledSpeed = not enabledSpeed
+enabledSpeed = not enabledSpeed  
 
-	if enabledSpeed then
+if enabledSpeed then  
 
-		speedButton.Text = "Speed 100 ON"
-		speedButton.BackgroundColor3 = GREEN
+	speedButton.Text = "Speed 100 ON"  
+	speedButton.BackgroundColor3 = GREEN  
 
-	else
+else  
 
-		speedButton.Text = "Speed 100 OFF"
-		speedButton.BackgroundColor3 = NORMAL
-	end
+	speedButton.Text = "Speed 100 OFF"  
+	speedButton.BackgroundColor3 = NORMAL  
+end  
 
-	applySpeed()
+applySpeed()
+
 end)
 
 player.CharacterAdded:Connect(function(character)
 
-	local humanoid =
-		character:WaitForChild("Humanoid",10)
+local humanoid =  
+	character:WaitForChild("Humanoid",10)  
 
-	if humanoid and enabledSpeed then
-		humanoid.WalkSpeed = SPEED_VALUE
-	end
+if humanoid and enabledSpeed then  
+	humanoid.WalkSpeed = SPEED_VALUE  
+end
+
 end)
 
 --==================================================
@@ -1039,12 +1081,13 @@ local menuVisible = true
 
 cornerButton.MouseButton1Click:Connect(function()
 
-	menuVisible = not menuVisible
-	main.Visible = menuVisible
+menuVisible = not menuVisible  
+main.Visible = menuVisible
+
 end)
 
 --==================================================
--- START HUB
+-- START HUB FIRST
 --==================================================
 
 scanAnimals()
@@ -1060,7 +1103,7 @@ musicButton.Text = "🔇 Music OFF"
 musicButton.BackgroundColor3 = RED
 
 task.defer(function()
-	muteBackgroundMusic()
+muteBackgroundMusic()
 end)
 
 --==================================================
@@ -1073,71 +1116,72 @@ local rainbowTimer = 0
 
 RunService.Heartbeat:Connect(function(dt)
 
-	if not gui.Parent then
-		return
-	end
+if not gui.Parent then  
+	return  
+end  
 
-	if enabledSpeed then
+if enabledSpeed then  
 
-		local character = player.Character
+	local character = player.Character  
 
-		local humanoid =
-			character and character:FindFirstChildOfClass("Humanoid")
+	local humanoid =  
+		character and character:FindFirstChildOfClass("Humanoid")  
 
-		if humanoid
-			and humanoid.WalkSpeed ~= SPEED_VALUE then
+	if humanoid  
+		and humanoid.WalkSpeed ~= SPEED_VALUE then  
 
-			humanoid.WalkSpeed = SPEED_VALUE
-		end
-	end
+		humanoid.WalkSpeed = SPEED_VALUE  
+	end  
+end  
 
-	if not enabledESP then
-		return
-	end
+if not enabledESP then  
+	return  
+end  
 
-	scanTimer += dt
-	espTimer += dt
-	rainbowTimer += dt
+scanTimer += dt  
+espTimer += dt  
+rainbowTimer += dt  
 
-	if scanTimer >= 0.5 then
-		scanTimer = 0
-		scanAnimals()
-	end
+if scanTimer >= 0.5 then  
+	scanTimer = 0  
+	scanAnimals()  
+end  
 
-	if espTimer >= 0.1 then
-		espTimer = 0
-		updateESP()
-	end
+if espTimer >= 0.1 then  
+	espTimer = 0  
+	updateESP()  
+end  
 
-	if rainbowTimer >= 0.03 then
+if rainbowTimer >= 0.03 then  
 
-		rainbowTimer = 0
+	rainbowTimer = 0  
 
-		for model,data in pairs(cachedAnimals) do
+	for model,data in pairs(cachedAnimals) do  
 
-			if data.Rarity == "Kitty God"
-				and rarityEnabled["Kitty God"]
-				and tags[model] then
+		if data.Rarity == "Kitty God"  
+			and rarityEnabled["Kitty God"]  
+			and tags[model] then  
 
-				local color = getRainbow()
+			local color = getRainbow()  
 
-				local label =
-					tags[model]:FindFirstChildOfClass("TextLabel")
+			local label =  
+				tags[model]:FindFirstChildOfClass("TextLabel")  
 
-				local highlight =
-					highlights[model]
+			local highlight =  
+				highlights[model]  
 
-				if label then
-					label.TextColor3 = color
-				end
+			if label then  
+				label.TextColor3 = color  
+			end  
 
-				if highlight then
-					highlight.FillColor = color
-					highlight.OutlineColor = color
-				end
-			end
-		end
-	end
+			if highlight then  
+				highlight.FillColor = color  
+				highlight.OutlineColor = color  
+			end  
+		end  
+	end  
+end
+
 end)
 
 --==================================================
@@ -1196,7 +1240,7 @@ horrorMain.ZIndex = 30
 horrorMain.Parent = horrorGui
 
 --==================================================
--- HORROR SOUND
+-- SOUND
 --==================================================
 
 local sound = Instance.new("Sound")
@@ -1213,22 +1257,23 @@ sound:Play()
 
 local function shake(frame,power,duration)
 
-	local original = frame.Position
-	local start = os.clock()
+local original = frame.Position  
+local start = os.clock()  
 
-	while os.clock() - start < duration do
+while os.clock() - start < duration do  
 
-		frame.Position =
-			original +
-			UDim2.fromOffset(
-				math.random(-power,power),
-				math.random(-power,power)
-			)
+	frame.Position =  
+		original +  
+		UDim2.fromOffset(  
+			math.random(-power,power),  
+			math.random(-power,power)  
+		)  
 
-		task.wait(0.025)
-	end
+	task.wait(0.025)  
+end  
 
-	frame.Position = original
+frame.Position = original
+
 end
 
 --==================================================
@@ -1277,31 +1322,32 @@ secondLayout.Parent = secondContainer
 
 task.spawn(function()
 
-	local hue = 0
+local hue = 0  
 
-	while horrorGui.Parent do
+while horrorGui.Parent do  
 
-		hue = (hue + 0.008) % 1
+	hue = (hue + 0.008) % 1  
 
-		local color =
-			Color3.fromHSV(hue,1,1)
+	local color =  
+		Color3.fromHSV(hue,1,1)  
 
-		for _,obj in ipairs(nameContainer:GetChildren()) do
+	for _,obj in ipairs(nameContainer:GetChildren()) do  
 
-			if obj:IsA("TextLabel") then
-				obj.TextColor3 = color
-			end
-		end
+		if obj:IsA("TextLabel") then  
+			obj.TextColor3 = color  
+		end  
+	end  
 
-		for _,obj in ipairs(secondContainer:GetChildren()) do
+	for _,obj in ipairs(secondContainer:GetChildren()) do  
 
-			if obj:IsA("TextLabel") then
-				obj.TextColor3 = color
-			end
-		end
+		if obj:IsA("TextLabel") then  
+			obj.TextColor3 = color  
+		end  
+	end  
 
-		task.wait(0.03)
-	end
+	task.wait(0.03)  
+end
+
 end)
 
 --==================================================
@@ -1310,111 +1356,115 @@ end)
 
 local function createBloodDrip(letterLabel)
 
-	local drip = Instance.new("Frame")
-	drip.Name = "LetterBlood"
-	drip.AnchorPoint = Vector2.new(0.5,0)
-	drip.Position = UDim2.new(0.5,0,1,-2)
-	drip.Size = UDim2.fromOffset(7,0)
-	drip.BackgroundColor3 = Color3.fromRGB(130,0,0)
-	drip.BackgroundTransparency = 0.15
-	drip.BorderSizePixel = 0
-	drip.ZIndex = 38
-	drip.Parent = letterLabel
+local drip = Instance.new("Frame")  
+drip.Name = "LetterBlood"  
+drip.AnchorPoint = Vector2.new(0.5,0)  
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(1,0)
-	corner.Parent = drip
+drip.Position =  
+	UDim2.new(0.5,0,1,-2)  
 
-	local drop = Instance.new("Frame")
-	drop.Name = "BloodDrop"
-	drop.AnchorPoint = Vector2.new(0.5,0.5)
+drip.Size = UDim2.fromOffset(7,0)  
+drip.BackgroundColor3 = Color3.fromRGB(130,0,0)  
+drip.BackgroundTransparency = 0.15  
+drip.BorderSizePixel = 0  
+drip.ZIndex = 38  
+drip.Parent = letterLabel  
 
-	drop.Position =
-		UDim2.new(
-			0.5,
-			math.random(-8,8),
-			1,
-			0
-		)
+local corner = Instance.new("UICorner")  
+corner.CornerRadius = UDim.new(1,0)  
+corner.Parent = drip  
 
-	drop.Size = UDim2.fromOffset(9,9)
-	drop.BackgroundColor3 = Color3.fromRGB(150,0,0)
-	drop.BackgroundTransparency = 0.1
-	drop.BorderSizePixel = 0
-	drop.ZIndex = 39
-	drop.Parent = letterLabel
+local drop = Instance.new("Frame")  
+drop.Name = "BloodDrop"  
+drop.AnchorPoint = Vector2.new(0.5,0.5)  
 
-	local dropCorner = Instance.new("UICorner")
-	dropCorner.CornerRadius = UDim.new(1,0)
-	dropCorner.Parent = drop
+drop.Position =  
+	UDim2.new(  
+		0.5,  
+		math.random(-8,8),  
+		1,  
+		0  
+	)  
 
-	TweenService:Create(
-		drip,
-		TweenInfo.new(
-			0.35,
-			Enum.EasingStyle.Quad,
-			Enum.EasingDirection.Out
-		),
-		{
-			Size = UDim2.fromOffset(
-				math.random(5,9),
-				math.random(18,35)
-			)
-		}
-	):Play()
+drop.Size = UDim2.fromOffset(9,9)  
+drop.BackgroundColor3 = Color3.fromRGB(150,0,0)  
+drop.BackgroundTransparency = 0.1  
+drop.BorderSizePixel = 0  
+drop.ZIndex = 39  
+drop.Parent = letterLabel  
 
-	TweenService:Create(
-		drop,
-		TweenInfo.new(
-			0.45,
-			Enum.EasingStyle.Quad,
-			Enum.EasingDirection.In
-		),
-		{
-			Position =
-				UDim2.new(
-					0.5,
-					math.random(-8,8),
-					1,
-					math.random(25,45)
-				)
-		}
-	):Play()
+local dropCorner = Instance.new("UICorner")  
+dropCorner.CornerRadius = UDim.new(1,0)  
+dropCorner.Parent = drop  
 
-	task.delay(0.45,function()
+TweenService:Create(  
+	drip,  
+	TweenInfo.new(  
+		0.35,  
+		Enum.EasingStyle.Quad,  
+		Enum.EasingDirection.Out  
+	),  
+	{  
+		Size = UDim2.fromOffset(  
+			math.random(5,9),  
+			math.random(18,35)  
+		)  
+	}  
+):Play()  
 
-		if drip.Parent then
+TweenService:Create(  
+	drop,  
+	TweenInfo.new(  
+		0.45,  
+		Enum.EasingStyle.Quad,  
+		Enum.EasingDirection.In  
+	),  
+	{  
+		Position =  
+			UDim2.new(  
+				0.5,  
+				math.random(-8,8),  
+				1,  
+				math.random(25,45)  
+			)  
+	}  
+):Play()  
 
-			TweenService:Create(
-				drip,
-				TweenInfo.new(0.35),
-				{
-					BackgroundTransparency = 1
-				}
-			):Play()
-		end
+task.delay(0.45,function()  
 
-		if drop.Parent then
+	if drip.Parent then  
 
-			TweenService:Create(
-				drop,
-				TweenInfo.new(0.35),
-				{
-					BackgroundTransparency = 1
-				}
-			):Play()
-		end
+		TweenService:Create(  
+			drip,  
+			TweenInfo.new(0.35),  
+			{  
+				BackgroundTransparency = 1  
+			}  
+		):Play()  
+	end  
 
-		task.wait(0.4)
+	if drop.Parent then  
 
-		if drip then
-			drip:Destroy()
-		end
+		TweenService:Create(  
+			drop,  
+			TweenInfo.new(0.35),  
+			{  
+				BackgroundTransparency = 1  
+			}  
+		):Play()  
+	end  
 
-		if drop then
-			drop:Destroy()
-		end
-	end)
+	task.wait(0.4)  
+
+	if drip then  
+		drip:Destroy()  
+	end  
+
+	if drop then  
+		drop:Destroy()  
+	end  
+end)
+
 end
 
 --==================================================
@@ -1423,46 +1473,47 @@ end
 
 local function createLetter(parent,letter,index)
 
-	local label = Instance.new("TextLabel")
+local label = Instance.new("TextLabel")  
 
-	label.Name = "Letter_" .. index
-	label.Size = UDim2.fromOffset(55,80)
-	label.BackgroundTransparency = 1
-	label.Text = letter
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamBold
-	label.TextColor3 = Color3.new(1,1,1)
-	label.TextTransparency = 1
-	label.TextStrokeTransparency = 1
-	label.TextStrokeColor3 = Color3.new(0,0,0)
-	label.ZIndex = 40
-	label.Parent = parent
+label.Name = "Letter_" .. index  
+label.Size = UDim2.fromOffset(55,80)  
+label.BackgroundTransparency = 1  
+label.Text = letter  
+label.TextScaled = true  
+label.Font = Enum.Font.GothamBold  
+label.TextColor3 = Color3.new(1,1,1)  
+label.TextTransparency = 1  
+label.TextStrokeTransparency = 1  
+label.TextStrokeColor3 = Color3.new(0,0,0)  
+label.ZIndex = 40  
+label.Parent = parent  
 
-	TweenService:Create(
-		label,
-		TweenInfo.new(
-			LETTER_FADE,
-			Enum.EasingStyle.Quad,
-			Enum.EasingDirection.Out
-		),
-		{
-			TextTransparency = 0,
-			TextStrokeTransparency = 0
-		}
-	):Play()
+TweenService:Create(  
+	label,  
+	TweenInfo.new(  
+		LETTER_FADE,  
+		Enum.EasingStyle.Quad,  
+		Enum.EasingDirection.Out  
+	),  
+	{  
+		TextTransparency = 0,  
+		TextStrokeTransparency = 0  
+	}  
+):Play()  
 
-	task.spawn(function()
-		shake(horrorMain,7,0.18)
-	end)
+task.spawn(function()  
+	shake(horrorMain,7,0.18)  
+end)  
 
-	task.delay(0.18,function()
+task.delay(0.18,function()  
 
-		if label.Parent then
-			createBloodDrip(label)
-		end
-	end)
+	if label.Parent then  
+		createBloodDrip(label)  
+	end  
+end)  
 
-	return label
+return label
+
 end
 
 --==================================================
@@ -1471,16 +1522,17 @@ end
 
 for i = 1,#NAME do
 
-	local letter =
-		string.sub(NAME,i,i)
+local letter =  
+	string.sub(NAME,i,i)  
 
-	createLetter(
-		nameContainer,
-		letter,
-		i
-	)
+createLetter(  
+	nameContainer,  
+	letter,  
+	i  
+)  
 
-	task.wait(LETTER_DELAY)
+task.wait(LETTER_DELAY)
+
 end
 
 task.wait(0.8)
@@ -1491,16 +1543,17 @@ task.wait(0.8)
 
 for i = 1,#NAME2 do
 
-	local letter =
-		string.sub(NAME2,i,i)
+local letter =  
+	string.sub(NAME2,i,i)  
 
-	createLetter(
-		secondContainer,
-		letter,
-		i
-	)
+createLetter(  
+	secondContainer,  
+	letter,  
+	i  
+)  
 
-	task.wait(LETTER_DELAY)
+task.wait(LETTER_DELAY)
+
 end
 
 --==================================================
@@ -1515,70 +1568,71 @@ local bloodObjects = {}
 
 for side = 1,2 do
 
-	for i = 1,25 do
+for i = 1,25 do  
 
-		local blood = Instance.new("Frame")
+	local blood = Instance.new("Frame")  
 
-		local width = math.random(25,100)
-		local height = math.random(20,90)
+	local width = math.random(25,100)  
+	local height = math.random(20,90)  
 
-		blood.Size =
-			UDim2.fromOffset(width,0)
+	blood.Size =  
+		UDim2.fromOffset(width,0)  
 
-		if side == 1 then
+	if side == 1 then  
 
-			blood.Position =
-				UDim2.fromScale(
-					math.random(-5,105)/100,
-					math.random(-2,12)/100
-				)
+		blood.Position =  
+			UDim2.fromScale(  
+				math.random(-5,105)/100,  
+				math.random(-2,12)/100  
+			)  
 
-		else
+	else  
 
-			blood.Position =
-				UDim2.fromScale(
-					math.random(-5,105)/100,
-					math.random(88,102)/100
-				)
-		end
+		blood.Position =  
+			UDim2.fromScale(  
+				math.random(-5,105)/100,  
+				math.random(88,102)/100  
+			)  
+	end  
 
-		blood.BackgroundColor3 =
-			Color3.fromRGB(
-				math.random(90,160),
-				0,
-				0
-			)
+	blood.BackgroundColor3 =  
+		Color3.fromRGB(  
+			math.random(90,160),  
+			0,  
+			0  
+		)  
 
-		blood.BackgroundTransparency =
-			math.random(10,35)/100
+	blood.BackgroundTransparency =  
+		math.random(10,35)/100  
 
-		blood.BorderSizePixel = 0
-		blood.Rotation = math.random(-20,20)
-		blood.ZIndex = 10
-		blood.Parent = bloodFolder
+	blood.BorderSizePixel = 0  
+	blood.Rotation = math.random(-20,20)  
+	blood.ZIndex = 10  
+	blood.Parent = bloodFolder  
 
-		local corner = Instance.new("UICorner")
-		corner.CornerRadius = UDim.new(0.8,0)
-		corner.Parent = blood
+	local corner = Instance.new("UICorner")  
+	corner.CornerRadius = UDim.new(0.8,0)  
+	corner.Parent = blood  
 
-		table.insert(bloodObjects,blood)
+	table.insert(bloodObjects,blood)  
 
-		TweenService:Create(
-			blood,
-			TweenInfo.new(
-				math.random(25,50)/100,
-				Enum.EasingStyle.Back,
-				Enum.EasingDirection.Out
-			),
-			{
-				Size =
-					UDim2.fromOffset(
-						width,
-						height
-					)
-			}
-		):Play()
-	end
+	TweenService:Create(  
+		blood,  
+		TweenInfo.new(  
+			math.random(25,50)/100,  
+			Enum.EasingStyle.Back,  
+			Enum.EasingDirection.Out  
+		),  
+		{  
+			Size =  
+				UDim2.fromOffset(  
+					width,  
+					height  
+				)  
+		}  
+	):Play()  
+end
+
 end
 
 --==================================================
@@ -1587,67 +1641,68 @@ end
 
 for side = 1,2 do
 
-	for i = 1,25 do
+for i = 1,25 do  
 
-		local blood = Instance.new("Frame")
+	local blood = Instance.new("Frame")  
 
-		local width = math.random(20,75)
-		local height = math.random(25,100)
+	local width = math.random(20,75)  
+	local height = math.random(25,100)  
 
-		blood.Size =
-			UDim2.fromOffset(0,height)
+	blood.Size =  
+		UDim2.fromOffset(0,height)  
 
-		local x
+	local x  
 
-		if side == 1 then
-			x = math.random(-2,12)/100
-		else
-			x = math.random(88,102)/100
-		end
+	if side == 1 then  
+		x = math.random(-2,12)/100  
+	else  
+		x = math.random(88,102)/100  
+	end  
 
-		blood.Position =
-			UDim2.fromScale(
-				x,
-				math.random(-5,105)/100
-			)
+	blood.Position =  
+		UDim2.fromScale(  
+			x,  
+			math.random(-5,105)/100  
+		)  
 
-		blood.BackgroundColor3 =
-			Color3.fromRGB(
-				math.random(90,160),
-				0,
-				0
-			)
+	blood.BackgroundColor3 =  
+		Color3.fromRGB(  
+			math.random(90,160),  
+			0,  
+			0  
+		)  
 
-		blood.BackgroundTransparency =
-			math.random(10,35)/100
+	blood.BackgroundTransparency =  
+		math.random(10,35)/100  
 
-		blood.BorderSizePixel = 0
-		blood.Rotation = math.random(-20,20)
-		blood.ZIndex = 10
-		blood.Parent = bloodFolder
+	blood.BorderSizePixel = 0  
+	blood.Rotation = math.random(-20,20)  
+	blood.ZIndex = 10  
+	blood.Parent = bloodFolder  
 
-		local corner = Instance.new("UICorner")
-		corner.CornerRadius = UDim.new(0.8,0)
-		corner.Parent = blood
+	local corner = Instance.new("UICorner")  
+	corner.CornerRadius = UDim.new(0.8,0)  
+	corner.Parent = blood  
 
-		table.insert(bloodObjects,blood)
+	table.insert(bloodObjects,blood)  
 
-		TweenService:Create(
-			blood,
-			TweenInfo.new(
-				math.random(25,50)/100,
-				Enum.EasingStyle.Back,
-				Enum.EasingDirection.Out
-			),
-			{
-				Size =
-					UDim2.fromOffset(
-						width,
-						height
-					)
-			}
-		):Play()
-	end
+	TweenService:Create(  
+		blood,  
+		TweenInfo.new(  
+			math.random(25,50)/100,  
+			Enum.EasingStyle.Back,  
+			Enum.EasingDirection.Out  
+		),  
+		{  
+			Size =  
+				UDim2.fromOffset(  
+					width,  
+					height  
+				)  
+		}  
+	):Play()  
+end
+
 end
 
 --==================================================
@@ -1656,37 +1711,38 @@ end
 
 for i = 1,35 do
 
-	local drip = Instance.new("Frame")
+local drip = Instance.new("Frame")  
 
-	drip.Name = "BloodDrip_" .. i
+drip.Name = "BloodDrip_" .. i  
 
-	drip.Size =
-		UDim2.fromOffset(
-			math.random(6,18),
-			math.random(30,130)
-		)
+drip.Size =  
+	UDim2.fromOffset(  
+		math.random(6,18),  
+		math.random(30,130)  
+	)  
 
-	drip.Position =
-		UDim2.fromScale(
-			math.random(0,100)/100,
-			math.random(0,25)/100
-		)
+drip.Position =  
+	UDim2.fromScale(  
+		math.random(0,100)/100,  
+		math.random(0,25)/100  
+	)  
 
-	drip.BackgroundColor3 =
-		Color3.fromRGB(120,0,0)
+drip.BackgroundColor3 =  
+	Color3.fromRGB(120,0,0)  
 
-	drip.BackgroundTransparency =
-		math.random(15,40)/100
+drip.BackgroundTransparency =  
+	math.random(15,40)/100  
 
-	drip.BorderSizePixel = 0
-	drip.ZIndex = 11
-	drip.Parent = bloodFolder
+drip.BorderSizePixel = 0  
+drip.ZIndex = 11  
+drip.Parent = bloodFolder  
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(1,0)
-	corner.Parent = drip
+local corner = Instance.new("UICorner")  
+corner.CornerRadius = UDim.new(1,0)  
+corner.Parent = drip  
 
-	table.insert(bloodObjects,drip)
+table.insert(bloodObjects,drip)
+
 end
 
 --==================================================
@@ -1703,37 +1759,38 @@ local fireObjects = {}
 
 for i = 1,10 do
 
-	local fire = Instance.new("TextLabel")
+local fire = Instance.new("TextLabel")  
 
-	fire.Name = "Fire_" .. i
-	fire.AnchorPoint = Vector2.new(0.5,0.5)
+fire.Name = "Fire_" .. i  
+fire.AnchorPoint = Vector2.new(0.5,0.5)  
 
-	local x =
-		0.23 + ((i - 1) * 0.06)
+local x =  
+	0.23 + ((i - 1) * 0.06)  
 
-	fire.Position =
-		UDim2.fromScale(x,0.52)
+fire.Position =  
+	UDim2.fromScale(x,0.52)  
 
-	fire.Size =
-		UDim2.fromOffset(45,45)
+fire.Size =  
+	UDim2.fromOffset(45,45)  
 
-	fire.BackgroundTransparency = 1
-	fire.Text = "🔥"
-	fire.TextScaled = true
-	fire.Font = Enum.Font.GothamBold
-	fire.TextTransparency = 1
-	fire.ZIndex = 45
-	fire.Parent = fireFolder
+fire.BackgroundTransparency = 1  
+fire.Text = "🔥"  
+fire.TextScaled = true  
+fire.Font = Enum.Font.GothamBold  
+fire.TextTransparency = 1  
+fire.ZIndex = 45  
+fire.Parent = fireFolder  
 
-	table.insert(fireObjects,fire)
+table.insert(fireObjects,fire)  
 
-	TweenService:Create(
-		fire,
-		TweenInfo.new(0.3),
-		{
-			TextTransparency = 0
-		}
-	):Play()
+TweenService:Create(  
+	fire,  
+	TweenInfo.new(0.3),  
+	{  
+		TextTransparency = 0  
+	}  
+):Play()
+
 end
 
 --==================================================
@@ -1742,25 +1799,26 @@ end
 
 task.spawn(function()
 
-	while fireFolder.Parent do
+while fireFolder.Parent do  
 
-		for i,fire in ipairs(fireObjects) do
+	for i,fire in ipairs(fireObjects) do  
 
-			local baseX =
-				0.23 + ((i - 1) * 0.06)
+		local baseX =  
+			0.23 + ((i - 1) * 0.06)  
 
-			fire.Position =
-				UDim2.fromScale(
-					baseX,
-					0.52 +
-					math.sin(
-						os.clock() * 5 + i
-					) * 0.025
-				)
-		end
+		fire.Position =  
+			UDim2.fromScale(  
+				baseX,  
+				0.52 +  
+				math.sin(  
+					os.clock() * 5 + i  
+				) * 0.025  
+			)  
+	end  
 
-		task.wait(0.03)
-	end
+	task.wait(0.03)  
+end
+
 end)
 
 --==================================================
@@ -1768,7 +1826,7 @@ end)
 --==================================================
 
 task.spawn(function()
-	shake(horrorMain,12,0.5)
+shake(horrorMain,12,0.5)
 end)
 
 task.wait(0.8)
@@ -1792,15 +1850,15 @@ devil.ZIndex = 50
 devil.Parent = horrorGui
 
 TweenService:Create(
-	devil,
-	TweenInfo.new(
-		0.25,
-		Enum.EasingStyle.Back,
-		Enum.EasingDirection.Out
-	),
-	{
-		TextTransparency = 0
-	}
+devil,
+TweenInfo.new(
+0.25,
+Enum.EasingStyle.Back,
+Enum.EasingDirection.Out
+),
+{
+TextTransparency = 0
+}
 ):Play()
 
 shake(horrorMain,18,0.8)
@@ -1813,70 +1871,74 @@ task.wait(1.2)
 
 for _,obj in ipairs(nameContainer:GetChildren()) do
 
-	if obj:IsA("TextLabel") then
+if obj:IsA("TextLabel") then  
 
-		TweenService:Create(
-			obj,
-			TweenInfo.new(0.5),
-			{
-				TextTransparency = 1,
-				TextStrokeTransparency = 1
-			}
-		):Play()
-	end
+	TweenService:Create(  
+		obj,  
+		TweenInfo.new(0.5),  
+		{  
+			TextTransparency = 1,  
+			TextStrokeTransparency = 1  
+		}  
+	):Play()  
+end
+
 end
 
 for _,obj in ipairs(secondContainer:GetChildren()) do
 
-	if obj:IsA("TextLabel") then
+if obj:IsA("TextLabel") then  
 
-		TweenService:Create(
-			obj,
-			TweenInfo.new(0.5),
-			{
-				TextTransparency = 1,
-				TextStrokeTransparency = 1
-			}
-		):Play()
-	end
+	TweenService:Create(  
+		obj,  
+		TweenInfo.new(0.5),  
+		{  
+			TextTransparency = 1,  
+			TextStrokeTransparency = 1  
+		}  
+	):Play()  
+end
+
 end
 
 for _,fire in ipairs(fireObjects) do
 
-	TweenService:Create(
-		fire,
-		TweenInfo.new(0.5),
-		{
-			TextTransparency = 1
-		}
-	):Play()
+TweenService:Create(  
+	fire,  
+	TweenInfo.new(0.5),  
+	{  
+		TextTransparency = 1  
+	}  
+):Play()
+
 end
 
 TweenService:Create(
-	devil,
-	TweenInfo.new(0.5),
-	{
-		TextTransparency = 1
-	}
+devil,
+TweenInfo.new(0.5),
+{
+TextTransparency = 1
+}
 ):Play()
 
 for _,blood in ipairs(bloodObjects) do
 
-	TweenService:Create(
-		blood,
-		TweenInfo.new(0.6),
-		{
-			BackgroundTransparency = 1
-		}
-	):Play()
+TweenService:Create(  
+	blood,  
+	TweenInfo.new(0.6),  
+	{  
+		BackgroundTransparency = 1  
+	}  
+):Play()
+
 end
 
 TweenService:Create(
-	bloodScreen,
-	TweenInfo.new(0.6),
-	{
-		BackgroundTransparency = 1
-	}
+bloodScreen,
+TweenInfo.new(0.6),
+{
+BackgroundTransparency = 1
+}
 ):Play()
 
 task.wait(0.8)
@@ -1902,27 +1964,27 @@ emoji1.ZIndex = 100
 emoji1.Parent = horrorGui
 
 TweenService:Create(
-	emoji1,
-	TweenInfo.new(
-		0.45,
-		Enum.EasingStyle.Back,
-		Enum.EasingDirection.Out
-	),
-	{
-		TextTransparency = 0,
-		Size = UDim2.fromOffset(160,160)
-	}
+emoji1,
+TweenInfo.new(
+0.45,
+Enum.EasingStyle.Back,
+Enum.EasingDirection.Out
+),
+{
+TextTransparency = 0,
+Size = UDim2.fromOffset(160,160)
+}
 ):Play()
 
 task.wait(1)
 
 TweenService:Create(
-	emoji1,
-	TweenInfo.new(0.35),
-	{
-		TextTransparency = 1,
-		Size = UDim2.fromOffset(80,80)
-	}
+emoji1,
+TweenInfo.new(0.35),
+{
+TextTransparency = 1,
+Size = UDim2.fromOffset(80,80)
+}
 ):Play()
 
 task.wait(0.4)
@@ -1930,7 +1992,7 @@ task.wait(0.4)
 emoji1:Destroy()
 
 --==================================================
--- SECOND EMOJI
+-- BIG FINAL EMOJIS
 --==================================================
 
 local finalEmoji = Instance.new("TextLabel")
@@ -1948,231 +2010,47 @@ finalEmoji.ZIndex = 110
 finalEmoji.Parent = horrorGui
 
 TweenService:Create(
-	finalEmoji,
-	TweenInfo.new(
-		0.3,
-		Enum.EasingStyle.Back,
-		Enum.EasingDirection.Out
-	),
-	{
-		TextTransparency = 0,
-		Size = UDim2.fromOffset(420,300)
-	}
+finalEmoji,
+TweenInfo.new(
+0.3,
+Enum.EasingStyle.Back,
+Enum.EasingDirection.Out
+),
+{
+TextTransparency = 0,
+Size = UDim2.fromOffset(420,300)
+}
 ):Play()
 
 task.spawn(function()
-	shake(finalEmoji,8,0.7)
+shake(finalEmoji,8,0.7)
 end)
 
 task.wait(1.5)
 
 --==================================================
--- SECOND EMOJI FADE
+-- FINAL FADE
 --==================================================
 
 TweenService:Create(
-	finalEmoji,
-	TweenInfo.new(0.6),
-	{
-		TextTransparency = 1,
-		Size = UDim2.fromOffset(500,350)
-	}
+finalEmoji,
+TweenInfo.new(0.6),
+{
+TextTransparency = 1,
+Size = UDim2.fromOffset(500,350)
+}
 ):Play()
 
 task.wait(0.7)
 
-finalEmoji:Destroy()
-
 --==================================================
--- SPEED SONG
+-- CLEAN HORROR ONLY
 --==================================================
 
-local SPEED_SOUND_ID = "rbxassetid://131017458771974"
+sound:Stop()
+sound:Destroy()
 
--- مدة الأغنية: 90 ثانية
-local SPEED_SONG_TIME = 90
-
-local speedSound = Instance.new("Sound")
-speedSound.Name = "SpeedSong"
-speedSound.SoundId = SPEED_SOUND_ID
-speedSound.Volume = 1
-speedSound.Looped = false
-speedSound.Parent = SoundService
-
---==================================================
--- SPEED CONTAINER
---==================================================
-
-local speedContainer = Instance.new("Frame")
-speedContainer.Name = "SpeedContainer"
-speedContainer.AnchorPoint = Vector2.new(0.5,0.5)
-speedContainer.Position = UDim2.fromScale(0.5,0.22)
-speedContainer.Size = UDim2.fromOffset(500,100)
-speedContainer.BackgroundTransparency = 1
-speedContainer.ZIndex = 120
-speedContainer.Parent = horrorGui
-
---==================================================
--- ISHOWSPEED NAME
---==================================================
-
-local speedName = Instance.new("TextLabel")
-speedName.Name = "SpeedName"
-speedName.AnchorPoint = Vector2.new(0.5,0.5)
-speedName.Position = UDim2.fromScale(0.5,0.35)
-speedName.Size = UDim2.fromOffset(500,55)
-speedName.BackgroundTransparency = 1
-speedName.Text = "ishowspeed"
-speedName.TextColor3 = Color3.new(1,1,1)
-speedName.TextStrokeColor3 = Color3.new(0,0,0)
-speedName.TextStrokeTransparency = 0
-speedName.TextScaled = true
-speedName.Font = Enum.Font.GothamBold
-speedName.ZIndex = 121
-speedName.Parent = speedContainer
-
---==================================================
--- COUNTDOWN
---==================================================
-
-local countdown = Instance.new("TextLabel")
-countdown.Name = "Countdown"
-countdown.AnchorPoint = Vector2.new(0.5,0.5)
-countdown.Position = UDim2.fromScale(0.5,0.85)
-countdown.Size = UDim2.fromOffset(120,40)
-countdown.BackgroundTransparency = 1
-countdown.Text = "100"
-countdown.TextColor3 = Color3.new(1,1,1)
-countdown.TextStrokeColor3 = Color3.new(0,0,0)
-countdown.TextStrokeTransparency = 0
-countdown.TextScaled = true
-countdown.Font = Enum.Font.GothamBold
-countdown.ZIndex = 121
-countdown.Parent = speedContainer
-
---==================================================
--- START SPEED SONG
---==================================================
-
-speedSound:Play()
-
---==================================================
--- COUNTDOWN 100 → 20
---==================================================
-
-task.spawn(function()
-
-	for i = 100,20,-1 do
-
-		if not speedSound.Parent then
-			break
-		end
-
-		countdown.Text = tostring(i)
-
-		task.wait(1)
-	end
-
-	-- إخفاء الاسم والعداد
-	if speedName.Parent then
-
-		TweenService:Create(
-			speedName,
-			TweenInfo.new(0.4),
-			{
-				TextTransparency = 1,
-				TextStrokeTransparency = 1
-			}
-		):Play()
-	end
-
-	if countdown.Parent then
-
-		TweenService:Create(
-			countdown,
-			TweenInfo.new(0.4),
-			{
-				TextTransparency = 1,
-				TextStrokeTransparency = 1
-			}
-		):Play()
-	end
-end)
-
---==================================================
--- WAIT 90 SECONDS
---==================================================
-
-task.wait(SPEED_SONG_TIME)
-
---==================================================
--- STOP SPEED SONG
---==================================================
-
-if speedSound then
-	speedSound:Stop()
-end
-
-if speedContainer and speedContainer.Parent then
-	speedContainer:Destroy()
-end
-
-if speedSound then
-	speedSound:Destroy()
-end
-
---==================================================
--- SONG FINISHED
---==================================================
-
-local finishedText = Instance.new("TextLabel")
-
-finishedText.Name = "SongFinished"
-finishedText.AnchorPoint = Vector2.new(0.5,0.5)
-finishedText.Position = UDim2.fromScale(0.5,0.5)
-finishedText.Size = UDim2.fromOffset(500,100)
-finishedText.BackgroundTransparency = 1
-finishedText.Text = "SONG FINISHED"
-finishedText.TextColor3 = Color3.new(1,1,1)
-finishedText.TextStrokeColor3 = Color3.new(0,0,0)
-finishedText.TextStrokeTransparency = 0
-finishedText.TextScaled = true
-finishedText.Font = Enum.Font.GothamBold
-finishedText.TextTransparency = 1
-finishedText.ZIndex = 130
-finishedText.Parent = horrorGui
-
-TweenService:Create(
-	finishedText,
-	TweenInfo.new(0.4),
-	{
-		TextTransparency = 0,
-		TextStrokeTransparency = 0
-	}
-):Play()
-
-task.wait(1)
-
-TweenService:Create(
-	finishedText,
-	TweenInfo.new(0.5),
-	{
-		TextTransparency = 1,
-		TextStrokeTransparency = 1
-	}
-):Play()
-
-task.wait(0.6)
-
-finishedText:Destroy()
-
---==================================================
--- CLEAN HORROR
---==================================================
-
-if horrorGui and horrorGui.Parent then
-	horrorGui:Destroy()
-end
+horrorGui:Destroy()
 
 --==================================================
 -- END
