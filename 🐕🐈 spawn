@@ -2,6 +2,7 @@
 -- ALIBOOSS
 -- 1 = Animal Rarity Hub
 -- 2 = ALIBOOSS HORROR INTRO
+-- 3 = SPEED SONG
 --==================================================
 
 local Players = game:GetService("Players")
@@ -65,7 +66,7 @@ local function muteBackgroundMusic()
 		return
 	end
 
-	for _, object in ipairs(backgroundMusic:GetDescendants()) do
+	for _,object in ipairs(backgroundMusic:GetDescendants()) do
 
 		if object:IsA("Sound") then
 
@@ -80,20 +81,11 @@ end
 
 local function unmuteBackgroundMusic()
 
-	for sound, volume in pairs(savedVolumes) do
+	for sound,volume in pairs(savedVolumes) do
 
 		if sound and sound.Parent then
 			sound.Volume = volume
 		end
-	end
-end
-
-local function updateBackgroundMusic()
-
-	if backgroundMuted then
-		muteBackgroundMusic()
-	else
-		unmuteBackgroundMusic()
 	end
 end
 
@@ -360,10 +352,6 @@ speedButton.Parent = main
 
 Instance.new("UICorner",speedButton).CornerRadius = UDim.new(0,5)
 
---==================================================
--- MUSIC BUTTON
---==================================================
-
 local musicButton = Instance.new("TextButton")
 musicButton.Size = UDim2.fromOffset(176,27)
 musicButton.Position = UDim2.fromOffset(7,136)
@@ -400,11 +388,10 @@ musicButton.MouseButton1Click:Connect(function()
 		unmuteBackgroundMusic()
 
 	end
-
 end)
 
 --==================================================
--- BACKGROUND MUSIC NEW SOUNDS
+-- BACKGROUND MUSIC WATCHER
 --==================================================
 
 task.spawn(function()
@@ -433,14 +420,12 @@ task.spawn(function()
 
 						object.Volume = 0
 					end
-
 				end)
 			end
 		end
 
 		task.wait(0.5)
 	end
-
 end)
 
 --==================================================
@@ -774,7 +759,7 @@ kittyESP.MouseButton1Click:Connect(function()
 end)
 
 --==================================================
--- OPEN / CLOSE ESP + SPAWN
+-- OPEN / CLOSE
 --==================================================
 
 local espOpen = false
@@ -924,7 +909,6 @@ local function teleportToAnimal(rarity)
 					Enum.HumanoidStateType.GettingUp
 				)
 			end
-
 		end)
 	end
 end
@@ -1060,7 +1044,7 @@ cornerButton.MouseButton1Click:Connect(function()
 end)
 
 --==================================================
--- START HUB FIRST
+-- START HUB
 --==================================================
 
 scanAnimals()
@@ -1212,7 +1196,7 @@ horrorMain.ZIndex = 30
 horrorMain.Parent = horrorGui
 
 --==================================================
--- SOUND
+-- HORROR SOUND
 --==================================================
 
 local sound = Instance.new("Sound")
@@ -1329,10 +1313,7 @@ local function createBloodDrip(letterLabel)
 	local drip = Instance.new("Frame")
 	drip.Name = "LetterBlood"
 	drip.AnchorPoint = Vector2.new(0.5,0)
-
-	drip.Position =
-		UDim2.new(0.5,0,1,-2)
-
+	drip.Position = UDim2.new(0.5,0,1,-2)
 	drip.Size = UDim2.fromOffset(7,0)
 	drip.BackgroundColor3 = Color3.fromRGB(130,0,0)
 	drip.BackgroundTransparency = 0.15
@@ -1949,7 +1930,7 @@ task.wait(0.4)
 emoji1:Destroy()
 
 --==================================================
--- BIG FINAL EMOJIS
+-- SECOND EMOJI
 --==================================================
 
 local finalEmoji = Instance.new("TextLabel")
@@ -1986,7 +1967,7 @@ end)
 task.wait(1.5)
 
 --==================================================
--- FINAL FADE
+-- SECOND EMOJI FADE
 --==================================================
 
 TweenService:Create(
@@ -2000,14 +1981,198 @@ TweenService:Create(
 
 task.wait(0.7)
 
+finalEmoji:Destroy()
+
 --==================================================
--- CLEAN HORROR ONLY
+-- SPEED SONG
 --==================================================
 
-sound:Stop()
-sound:Destroy()
+local SPEED_SOUND_ID = "rbxassetid://131017458771974"
 
-horrorGui:Destroy()
+-- مدة الأغنية: 90 ثانية
+local SPEED_SONG_TIME = 90
+
+local speedSound = Instance.new("Sound")
+speedSound.Name = "SpeedSong"
+speedSound.SoundId = SPEED_SOUND_ID
+speedSound.Volume = 1
+speedSound.Looped = false
+speedSound.Parent = SoundService
+
+--==================================================
+-- SPEED CONTAINER
+--==================================================
+
+local speedContainer = Instance.new("Frame")
+speedContainer.Name = "SpeedContainer"
+speedContainer.AnchorPoint = Vector2.new(0.5,0.5)
+speedContainer.Position = UDim2.fromScale(0.5,0.22)
+speedContainer.Size = UDim2.fromOffset(500,100)
+speedContainer.BackgroundTransparency = 1
+speedContainer.ZIndex = 120
+speedContainer.Parent = horrorGui
+
+--==================================================
+-- ISHOWSPEED NAME
+--==================================================
+
+local speedName = Instance.new("TextLabel")
+speedName.Name = "SpeedName"
+speedName.AnchorPoint = Vector2.new(0.5,0.5)
+speedName.Position = UDim2.fromScale(0.5,0.35)
+speedName.Size = UDim2.fromOffset(500,55)
+speedName.BackgroundTransparency = 1
+speedName.Text = "ishowspeed"
+speedName.TextColor3 = Color3.new(1,1,1)
+speedName.TextStrokeColor3 = Color3.new(0,0,0)
+speedName.TextStrokeTransparency = 0
+speedName.TextScaled = true
+speedName.Font = Enum.Font.GothamBold
+speedName.ZIndex = 121
+speedName.Parent = speedContainer
+
+--==================================================
+-- COUNTDOWN
+--==================================================
+
+local countdown = Instance.new("TextLabel")
+countdown.Name = "Countdown"
+countdown.AnchorPoint = Vector2.new(0.5,0.5)
+countdown.Position = UDim2.fromScale(0.5,0.85)
+countdown.Size = UDim2.fromOffset(120,40)
+countdown.BackgroundTransparency = 1
+countdown.Text = "100"
+countdown.TextColor3 = Color3.new(1,1,1)
+countdown.TextStrokeColor3 = Color3.new(0,0,0)
+countdown.TextStrokeTransparency = 0
+countdown.TextScaled = true
+countdown.Font = Enum.Font.GothamBold
+countdown.ZIndex = 121
+countdown.Parent = speedContainer
+
+--==================================================
+-- START SPEED SONG
+--==================================================
+
+speedSound:Play()
+
+--==================================================
+-- COUNTDOWN 100 → 20
+--==================================================
+
+task.spawn(function()
+
+	for i = 100,20,-1 do
+
+		if not speedSound.Parent then
+			break
+		end
+
+		countdown.Text = tostring(i)
+
+		task.wait(1)
+	end
+
+	-- إخفاء الاسم والعداد
+	if speedName.Parent then
+
+		TweenService:Create(
+			speedName,
+			TweenInfo.new(0.4),
+			{
+				TextTransparency = 1,
+				TextStrokeTransparency = 1
+			}
+		):Play()
+	end
+
+	if countdown.Parent then
+
+		TweenService:Create(
+			countdown,
+			TweenInfo.new(0.4),
+			{
+				TextTransparency = 1,
+				TextStrokeTransparency = 1
+			}
+		):Play()
+	end
+end)
+
+--==================================================
+-- WAIT 90 SECONDS
+--==================================================
+
+task.wait(SPEED_SONG_TIME)
+
+--==================================================
+-- STOP SPEED SONG
+--==================================================
+
+if speedSound then
+	speedSound:Stop()
+end
+
+if speedContainer and speedContainer.Parent then
+	speedContainer:Destroy()
+end
+
+if speedSound then
+	speedSound:Destroy()
+end
+
+--==================================================
+-- SONG FINISHED
+--==================================================
+
+local finishedText = Instance.new("TextLabel")
+
+finishedText.Name = "SongFinished"
+finishedText.AnchorPoint = Vector2.new(0.5,0.5)
+finishedText.Position = UDim2.fromScale(0.5,0.5)
+finishedText.Size = UDim2.fromOffset(500,100)
+finishedText.BackgroundTransparency = 1
+finishedText.Text = "SONG FINISHED"
+finishedText.TextColor3 = Color3.new(1,1,1)
+finishedText.TextStrokeColor3 = Color3.new(0,0,0)
+finishedText.TextStrokeTransparency = 0
+finishedText.TextScaled = true
+finishedText.Font = Enum.Font.GothamBold
+finishedText.TextTransparency = 1
+finishedText.ZIndex = 130
+finishedText.Parent = horrorGui
+
+TweenService:Create(
+	finishedText,
+	TweenInfo.new(0.4),
+	{
+		TextTransparency = 0,
+		TextStrokeTransparency = 0
+	}
+):Play()
+
+task.wait(1)
+
+TweenService:Create(
+	finishedText,
+	TweenInfo.new(0.5),
+	{
+		TextTransparency = 1,
+		TextStrokeTransparency = 1
+	}
+):Play()
+
+task.wait(0.6)
+
+finishedText:Destroy()
+
+--==================================================
+-- CLEAN HORROR
+--==================================================
+
+if horrorGui and horrorGui.Parent then
+	horrorGui:Destroy()
+end
 
 --==================================================
 -- END
