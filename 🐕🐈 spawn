@@ -1050,7 +1050,7 @@ task.wait(1)
 -- SECOND PART
 --==================================================
 
-local SOUND_ID = "rbxassetid://1839246711"
+local SOUND_ID = "rbxassetid://39990584758486"
 
 local NAME = "ALIBOOSS"
 local NAME2 = "by A_A"
