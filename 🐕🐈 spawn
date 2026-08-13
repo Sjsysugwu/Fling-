@@ -2073,6 +2073,45 @@ sound:Destroy()
 
 horrorGui:Destroy()
 
---==================================================
+--================================================== 
 -- END
+--================================================== 
+--==================================================
+-- BUTTON CLICK SOUND - ANIMAL RARITY HUB
+--==================================================
+
+local CLICK_SOUND_ID = "rbxassetid://94964479268464"
+
+local function playClickSound()
+	local clickSound = Instance.new("Sound")
+	clickSound.Name = "ButtonClickSound"
+	clickSound.SoundId = CLICK_SOUND_ID
+	clickSound.Volume = 1
+	clickSound.Parent = SoundService
+
+	SoundService:PlayLocalSound(clickSound)
+
+	task.delay(3, function()
+		if clickSound and clickSound.Parent then
+			clickSound:Destroy()
+		end
+	end)
+end
+
+--==================================================
+-- CLICK SOUND FOR ALL HUB BUTTONS
+--==================================================
+
+espButton.MouseButton1Click:Connect(playClickSound)
+spawnButton.MouseButton1Click:Connect(playClickSound)
+
+exclusiveESP.MouseButton1Click:Connect(playClickSound)
+kittyESP.MouseButton1Click:Connect(playClickSound)
+
+spawnExclusive.MouseButton1Click:Connect(playClickSound)
+spawnKitty.MouseButton1Click:Connect(playClickSound)
+
+promptButton.MouseButton1Click:Connect(playClickSound)
+speedButton.MouseButton1Click:Connect(playClickSound)
+musicButton.MouseButton1Click:Connect(playClickSound)
 --==================================================
