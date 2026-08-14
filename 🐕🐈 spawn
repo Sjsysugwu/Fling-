@@ -1,1 +1,2208 @@
-hi
+--==================================================
+-- ALIBOOSS
+-- ANIMAL RARITY HUB - RED PREMIUM UI
+-- FPS BOOST ON/OFF
+--==================================================
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+--==================================================
+-- SETTINGS
+--==================================================
+
+local RARITIES = {
+	"Exclusive",
+	"Kitty God"
+}
+
+local RARITY_COLORS = {
+	Exclusive = Color3.fromRGB(170,0,255),
+	["Kitty God"] = Color3.fromRGB(255,0,0)
+}
+
+local NORMAL = Color3.fromRGB(45,45,55)
+local RED = Color3.fromRGB(190,45,45)
+local GREEN = Color3.fromRGB(45,180,75)
+local ACTIVE = Color3.fromRGB(255,190,0)
+
+local ESP_MAX_DISTANCE = 230
+local SPEED_VALUE = 100
+local NORMAL_SPEED = 16
+
+local enabledESP = true
+local enabledSpawn = false
+local enabledPrompt = false
+local enabledSpeed = false
+
+local rarityEnabled = {
+	Exclusive = true,
+	["Kitty God"] = true
+}
+
+--==================================================
+-- BACKGROUND MUSIC
+--==================================================
+
+local backgroundMuted = true
+local savedVolumes = {}
+
+local function findBackgroundMusic()
+	return SoundService:FindFirstChild("BackgroundMusic")
+end
+
+local function muteBackgroundMusic()
+
+	local backgroundMusic = findBackgroundMusic()
+
+	if not backgroundMusic then
+		return
+	end
+
+	for _,object in ipairs(backgroundMusic:GetDescendants()) do
+
+		if object:IsA("Sound") then
+
+			if savedVolumes[object] == nil then
+				savedVolumes[object] = object.Volume
+			end
+
+			object.Volume = 0
+		end
+	end
+end
+
+local function unmuteBackgroundMusic()
+
+	for sound,volume in pairs(savedVolumes) do
+
+		if sound and sound.Parent then
+			sound.Volume = volume
+		end
+	end
+end
+
+--==================================================
+-- GUI
+--==================================================
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "AnimalRarityHub"
+gui.ResetOnSpawn = false
+gui.Parent = playerGui
+
+--==================================================
+-- CORNER IMAGE
+--==================================================
+
+local cornerButton = Instance.new("ImageButton")
+cornerButton.Name = "CornerImage"
+cornerButton.Size = UDim2.fromOffset(36,36)
+cornerButton.Position = UDim2.fromOffset(5,5)
+cornerButton.BackgroundTransparency = 1
+cornerButton.BorderSizePixel = 0
+cornerButton.Image = "rbxassetid://124079604372236"
+cornerButton.ScaleType = Enum.ScaleType.Stretch
+cornerButton.ZIndex = 100
+cornerButton.Parent = gui
+
+local cornerCorner = Instance.new("UICorner")
+cornerCorner.CornerRadius = UDim.new(0,6)
+cornerCorner.Parent = cornerButton
+
+local cornerStroke = Instance.new("UIStroke")
+cornerStroke.Thickness = 2
+cornerStroke.Parent = cornerButton
+
+task.spawn(function()
+
+	while cornerButton.Parent do
+
+		cornerStroke.Color =
+			Color3.fromHSV(
+				(os.clock()*0.25)%1,
+				1,
+				1
+			)
+
+		task.wait(0.03)
+	end
+
+end)
+
+--==================================================
+-- MAIN
+--==================================================
+
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.fromOffset(190,207)
+main.Position = UDim2.fromOffset(48,50)
+main.BackgroundColor3 = Color3.fromRGB(12,12,16)
+main.BorderSizePixel = 0
+main.Active = true
+main.Draggable = true
+main.Parent = gui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0,12)
+mainCorner.Parent = main
+
+local stroke = Instance.new("UIStroke")
+stroke.Name = "PremiumRedStroke"
+stroke.Thickness = 2.5
+stroke.Color = Color3.fromRGB(255,25,35)
+stroke.Parent = main
+
+local gradient = Instance.new("UIGradient")
+gradient.Name = "RedBorderGradient"
+gradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0,Color3.fromRGB(90,0,0)),
+	ColorSequenceKeypoint.new(0.5,Color3.fromRGB(255,35,45)),
+	ColorSequenceKeypoint.new(1,Color3.fromRGB(90,0,0))
+})
+gradient.Parent = stroke
+
+local inner = Instance.new("Frame")
+inner.Name = "Inner"
+inner.Size = UDim2.new(1,-8,1,-8)
+inner.Position = UDim2.fromOffset(4,4)
+inner.BackgroundColor3 = Color3.fromRGB(18,18,23)
+inner.BorderSizePixel = 0
+inner.ZIndex = 0
+inner.Parent = main
+
+local innerCorner = Instance.new("UICorner")
+innerCorner.CornerRadius = UDim.new(0,9)
+innerCorner.Parent = inner
+
+--==================================================
+-- TITLE
+--==================================================
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,-12,0,28)
+title.Position = UDim2.fromOffset(6,6)
+title.BackgroundColor3 = Color3.fromRGB(30,8,12)
+title.Text = "Animal Rarity Hub"
+title.TextColor3 = Color3.new(1,1,1)
+title.TextSize = 13
+title.Font = Enum.Font.GothamBold
+title.BorderSizePixel = 0
+title.ZIndex = 5
+title.Parent = main
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0,7)
+titleCorner.Parent = title
+
+local titleStroke = Instance.new("UIStroke")
+titleStroke.Thickness = 1
+titleStroke.Color = Color3.fromRGB(255,35,45)
+titleStroke.Transparency = 0.2
+titleStroke.Parent = title
+
+--==================================================
+-- BUTTON STYLE
+--==================================================
+
+local function styleButton(button)
+
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0,5)
+	c.Parent = button
+
+	local s = Instance.new("UIStroke")
+	s.Thickness = 1
+	s.Color = Color3.fromRGB(255,35,45)
+	s.Transparency = 0.3
+	s.Parent = button
+
+end
+
+--==================================================
+-- ESP BUTTON
+--==================================================
+
+local espButton = Instance.new("TextButton")
+espButton.Size = UDim2.fromOffset(87,27)
+espButton.Position = UDim2.fromOffset(7,34)
+espButton.Text = "ESP"
+espButton.TextColor3 = Color3.new(1,1,1)
+espButton.TextSize = 11
+espButton.Font = Enum.Font.GothamBold
+espButton.BackgroundColor3 = GREEN
+espButton.BorderSizePixel = 0
+espButton.ZIndex = 5
+espButton.Parent = main
+
+styleButton(espButton)
+
+--==================================================
+-- SPAWN BUTTON
+--==================================================
+
+local spawnButton = Instance.new("TextButton")
+spawnButton.Size = UDim2.fromOffset(87,27)
+spawnButton.Position = UDim2.fromOffset(96,34)
+spawnButton.Text = "SPAWN"
+spawnButton.TextColor3 = Color3.new(1,1,1)
+spawnButton.TextSize = 11
+spawnButton.Font = Enum.Font.GothamBold
+spawnButton.BackgroundColor3 = NORMAL
+spawnButton.BorderSizePixel = 0
+spawnButton.ZIndex = 5
+spawnButton.Parent = main
+
+styleButton(spawnButton)
+
+--==================================================
+-- ESP CONTENT
+--==================================================
+
+local espContent = Instance.new("Frame")
+espContent.Size = UDim2.new(1,-14,0,100)
+espContent.Position = UDim2.fromOffset(7,66)
+espContent.BackgroundColor3 = Color3.fromRGB(24,24,28)
+espContent.BorderSizePixel = 0
+espContent.Visible = false
+espContent.ZIndex = 4
+espContent.Parent = main
+
+local espContentCorner = Instance.new("UICorner")
+espContentCorner.CornerRadius = UDim.new(0,5)
+espContentCorner.Parent = espContent
+
+local espContentStroke = Instance.new("UIStroke")
+espContentStroke.Thickness = 1
+espContentStroke.Color = Color3.fromRGB(150,10,20)
+espContentStroke.Parent = espContent
+
+local espDistanceLabel = Instance.new("TextLabel")
+espDistanceLabel.Size = UDim2.fromOffset(72,23)
+espDistanceLabel.Position = UDim2.fromOffset(5,5)
+espDistanceLabel.BackgroundTransparency = 1
+espDistanceLabel.Text = "Distance"
+espDistanceLabel.TextColor3 = Color3.new(1,1,1)
+espDistanceLabel.TextSize = 10
+espDistanceLabel.Font = Enum.Font.GothamBold
+espDistanceLabel.TextXAlignment = Enum.TextXAlignment.Left
+espDistanceLabel.ZIndex = 6
+espDistanceLabel.Parent = espContent
+
+local distanceBox = Instance.new("TextBox")
+distanceBox.Size = UDim2.fromOffset(55,23)
+distanceBox.Position = UDim2.fromOffset(80,5)
+distanceBox.Text = "230"
+distanceBox.TextColor3 = Color3.new(1,1,1)
+distanceBox.TextSize = 10
+distanceBox.Font = Enum.Font.GothamBold
+distanceBox.BackgroundColor3 = Color3.fromRGB(45,45,55)
+distanceBox.ClearTextOnFocus = false
+distanceBox.ZIndex = 6
+distanceBox.Parent = espContent
+
+styleButton(distanceBox)
+
+local exclusiveESP = Instance.new("TextButton")
+exclusiveESP.Size = UDim2.new(1,-10,0,25)
+exclusiveESP.Position = UDim2.fromOffset(5,33)
+exclusiveESP.Text = "Exclusive"
+exclusiveESP.TextColor3 = Color3.new(1,1,1)
+exclusiveESP.TextSize = 10
+exclusiveESP.Font = Enum.Font.GothamBold
+exclusiveESP.BackgroundColor3 = GREEN
+exclusiveESP.BorderSizePixel = 0
+exclusiveESP.ZIndex = 6
+exclusiveESP.Parent = espContent
+
+styleButton(exclusiveESP)
+
+local kittyESP = Instance.new("TextButton")
+kittyESP.Size = UDim2.new(1,-10,0,25)
+kittyESP.Position = UDim2.fromOffset(5,62)
+kittyESP.Text = "Kitty God"
+kittyESP.TextColor3 = Color3.new(1,1,1)
+kittyESP.TextSize = 10
+kittyESP.Font = Enum.Font.GothamBold
+kittyESP.BackgroundColor3 = GREEN
+kittyESP.BorderSizePixel = 0
+kittyESP.ZIndex = 6
+kittyESP.Parent = espContent
+
+styleButton(kittyESP)
+
+--==================================================
+-- SPAWN CONTENT
+--==================================================
+
+local spawnContent = Instance.new("Frame")
+spawnContent.Size = UDim2.new(1,-14,0,100)
+spawnContent.Position = UDim2.fromOffset(7,66)
+spawnContent.BackgroundColor3 = Color3.fromRGB(24,24,28)
+spawnContent.BorderSizePixel = 0
+spawnContent.Visible = false
+spawnContent.ZIndex = 4
+spawnContent.Parent = main
+
+local spawnContentCorner = Instance.new("UICorner")
+spawnContentCorner.CornerRadius = UDim.new(0,5)
+spawnContentCorner.Parent = spawnContent
+
+local spawnContentStroke = Instance.new("UIStroke")
+spawnContentStroke.Thickness = 1
+spawnContentStroke.Color = Color3.fromRGB(150,10,20)
+spawnContentStroke.Parent = spawnContent
+
+local spawnDistanceLabel = Instance.new("TextLabel")
+spawnDistanceLabel.Size = UDim2.fromOffset(72,23)
+spawnDistanceLabel.Position = UDim2.fromOffset(5,5)
+spawnDistanceLabel.BackgroundTransparency = 1
+spawnDistanceLabel.Text = "Distance"
+spawnDistanceLabel.TextColor3 = Color3.new(1,1,1)
+spawnDistanceLabel.TextSize = 10
+spawnDistanceLabel.Font = Enum.Font.GothamBold
+spawnDistanceLabel.TextXAlignment = Enum.TextXAlignment.Left
+spawnDistanceLabel.ZIndex = 6
+spawnDistanceLabel.Parent = spawnContent
+
+local spawnDistance = Instance.new("TextBox")
+spawnDistance.Size = UDim2.fromOffset(55,23)
+spawnDistance.Position = UDim2.fromOffset(80,5)
+spawnDistance.Text = "240"
+spawnDistance.TextColor3 = Color3.new(1,1,1)
+spawnDistance.TextSize = 10
+spawnDistance.Font = Enum.Font.GothamBold
+spawnDistance.BackgroundColor3 = Color3.fromRGB(45,45,55)
+spawnDistance.ClearTextOnFocus = false
+spawnDistance.ZIndex = 6
+spawnDistance.Parent = spawnContent
+
+styleButton(spawnDistance)
+
+local spawnExclusive = Instance.new("TextButton")
+spawnExclusive.Size = UDim2.new(1,-10,0,25)
+spawnExclusive.Position = UDim2.fromOffset(5,33)
+spawnExclusive.Text = "Exclusive"
+spawnExclusive.TextColor3 = Color3.new(1,1,1)
+spawnExclusive.TextSize = 10
+spawnExclusive.Font = Enum.Font.GothamBold
+spawnExclusive.BackgroundColor3 = ACTIVE
+spawnExclusive.BorderSizePixel = 0
+spawnExclusive.ZIndex = 6
+spawnExclusive.Parent = spawnContent
+
+styleButton(spawnExclusive)
+
+local spawnKitty = Instance.new("TextButton")
+spawnKitty.Size = UDim2.new(1,-10,0,25)
+spawnKitty.Position = UDim2.fromOffset(5,62)
+spawnKitty.Text = "Kitty God"
+spawnKitty.TextColor3 = Color3.new(1,1,1)
+spawnKitty.TextSize = 10
+spawnKitty.Font = Enum.Font.GothamBold
+spawnKitty.BackgroundColor3 = ACTIVE
+spawnKitty.BorderSizePixel = 0
+spawnKitty.ZIndex = 6
+spawnKitty.Parent = spawnContent
+
+styleButton(spawnKitty)
+
+--==================================================
+-- OTHER BUTTONS
+--==================================================
+
+local promptButton = Instance.new("TextButton")
+promptButton.Size = UDim2.fromOffset(176,27)
+promptButton.Position = UDim2.fromOffset(7,72)
+promptButton.Text = "ProximityPrompt OFF"
+promptButton.TextColor3 = Color3.new(1,1,1)
+promptButton.TextSize = 10
+promptButton.Font = Enum.Font.GothamBold
+promptButton.BackgroundColor3 = NORMAL
+promptButton.BorderSizePixel = 0
+promptButton.ZIndex = 5
+promptButton.Parent = main
+
+styleButton(promptButton)
+
+local speedButton = Instance.new("TextButton")
+speedButton.Size = UDim2.fromOffset(176,27)
+speedButton.Position = UDim2.fromOffset(7,104)
+speedButton.Text = "Speed 100 OFF"
+speedButton.TextColor3 = Color3.new(1,1,1)
+speedButton.TextSize = 10
+speedButton.Font = Enum.Font.GothamBold
+speedButton.BackgroundColor3 = NORMAL
+speedButton.BorderSizePixel = 0
+speedButton.ZIndex = 5
+speedButton.Parent = main
+
+styleButton(speedButton)
+
+local musicButton = Instance.new("TextButton")
+musicButton.Size = UDim2.fromOffset(176,27)
+musicButton.Position = UDim2.fromOffset(7,136)
+musicButton.Text = "🔇 Music OFF"
+musicButton.TextColor3 = Color3.new(1,1,1)
+musicButton.TextSize = 10
+musicButton.Font = Enum.Font.GothamBold
+musicButton.BackgroundColor3 = RED
+musicButton.BorderSizePixel = 0
+musicButton.ZIndex = 5
+musicButton.Parent = main
+
+styleButton(musicButton)
+
+--==================================================
+-- FPS BUTTON
+--==================================================
+
+local fpsButton = Instance.new("TextButton")
+fpsButton.Name = "FPSBoostButton"
+fpsButton.Size = UDim2.fromOffset(176,27)
+fpsButton.Position = UDim2.fromOffset(7,168)
+fpsButton.Text = "FPS Boost OFF"
+fpsButton.TextColor3 = Color3.new(1,1,1)
+fpsButton.TextSize = 10
+fpsButton.Font = Enum.Font.GothamBold
+fpsButton.BackgroundColor3 = NORMAL
+fpsButton.BorderSizePixel = 0
+fpsButton.ZIndex = 5
+fpsButton.Parent = main
+
+styleButton(fpsButton)
+
+--==================================================
+-- FPS BOOST SYSTEM
+--==================================================
+
+local fpsBoostEnabled = false
+local fpsSaved = {}
+
+local function fpsSave(object,property,value)
+
+	if not fpsSaved[object] then
+		fpsSaved[object] = {}
+	end
+
+	if fpsSaved[object][property] == nil then
+		fpsSaved[object][property] = value
+	end
+
+end
+
+local function enableFPSBoost()
+
+	if fpsBoostEnabled then
+		return
+	end
+
+	fpsBoostEnabled = true
+
+	for _,v in ipairs(game:GetDescendants()) do
+
+		-- Parts
+		if v:IsA("BasePart") then
+
+			fpsSave(v,"Material",v.Material)
+			v.Material = Enum.Material.SmoothPlastic
+
+		end
+
+		-- Mesh textures
+		if v:IsA("MeshPart") then
+
+			fpsSave(v,"TextureID",v.TextureID)
+			v.TextureID = ""
+
+		end
+
+		-- Particles
+		if v:IsA("ParticleEmitter")
+			or v:IsA("Trail")
+			or v:IsA("Beam")
+			or v:IsA("Smoke")
+			or v:IsA("Fire")
+			or v:IsA("Sparkles") then
+
+			fpsSave(v,"Enabled",v.Enabled)
+			v.Enabled = false
+
+		end
+
+		-- Visual effects
+		if v:IsA("BloomEffect")
+			or v:IsA("BlurEffect")
+			or v:IsA("ColorCorrectionEffect")
+			or v:IsA("DepthOfFieldEffect")
+			or v:IsA("SunRaysEffect") then
+
+			fpsSave(v,"Enabled",v.Enabled)
+			v.Enabled = false
+
+		end
+
+		-- Decals / Textures
+		if v:IsA("Decal")
+			or v:IsA("Texture") then
+
+			fpsSave(v,"Transparency",v.Transparency)
+			v.Transparency = 1
+
+		end
+
+		-- Sky
+		if v:IsA("Sky") then
+
+			fpsSave(v,"Parent",v.Parent)
+			v.Parent = nil
+
+		end
+	end
+
+	fpsButton.Text = "FPS Boost ON"
+	fpsButton.BackgroundColor3 = GREEN
+
+end
+
+local function disableFPSBoost()
+
+	if not fpsBoostEnabled then
+		return
+	end
+
+	fpsBoostEnabled = false
+
+	for object,properties in pairs(fpsSaved) do
+
+		for property,value in pairs(properties) do
+
+			pcall(function()
+				object[property] = value
+			end)
+
+		end
+	end
+
+	table.clear(fpsSaved)
+
+	fpsButton.Text = "FPS Boost OFF"
+	fpsButton.BackgroundColor3 = NORMAL
+
+end
+
+fpsButton.MouseButton1Click:Connect(function()
+
+	if fpsBoostEnabled then
+		disableFPSBoost()
+	else
+		enableFPSBoost()
+	end
+
+end)
+
+--==================================================
+-- MUSIC BUTTON
+--==================================================
+
+musicButton.MouseButton1Click:Connect(function()
+
+	backgroundMuted = not backgroundMuted
+
+	if backgroundMuted then
+
+		musicButton.Text = "🔇 Music OFF"
+		musicButton.BackgroundColor3 = RED
+
+		muteBackgroundMusic()
+
+	else
+
+		musicButton.Text = "🔊 Music ON"
+		musicButton.BackgroundColor3 = GREEN
+
+		unmuteBackgroundMusic()
+
+	end
+
+end)
+
+--==================================================
+-- ANIMAL HELPERS
+--==================================================
+
+local cachedAnimals = {}
+local tags = {}
+local highlights = {}
+
+local function cleanText(text)
+
+	return string.lower(
+		string.gsub(text or "","^%s*(.-)%s*$","%1")
+	)
+
+end
+
+local function getPosition(model)
+
+	if not model or not model.Parent then
+		return nil
+	end
+
+	if model:IsA("Model") then
+
+		local ok,pivot = pcall(function()
+			return model:GetPivot()
+		end)
+
+		if ok and pivot then
+			return pivot.Position
+		end
+	end
+
+	local part = model:FindFirstChildWhichIsA("BasePart",true)
+
+	if part then
+		return part.Position
+	end
+
+	return nil
+
+end
+
+local function getAnimalFromBoard(board)
+
+	local current = board.Parent
+
+	while current and current ~= Workspace do
+
+		if current:IsA("Model")
+			and not current:FindFirstChildOfClass("Humanoid") then
+
+			if getPosition(current) then
+				return current
+			end
+		end
+
+		current = current.Parent
+	end
+
+	return nil
+
+end
+
+local function hasRarity(board,rarity)
+
+	for _,obj in ipairs(board:GetDescendants()) do
+
+		if obj:IsA("TextLabel")
+			or obj:IsA("TextButton") then
+
+			if cleanText(obj.Text) == cleanText(rarity) then
+				return true
+			end
+		end
+	end
+
+	return false
+
+end
+
+local function getAnimalName(animal,board)
+
+	for _,obj in ipairs(board:GetDescendants()) do
+
+		if obj:IsA("TextLabel")
+			or obj:IsA("TextButton") then
+
+			if obj.Text ~= "" then
+
+				local isRarity = false
+
+				for _,rarity in ipairs(RARITIES) do
+
+					if cleanText(obj.Text) == cleanText(rarity) then
+						isRarity = true
+						break
+					end
+
+				end
+
+				if not isRarity then
+					return obj.Text
+				end
+			end
+		end
+	end
+
+	return animal.Name
+
+end
+
+--==================================================
+-- SCAN
+--==================================================
+
+local function scanAnimals()
+
+	local found = {}
+	local seen = {}
+
+	for _,board in ipairs(Workspace:GetDescendants()) do
+
+		if board:IsA("BillboardGui") then
+
+			for _,rarity in ipairs(RARITIES) do
+
+				if hasRarity(board,rarity) then
+
+					local animal = getAnimalFromBoard(board)
+
+					if animal and not seen[animal] then
+
+						seen[animal] = true
+
+						found[animal] = {
+							Model = animal,
+							Name = getAnimalName(animal,board),
+							Rarity = rarity
+						}
+
+					end
+
+					break
+				end
+			end
+		end
+	end
+
+	cachedAnimals = found
+
+end
+
+--==================================================
+-- ESP
+--==================================================
+
+local function clearESP()
+
+	for _,v in pairs(tags) do
+		if v then
+			v:Destroy()
+		end
+	end
+
+	for _,v in pairs(highlights) do
+		if v then
+			v:Destroy()
+		end
+	end
+
+	table.clear(tags)
+	table.clear(highlights)
+
+end
+
+local function createESP(data)
+
+	local color =
+		RARITY_COLORS[data.Rarity]
+		or Color3.new(1,1,1)
+
+	local tag = Instance.new("BillboardGui")
+
+	tag.Name = "AnimalFinderTag"
+	tag.Size = UDim2.fromOffset(190,45)
+	tag.StudsOffset = Vector3.new(0,5,0)
+	tag.AlwaysOnTop = true
+	tag.MaxDistance = ESP_MAX_DISTANCE
+	tag.Parent = data.Model
+
+	local label = Instance.new("TextLabel")
+
+	label.Size = UDim2.fromScale(1,1)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = color
+	label.TextStrokeColor3 = Color3.new(1,1,1)
+	label.TextStrokeTransparency = 0
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	label.Parent = tag
+
+	tags[data.Model] = tag
+
+	local highlight = Instance.new("Highlight")
+
+	highlight.Name = "AnimalESPHighlight"
+	highlight.Adornee = data.Model
+	highlight.FillColor = color
+	highlight.OutlineColor = color
+	highlight.FillTransparency = 0.75
+	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	highlight.Parent = data.Model
+
+	highlights[data.Model] = highlight
+
+end
+
+local function getESPDistance()
+
+	local value = tonumber(distanceBox.Text)
+
+	if not value or value <= 0 then
+		return ESP_MAX_DISTANCE
+	end
+
+	return math.min(value,ESP_MAX_DISTANCE)
+
+end
+
+local function updateESP()
+
+	if not enabledESP then
+
+		clearESP()
+		return
+
+	end
+
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+
+	if not root then
+		return
+	end
+
+	local maxDistance = getESPDistance()
+
+	for model,tag in pairs(tags) do
+
+		local data = cachedAnimals[model]
+
+		if not model.Parent
+			or not data
+			or not rarityEnabled[data.Rarity] then
+
+			tag:Destroy()
+			tags[model] = nil
+
+			if highlights[model] then
+				highlights[model]:Destroy()
+				highlights[model] = nil
+			end
+
+		end
+	end
+
+	for model,data in pairs(cachedAnimals) do
+
+		if model.Parent
+			and rarityEnabled[data.Rarity] then
+
+			local position = getPosition(model)
+
+			if position then
+
+				local distance =
+					(root.Position-position).Magnitude
+
+				if distance <= maxDistance then
+
+					if not tags[model] then
+						createESP(data)
+					end
+
+					local label =
+						tags[model]:FindFirstChildOfClass("TextLabel")
+
+					if label then
+
+						label.Text =
+							data.Name
+							.. "\n⭐ "
+							.. data.Rarity
+							.. " | "
+							.. math.floor(distance)
+							.. " Stud"
+
+					end
+
+				else
+
+					if tags[model] then
+						tags[model]:Destroy()
+						tags[model] = nil
+					end
+
+					if highlights[model] then
+						highlights[model]:Destroy()
+						highlights[model] = nil
+					end
+				end
+			end
+		end
+	end
+
+end
+
+--==================================================
+-- RARITY BUTTONS
+--==================================================
+
+exclusiveESP.MouseButton1Click:Connect(function()
+
+	rarityEnabled["Exclusive"] =
+		not rarityEnabled["Exclusive"]
+
+	exclusiveESP.BackgroundColor3 =
+		rarityEnabled["Exclusive"]
+		and GREEN
+		or RED
+
+	updateESP()
+
+end)
+
+kittyESP.MouseButton1Click:Connect(function()
+
+	rarityEnabled["Kitty God"] =
+		not rarityEnabled["Kitty God"]
+
+	kittyESP.BackgroundColor3 =
+		rarityEnabled["Kitty God"]
+		and GREEN
+		or RED
+
+	updateESP()
+
+end)
+
+--==================================================
+-- OPEN / CLOSE
+--==================================================
+
+local espOpen = false
+local spawnOpen = false
+
+local function updateLayout()
+
+	if espOpen or spawnOpen then
+
+		main.Size = UDim2.fromOffset(190,339)
+
+		espContent.Visible = espOpen
+		spawnContent.Visible = spawnOpen
+
+		promptButton.Position = UDim2.fromOffset(7,175)
+		speedButton.Position = UDim2.fromOffset(7,207)
+		musicButton.Position = UDim2.fromOffset(7,239)
+		fpsButton.Position = UDim2.fromOffset(7,271)
+
+	else
+
+		main.Size = UDim2.fromOffset(190,207)
+
+		espContent.Visible = false
+		spawnContent.Visible = false
+
+		promptButton.Position = UDim2.fromOffset(7,72)
+		speedButton.Position = UDim2.fromOffset(7,104)
+		musicButton.Position = UDim2.fromOffset(7,136)
+		fpsButton.Position = UDim2.fromOffset(7,168)
+
+	end
+
+end
+
+espButton.MouseButton1Click:Connect(function()
+
+	espOpen = not espOpen
+	spawnOpen = false
+	enabledSpawn = false
+
+	espButton.BackgroundColor3 =
+		espOpen and GREEN or NORMAL
+
+	spawnButton.BackgroundColor3 = NORMAL
+
+	updateLayout()
+
+end)
+
+spawnButton.MouseButton1Click:Connect(function()
+
+	spawnOpen = not spawnOpen
+	espOpen = false
+	enabledSpawn = spawnOpen
+
+	spawnButton.BackgroundColor3 =
+		spawnOpen and ACTIVE or NORMAL
+
+	espButton.BackgroundColor3 = GREEN
+
+	updateLayout()
+
+end)
+
+--==================================================
+-- SPAWN
+--==================================================
+
+local function getSpawnDistance()
+
+	local value = tonumber(spawnDistance.Text)
+
+	if not value or value <= 0 then
+		return 240
+	end
+
+	return value
+
+end
+
+local function teleportToAnimal(rarity)
+
+	if not spawnOpen then
+		return
+	end
+
+	local character = player.Character
+
+	if not character then
+		return
+	end
+
+	local root =
+		character:FindFirstChild("HumanoidRootPart")
+
+	if not root then
+		return
+	end
+
+	scanAnimals()
+
+	local maxDistance = getSpawnDistance()
+
+	local closestPosition = nil
+	local closestDistance = math.huge
+
+	for model,data in pairs(cachedAnimals) do
+
+		if model
+			and model.Parent
+			and data
+			and data.Rarity == rarity then
+
+			local position = getPosition(model)
+
+			if position then
+
+				local distance =
+					(root.Position-position).Magnitude
+
+				if distance <= maxDistance
+					and distance < closestDistance then
+
+					closestDistance = distance
+					closestPosition = position
+
+				end
+			end
+		end
+	end
+
+	if closestPosition then
+
+		root.CFrame =
+			CFrame.new(
+				closestPosition + Vector3.new(0,4,0)
+			)
+
+	end
+
+end
+
+spawnExclusive.MouseButton1Click:Connect(function()
+	teleportToAnimal("Exclusive")
+end)
+
+spawnKitty.MouseButton1Click:Connect(function()
+	teleportToAnimal("Kitty God")
+end)
+
+--==================================================
+-- PROXIMITY PROMPT
+--==================================================
+
+local originalHoldDurations = {}
+
+local function setPromptsInstant()
+
+	for _,v in ipairs(Workspace:GetDescendants()) do
+
+		if v:IsA("ProximityPrompt") then
+
+			if originalHoldDurations[v] == nil then
+				originalHoldDurations[v] = v.HoldDuration
+			end
+
+			v.HoldDuration = 0
+
+		end
+	end
+
+end
+
+local function restorePrompts()
+
+	for prompt,duration in pairs(originalHoldDurations) do
+
+		if prompt and prompt.Parent then
+			prompt.HoldDuration = duration
+		end
+
+	end
+
+	table.clear(originalHoldDurations)
+
+end
+
+Workspace.DescendantAdded:Connect(function(v)
+
+	if enabledPrompt
+		and v:IsA("ProximityPrompt") then
+
+		originalHoldDurations[v] = v.HoldDuration
+		v.HoldDuration = 0
+
+	end
+
+end)
+
+promptButton.MouseButton1Click:Connect(function()
+
+	enabledPrompt = not enabledPrompt
+
+	if enabledPrompt then
+
+		promptButton.Text = "ProximityPrompt ON"
+		promptButton.BackgroundColor3 = GREEN
+
+		setPromptsInstant()
+
+	else
+
+		promptButton.Text = "ProximityPrompt OFF"
+		promptButton.BackgroundColor3 = NORMAL
+
+		restorePrompts()
+
+	end
+
+end)
+
+--==================================================
+-- SPEED
+--==================================================
+
+local function applySpeed()
+
+	local character = player.Character
+
+	local humanoid =
+		character and character:FindFirstChildOfClass("Humanoid")
+
+	if not humanoid then
+		return
+	end
+
+	humanoid.WalkSpeed =
+		enabledSpeed
+		and SPEED_VALUE
+		or NORMAL_SPEED
+
+end
+
+speedButton.MouseButton1Click:Connect(function()
+
+	enabledSpeed = not enabledSpeed
+
+	if enabledSpeed then
+
+		speedButton.Text = "Speed 100 ON"
+		speedButton.BackgroundColor3 = GREEN
+
+	else
+
+		speedButton.Text = "Speed 100 OFF"
+		speedButton.BackgroundColor3 = NORMAL
+
+	end
+
+	applySpeed()
+
+end)
+
+player.CharacterAdded:Connect(function(character)
+
+	local humanoid =
+		character:WaitForChild("Humanoid",10)
+
+	if humanoid and enabledSpeed then
+		humanoid.WalkSpeed = SPEED_VALUE
+	end
+
+end)
+
+--==================================================
+-- IMAGE OPEN / CLOSE
+--==================================================
+
+local menuVisible = true
+
+cornerButton.MouseButton1Click:Connect(function()
+
+	menuVisible = not menuVisible
+	main.Visible = menuVisible
+
+end)
+
+--==================================================
+-- START
+--==================================================
+
+scanAnimals()
+updateESP()
+updateLayout()
+
+backgroundMuted = true
+musicButton.Text = "🔇 Music OFF"
+musicButton.BackgroundColor3 = RED
+
+task.defer(function()
+	muteBackgroundMusic()
+end)
+
+--==================================================
+-- CLICK SOUND
+--==================================================
+
+local CLICK_SOUND_ID = "rbxassetid://94964479268464"
+
+local function playClickSound()
+
+	local clickSound = Instance.new("Sound")
+	clickSound.Name = "ButtonClickSound"
+	clickSound.SoundId = CLICK_SOUND_ID
+	clickSound.Volume = 1
+	clickSound.Parent = SoundService
+
+	SoundService:PlayLocalSound(clickSound)
+
+	task.delay(3,function()
+
+		if clickSound and clickSound.Parent then
+			clickSound:Destroy()
+		end
+
+	end)
+
+end
+
+espButton.MouseButton1Click:Connect(playClickSound)
+spawnButton.MouseButton1Click:Connect(playClickSound)
+exclusiveESP.MouseButton1Click:Connect(playClickSound)
+kittyESP.MouseButton1Click:Connect(playClickSound)
+spawnExclusive.MouseButton1Click:Connect(playClickSound)
+spawnKitty.MouseButton1Click:Connect(playClickSound)
+promptButton.MouseButton1Click:Connect(playClickSound)
+speedButton.MouseButton1Click:Connect(playClickSound)
+musicButton.MouseButton1Click:Connect(playClickSound)
+fpsButton.MouseButton1Click:Connect(playClickSound)
+
+--==================================================
+-- UPDATE
+--==================================================
+
+local scanTimer = 0
+local espTimer = 0
+
+RunService.Heartbeat:Connect(function(dt)
+
+	if not gui.Parent then
+		return
+	end
+
+	if enabledSpeed then
+
+		local character = player.Character
+		local humanoid =
+			character and character:FindFirstChildOfClass("Humanoid")
+
+		if humanoid
+			and humanoid.WalkSpeed ~= SPEED_VALUE then
+
+			humanoid.WalkSpeed = SPEED_VALUE
+
+		end
+	end
+
+	scanTimer += dt
+	espTimer += dt
+
+	if scanTimer >= 0.5 then
+		scanTimer = 0
+		scanAnimals()
+	end
+
+	if espTimer >= 0.1 then
+		espTimer = 0
+		updateESP()
+	end
+
+end)
+
+--==================================================
+-- BACKGROUND MUSIC WATCHER
+--==================================================
+
+task.spawn(function()
+
+	while gui.Parent do
+
+		local backgroundMusic = findBackgroundMusic()
+
+		if backgroundMusic and backgroundMuted then
+			muteBackgroundMusic()
+		end
+
+		task.wait(0.5)
+
+	end
+
+end)
+
+--==================================================
+-- HORROR INTRO
+--==================================================
+
+task.wait(1)
+
+local SOUND_ID = "rbxassetid://1839246711"
+local NAME = "ALIBOOSS"
+local NAME2 = "by A_A"
+
+local LETTER_DELAY = 0.9
+local LETTER_FADE = 0.8
+
+local horrorGui = Instance.new("ScreenGui")
+horrorGui.Name = "ALIBOOSS_Horror"
+horrorGui.ResetOnSpawn = false
+horrorGui.IgnoreGuiInset = true
+horrorGui.Parent = playerGui
+
+local bloodScreen = Instance.new("Frame")
+bloodScreen.Size = UDim2.fromScale(1,1)
+bloodScreen.BackgroundColor3 = Color3.fromRGB(110,0,0)
+bloodScreen.BackgroundTransparency = 0.88
+bloodScreen.BorderSizePixel = 0
+bloodScreen.ZIndex = 0
+bloodScreen.Parent = horrorGui
+
+local horrorMain = Instance.new("Frame")
+horrorMain.AnchorPoint = Vector2.new(0.5,0.5)
+horrorMain.Position = UDim2.fromScale(0.5,0.5)
+horrorMain.Size = UDim2.fromScale(0.9,0.4)
+horrorMain.BackgroundTransparency = 1
+horrorMain.ZIndex = 30
+horrorMain.Parent = horrorGui
+
+local sound = Instance.new("Sound")
+sound.Name = "ALIBOOSS_Music"
+sound.SoundId = SOUND_ID
+sound.Volume = 1
+sound.Looped = true
+sound.Parent = SoundService
+sound:Play()
+
+local function shake(frame,power,duration)
+
+	local original = frame.Position
+	local start = os.clock()
+
+	while os.clock()-start < duration do
+
+		frame.Position =
+			original +
+			UDim2.fromOffset(
+				math.random(-power,power),
+				math.random(-power,power)
+			)
+
+		task.wait(0.025)
+
+	end
+
+	frame.Position = original
+
+end
+
+local nameContainer = Instance.new("Frame")
+nameContainer.Position = UDim2.fromScale(0.5,0.57)
+nameContainer.AnchorPoint = Vector2.new(0.5,0.5)
+nameContainer.Size = UDim2.fromOffset(500,90)
+nameContainer.BackgroundTransparency = 1
+nameContainer.ZIndex = 35
+nameContainer.Parent = horrorMain
+
+local layout = Instance.new("UIListLayout")
+layout.FillDirection = Enum.FillDirection.Horizontal
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.VerticalAlignment = Enum.VerticalAlignment.Center
+layout.Padding = UDim.new(0,2)
+layout.Parent = nameContainer
+
+local secondContainer = Instance.new("Frame")
+secondContainer.Position = UDim2.fromScale(0.5,0.28)
+secondContainer.AnchorPoint = Vector2.new(0.5,0.5)
+secondContainer.Size = UDim2.fromOffset(350,70)
+secondContainer.BackgroundTransparency = 1
+secondContainer.ZIndex = 35
+secondContainer.Parent = horrorMain
+
+local secondLayout = Instance.new("UIListLayout")
+secondLayout.FillDirection = Enum.FillDirection.Horizontal
+secondLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+secondLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+secondLayout.Padding = UDim.new(0,2)
+secondLayout.Parent = secondContainer
+
+local function getRainbow()
+	return Color3.fromHSV((os.clock()*0.25)%1,1,1)
+end
+
+task.spawn(function()
+
+	local hue = 0
+
+	while horrorGui.Parent do
+
+		hue = (hue+0.008)%1
+
+		local color = Color3.fromHSV(hue,1,1)
+
+		for _,obj in ipairs(nameContainer:GetChildren()) do
+			if obj:IsA("TextLabel") then
+				obj.TextColor3 = color
+			end
+		end
+
+		for _,obj in ipairs(secondContainer:GetChildren()) do
+			if obj:IsA("TextLabel") then
+				obj.TextColor3 = color
+			end
+		end
+
+		task.wait(0.03)
+	end
+
+end)
+
+local function createBloodDrip(letterLabel)
+
+	local drip = Instance.new("Frame")
+	drip.AnchorPoint = Vector2.new(0.5,0)
+	drip.Position = UDim2.new(0.5,0,1,-2)
+	drip.Size = UDim2.fromOffset(7,0)
+	drip.BackgroundColor3 = Color3.fromRGB(130,0,0)
+	drip.BackgroundTransparency = 0.15
+	drip.BorderSizePixel = 0
+	drip.ZIndex = 38
+	drip.Parent = letterLabel
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1,0)
+	corner.Parent = drip
+
+	local drop = Instance.new("Frame")
+	drop.AnchorPoint = Vector2.new(0.5,0.5)
+	drop.Position = UDim2.new(0.5,math.random(-8,8),1,0)
+	drop.Size = UDim2.fromOffset(9,9)
+	drop.BackgroundColor3 = Color3.fromRGB(150,0,0)
+	drop.BackgroundTransparency = 0.1
+	drop.BorderSizePixel = 0
+	drop.ZIndex = 39
+	drop.Parent = letterLabel
+
+	local dropCorner = Instance.new("UICorner")
+	dropCorner.CornerRadius = UDim.new(1,0)
+	dropCorner.Parent = drop
+
+	TweenService:Create(
+		drip,
+		TweenInfo.new(0.35),
+		{
+			Size = UDim2.fromOffset(
+				math.random(5,9),
+				math.random(18,35)
+			)
+		}
+	):Play()
+
+	TweenService:Create(
+		drop,
+		TweenInfo.new(0.45),
+		{
+			Position = UDim2.new(
+				0.5,
+				math.random(-8,8),
+				1,
+				math.random(25,45)
+			)
+		}
+	):Play()
+
+	task.delay(0.45,function()
+
+		if drip.Parent then
+
+			TweenService:Create(
+				drip,
+				TweenInfo.new(0.35),
+				{
+					BackgroundTransparency = 1
+				}
+			):Play()
+
+		end
+
+		if drop.Parent then
+
+			TweenService:Create(
+				drop,
+				TweenInfo.new(0.35),
+				{
+					BackgroundTransparency = 1
+				}
+			):Play()
+
+		end
+
+		task.wait(0.4)
+
+		if drip then
+			drip:Destroy()
+		end
+
+		if drop then
+			drop:Destroy()
+		end
+
+	end)
+
+end
+
+local function createLetter(parent,letter,index)
+
+	local label = Instance.new("TextLabel")
+
+	label.Size = UDim2.fromOffset(55,80)
+	label.BackgroundTransparency = 1
+	label.Text = letter
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	label.TextColor3 = Color3.new(1,1,1)
+	label.TextTransparency = 1
+	label.TextStrokeTransparency = 1
+	label.TextStrokeColor3 = Color3.new(0,0,0)
+	label.ZIndex = 40
+	label.Parent = parent
+
+	TweenService:Create(
+		label,
+		TweenInfo.new(
+			LETTER_FADE,
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.Out
+		),
+		{
+			TextTransparency = 0,
+			TextStrokeTransparency = 0
+		}
+	):Play()
+
+	task.spawn(function()
+		shake(horrorMain,7,0.18)
+	end)
+
+	task.delay(0.18,function()
+
+		if label.Parent then
+			createBloodDrip(label)
+		end
+
+	end)
+
+	return label
+
+end
+
+for i = 1,#NAME do
+
+	createLetter(
+		nameContainer,
+		string.sub(NAME,i,i),
+		i
+	)
+
+	task.wait(LETTER_DELAY)
+
+end
+
+task.wait(0.8)
+
+for i = 1,#NAME2 do
+
+	createLetter(
+		secondContainer,
+		string.sub(NAME2,i,i),
+		i
+	)
+
+	task.wait(LETTER_DELAY)
+
+end
+
+--==================================================
+-- HORROR BLOOD
+--==================================================
+
+local bloodFolder = Instance.new("Folder")
+bloodFolder.Name = "BloodAroundScreen"
+bloodFolder.Parent = horrorGui
+
+local bloodObjects = {}
+
+for side = 1,2 do
+
+	for i = 1,25 do
+
+		local blood = Instance.new("Frame")
+
+		local width = math.random(25,100)
+		local height = math.random(20,90)
+
+		blood.Size = UDim2.fromOffset(width,0)
+
+		if side == 1 then
+
+			blood.Position = UDim2.fromScale(
+				math.random(-5,105)/100,
+				math.random(-2,12)/100
+			)
+
+		else
+
+			blood.Position = UDim2.fromScale(
+				math.random(-5,105)/100,
+				math.random(88,102)/100
+			)
+
+		end
+
+		blood.BackgroundColor3 =
+			Color3.fromRGB(
+				math.random(90,160),
+				0,
+				0
+			)
+
+		blood.BackgroundTransparency =
+			math.random(10,35)/100
+
+		blood.BorderSizePixel = 0
+		blood.Rotation = math.random(-20,20)
+		blood.ZIndex = 10
+		blood.Parent = bloodFolder
+
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.8,0)
+		corner.Parent = blood
+
+		table.insert(bloodObjects,blood)
+
+		TweenService:Create(
+			blood,
+			TweenInfo.new(
+				math.random(25,50)/100,
+				Enum.EasingStyle.Back,
+				Enum.EasingDirection.Out
+			),
+			{
+				Size = UDim2.fromOffset(width,height)
+			}
+		):Play()
+
+	end
+
+end
+
+for side = 1,2 do
+
+	for i = 1,25 do
+
+		local blood = Instance.new("Frame")
+
+		local width = math.random(20,75)
+		local height = math.random(25,100)
+
+		blood.Size = UDim2.fromOffset(0,height)
+
+		local x
+
+		if side == 1 then
+			x = math.random(-2,12)/100
+		else
+			x = math.random(88,102)/100
+		end
+
+		blood.Position = UDim2.fromScale(
+			x,
+			math.random(-5,105)/100
+		)
+
+		blood.BackgroundColor3 =
+			Color3.fromRGB(
+				math.random(90,160),
+				0,
+				0
+			)
+
+		blood.BackgroundTransparency =
+			math.random(10,35)/100
+
+		blood.BorderSizePixel = 0
+		blood.Rotation = math.random(-20,20)
+		blood.ZIndex = 10
+		blood.Parent = bloodFolder
+
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.8,0)
+		corner.Parent = blood
+
+		table.insert(bloodObjects,blood)
+
+		TweenService:Create(
+			blood,
+			TweenInfo.new(
+				math.random(25,50)/100,
+				Enum.EasingStyle.Back,
+				Enum.EasingDirection.Out
+			),
+			{
+				Size = UDim2.fromOffset(width,height)
+			}
+		):Play()
+
+	end
+
+end
+
+for i = 1,35 do
+
+	local drip = Instance.new("Frame")
+
+	drip.Size = UDim2.fromOffset(
+		math.random(6,18),
+		math.random(30,130)
+	)
+
+	drip.Position = UDim2.fromScale(
+		math.random(0,100)/100,
+		math.random(0,25)/100
+	)
+
+	drip.BackgroundColor3 = Color3.fromRGB(120,0,0)
+	drip.BackgroundTransparency =
+		math.random(15,40)/100
+
+	drip.BorderSizePixel = 0
+	drip.ZIndex = 11
+	drip.Parent = bloodFolder
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1,0)
+	corner.Parent = drip
+
+	table.insert(bloodObjects,drip)
+
+end
+
+--==================================================
+-- FIRE
+--==================================================
+
+task.wait(0.6)
+
+local fireFolder = Instance.new("Folder")
+fireFolder.Name = "NameFire"
+fireFolder.Parent = horrorGui
+
+local fireObjects = {}
+
+for i = 1,10 do
+
+	local fire = Instance.new("TextLabel")
+
+	fire.AnchorPoint = Vector2.new(0.5,0.5)
+
+	local x = 0.23+((i-1)*0.06)
+
+	fire.Position = UDim2.fromScale(x,0.52)
+	fire.Size = UDim2.fromOffset(45,45)
+	fire.BackgroundTransparency = 1
+	fire.Text = "🔥"
+	fire.TextScaled = true
+	fire.Font = Enum.Font.GothamBold
+	fire.TextTransparency = 1
+	fire.ZIndex = 45
+	fire.Parent = fireFolder
+
+	table.insert(fireObjects,fire)
+
+	TweenService:Create(
+		fire,
+		TweenInfo.new(0.3),
+		{
+			TextTransparency = 0
+		}
+	):Play()
+
+end
+
+task.spawn(function()
+
+	while fireFolder.Parent do
+
+		for i,fire in ipairs(fireObjects) do
+
+			local baseX =
+				0.23+((i-1)*0.06)
+
+			fire.Position =
+				UDim2.fromScale(
+					baseX,
+					0.52+
+					math.sin(os.clock()*5+i)*0.025
+				)
+
+		end
+
+		task.wait(0.03)
+
+	end
+
+end)
+
+task.spawn(function()
+	shake(horrorMain,12,0.5)
+end)
+
+task.wait(0.8)
+
+--==================================================
+-- DEVIL
+--==================================================
+
+local devil = Instance.new("TextLabel")
+
+devil.AnchorPoint = Vector2.new(0.5,0.5)
+devil.Position = UDim2.fromScale(0.5,0.5)
+devil.Size = UDim2.fromScale(0.35,0.35)
+devil.BackgroundTransparency = 1
+devil.Text = "😈"
+devil.TextScaled = true
+devil.Font = Enum.Font.GothamBold
+devil.TextTransparency = 1
+devil.ZIndex = 50
+devil.Parent = horrorGui
+
+TweenService:Create(
+	devil,
+	TweenInfo.new(
+		0.25,
+		Enum.EasingStyle.Back,
+		Enum.EasingDirection.Out
+	),
+	{
+		TextTransparency = 0
+	}
+):Play()
+
+shake(horrorMain,18,0.8)
+
+task.wait(1.2)
+
+--==================================================
+-- FADE
+--==================================================
+
+for _,obj in ipairs(nameContainer:GetChildren()) do
+
+	if obj:IsA("TextLabel") then
+
+		TweenService:Create(
+			obj,
+			TweenInfo.new(0.5),
+			{
+				TextTransparency = 1,
+				TextStrokeTransparency = 1
+			}
+		):Play()
+
+	end
+
+end
+
+for _,obj in ipairs(secondContainer:GetChildren()) do
+
+	if obj:IsA("TextLabel") then
+
+		TweenService:Create(
+			obj,
+			TweenInfo.new(0.5),
+			{
+				TextTransparency = 1,
+				TextStrokeTransparency = 1
+			}
+		):Play()
+
+	end
+
+end
+
+for _,fire in ipairs(fireObjects) do
+
+	TweenService:Create(
+		fire,
+		TweenInfo.new(0.5),
+		{
+			TextTransparency = 1
+		}
+	):Play()
+
+end
+
+TweenService:Create(
+	devil,
+	TweenInfo.new(0.5),
+	{
+		TextTransparency = 1
+	}
+):Play()
+
+for _,blood in ipairs(bloodObjects) do
+
+	TweenService:Create(
+		blood,
+		TweenInfo.new(0.6),
+		{
+			BackgroundTransparency = 1
+		}
+	):Play()
+
+end
+
+TweenService:Create(
+	bloodScreen,
+	TweenInfo.new(0.6),
+	{
+		BackgroundTransparency = 1
+	}
+):Play()
+
+task.wait(0.8)
+
+--==================================================
+-- END EMOJI
+--==================================================
+
+sound:Stop()
+
+local emoji1 = Instance.new("TextLabel")
+
+emoji1.AnchorPoint = Vector2.new(0.5,0.5)
+emoji1.Position = UDim2.fromScale(0.5,0.5)
+emoji1.Size = UDim2.fromOffset(130,130)
+emoji1.BackgroundTransparency = 1
+emoji1.Text = "🙂"
+emoji1.TextScaled = true
+emoji1.Font = Enum.Font.GothamBold
+emoji1.TextTransparency = 1
+emoji1.ZIndex = 100
+emoji1.Parent = horrorGui
+
+TweenService:Create(
+	emoji1,
+	TweenInfo.new(
+		0.45,
+		Enum.EasingStyle.Back,
+		Enum.EasingDirection.Out
+	),
+	{
+		TextTransparency = 0,
+		Size = UDim2.fromOffset(160,160)
+	}
+):Play()
+
+task.wait(1)
+
+TweenService:Create(
+	emoji1,
+	TweenInfo.new(0.35),
+	{
+		TextTransparency = 1,
+		Size = UDim2.fromOffset(80,80)
+	}
+):Play()
+
+task.wait(0.4)
+
+emoji1:Destroy()
+
+--==================================================
+-- FINAL
+--==================================================
+
+local finalEmoji = Instance.new("TextLabel")
+
+finalEmoji.AnchorPoint = Vector2.new(0.5,0.5)
+finalEmoji.Position = UDim2.fromScale(0.5,0.5)
+finalEmoji.Size = UDim2.fromOffset(250,180)
+finalEmoji.BackgroundTransparency = 1
+finalEmoji.Text = "🖕🏿🤫🖕🏿"
+finalEmoji.TextScaled = true
+finalEmoji.Font = Enum.Font.GothamBold
+finalEmoji.TextTransparency = 1
+finalEmoji.ZIndex = 110
+finalEmoji.Parent = horrorGui
+
+TweenService:Create(
+	finalEmoji,
+	TweenInfo.new(
+		0.3,
+		Enum.EasingStyle.Back,
+		Enum.EasingDirection.Out
+	),
+	{
+		TextTransparency = 0,
+		Size = UDim2.fromOffset(420,300)
+	}
+):Play()
+
+task.spawn(function()
+	shake(finalEmoji,8,0.7)
+end)
+
+task.wait(1.5)
+
+TweenService:Create(
+	finalEmoji,
+	TweenInfo.new(0.6),
+	{
+		TextTransparency = 1,
+		Size = UDim2.fromOffset(500,350)
+	}
+):Play()
+
+task.wait(0.7)
+
+sound:Stop()
+sound:Destroy()
+horrorGui:Destroy()
+
+--==================================================
+-- END
+--==================================================local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+local frames = 0
+local lastTime = os.clock()
+
+local function createFPS()
+	local character = player.Character
+	if not character then return end
+
+	local head = character:FindFirstChild("Head")
+	if not head then return end
+
+	local old = head:FindFirstChild("MyFPS")
+	if old then old:Destroy() end
+
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "MyFPS"
+	gui.Size = UDim2.fromOffset(110, 35)
+	gui.StudsOffset = Vector3.new(0, 3, 0)
+	gui.AlwaysOnTop = true
+	gui.Parent = head
+
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.fromScale(1, 1)
+	text.BackgroundTransparency = 1
+	text.Font = Enum.Font.GothamBold
+	text.TextScaled = true
+	text.TextStrokeTransparency = 0
+	text.Parent = gui
+
+	return text
+end
+
+local fpsText
+
+local function setup()
+	task.wait(1)
+	fpsText = createFPS()
+end
+
+player.CharacterAdded:Connect(setup)
+
+if player.Character then
+	setup()
+end
+
+RunService.RenderStepped:Connect(function()
+	frames += 1
+
+	local now = os.clock()
+
+	if now - lastTime >= 1 then
+		local fps = math.floor(frames / (now - lastTime))
+
+		if fpsText then
+			fpsText.Text = "FPS: " .. fps
+
+			if fps >= 120 then
+				fpsText.TextColor3 = Color3.fromRGB(0, 255, 80)
+			elseif fps >= 60 then
+				fpsText.TextColor3 = Color3.fromRGB(255, 255, 0)
+			elseif fps >= 30 then
+				fpsText.TextColor3 = Color3.fromRGB(255, 170, 0)
+			else
+				fpsText.TextColor3 = Color3.fromRGB(255, 50, 50)
+			end
+		end
+
+		frames = 0
+		lastTime = now
+	end
+end)hi
