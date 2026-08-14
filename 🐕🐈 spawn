@@ -2114,4 +2114,78 @@ spawnKitty.MouseButton1Click:Connect(playClickSound)
 promptButton.MouseButton1Click:Connect(playClickSound)
 speedButton.MouseButton1Click:Connect(playClickSound)
 musicButton.MouseButton1Click:Connect(playClickSound)
---==================================================
+--==================================================local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+local frames = 0
+local lastTime = os.clock()
+
+local function createFPS()
+	local character = player.Character
+	if not character then return end
+
+	local head = character:FindFirstChild("Head")
+	if not head then return end
+
+	local old = head:FindFirstChild("MyFPS")
+	if old then old:Destroy() end
+
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "MyFPS"
+	gui.Size = UDim2.fromOffset(110, 35)
+	gui.StudsOffset = Vector3.new(0, 3, 0)
+	gui.AlwaysOnTop = true
+	gui.Parent = head
+
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.fromScale(1, 1)
+	text.BackgroundTransparency = 1
+	text.Font = Enum.Font.GothamBold
+	text.TextScaled = true
+	text.TextStrokeTransparency = 0
+	text.Parent = gui
+
+	return text
+end
+
+local fpsText
+
+local function setup()
+	task.wait(1)
+	fpsText = createFPS()
+end
+
+player.CharacterAdded:Connect(setup)
+
+if player.Character then
+	setup()
+end
+
+RunService.RenderStepped:Connect(function()
+	frames += 1
+
+	local now = os.clock()
+
+	if now - lastTime >= 1 then
+		local fps = math.floor(frames / (now - lastTime))
+
+		if fpsText then
+			fpsText.Text = "FPS: " .. fps
+
+			if fps >= 120 then
+				fpsText.TextColor3 = Color3.fromRGB(0, 255, 80)
+			elseif fps >= 60 then
+				fpsText.TextColor3 = Color3.fromRGB(255, 255, 0)
+			elseif fps >= 30 then
+				fpsText.TextColor3 = Color3.fromRGB(255, 170, 0)
+			else
+				fpsText.TextColor3 = Color3.fromRGB(255, 50, 50)
+			end
+		end
+
+		frames = 0
+		lastTime = now
+	end
+end)
