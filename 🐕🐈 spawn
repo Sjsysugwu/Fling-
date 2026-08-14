@@ -1,7 +1,8 @@
 --==================================================
 -- ALIBOOSS
 -- ANIMAL RARITY HUB - RED PREMIUM UI
--- FPS BOOST ON/OFF
+-- IMAGE INSIDE MAIN
+-- FPS BOOST + FPS DISPLAY
 --==================================================
 
 local Players = game:GetService("Players")
@@ -93,49 +94,16 @@ end
 -- GUI
 --==================================================
 
+local oldGui = playerGui:FindFirstChild("AnimalRarityHub")
+
+if oldGui then
+	oldGui:Destroy()
+end
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "AnimalRarityHub"
 gui.ResetOnSpawn = false
 gui.Parent = playerGui
-
---==================================================
--- CORNER IMAGE
---==================================================
-
-local cornerButton = Instance.new("ImageButton")
-cornerButton.Name = "CornerImage"
-cornerButton.Size = UDim2.fromOffset(36,36)
-cornerButton.Position = UDim2.fromOffset(5,5)
-cornerButton.BackgroundTransparency = 1
-cornerButton.BorderSizePixel = 0
-cornerButton.Image = "rbxassetid://124079604372236"
-cornerButton.ScaleType = Enum.ScaleType.Stretch
-cornerButton.ZIndex = 100
-cornerButton.Parent = gui
-
-local cornerCorner = Instance.new("UICorner")
-cornerCorner.CornerRadius = UDim.new(0,6)
-cornerCorner.Parent = cornerButton
-
-local cornerStroke = Instance.new("UIStroke")
-cornerStroke.Thickness = 2
-cornerStroke.Parent = cornerButton
-
-task.spawn(function()
-
-	while cornerButton.Parent do
-
-		cornerStroke.Color =
-			Color3.fromHSV(
-				(os.clock()*0.25)%1,
-				1,
-				1
-			)
-
-		task.wait(0.03)
-	end
-
-end)
 
 --==================================================
 -- MAIN
@@ -149,11 +117,54 @@ main.BackgroundColor3 = Color3.fromRGB(12,12,16)
 main.BorderSizePixel = 0
 main.Active = true
 main.Draggable = true
+main.ClipsDescendants = true
 main.Parent = gui
 
 local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0,12)
 mainCorner.Parent = main
+
+--==================================================
+-- IMAGE INSIDE MAIN
+--==================================================
+
+local mainImage = Instance.new("ImageLabel")
+mainImage.Name = "MainImage"
+mainImage.Size = UDim2.fromScale(1,1)
+mainImage.Position = UDim2.fromScale(0,0)
+mainImage.BackgroundTransparency = 1
+mainImage.BorderSizePixel = 0
+mainImage.Image = "rbxassetid://138322653300434"
+mainImage.ScaleType = Enum.ScaleType.Crop
+mainImage.ImageTransparency = 0.15
+mainImage.ZIndex = 1
+mainImage.Parent = main
+
+local imageCorner = Instance.new("UICorner")
+imageCorner.CornerRadius = UDim.new(0,12)
+imageCorner.Parent = mainImage
+
+--==================================================
+-- IMAGE DARK OVERLAY
+--==================================================
+
+local imageOverlay = Instance.new("Frame")
+imageOverlay.Name = "ImageOverlay"
+imageOverlay.Size = UDim2.fromScale(1,1)
+imageOverlay.Position = UDim2.fromScale(0,0)
+imageOverlay.BackgroundColor3 = Color3.fromRGB(0,0,0)
+imageOverlay.BackgroundTransparency = 0.35
+imageOverlay.BorderSizePixel = 0
+imageOverlay.ZIndex = 2
+imageOverlay.Parent = main
+
+local overlayCorner = Instance.new("UICorner")
+overlayCorner.CornerRadius = UDim.new(0,12)
+overlayCorner.Parent = imageOverlay
+
+--==================================================
+-- RED BORDER
+--==================================================
 
 local stroke = Instance.new("UIStroke")
 stroke.Name = "PremiumRedStroke"
@@ -170,13 +181,17 @@ gradient.Color = ColorSequence.new({
 })
 gradient.Parent = stroke
 
+--==================================================
+-- INNER
+--==================================================
+
 local inner = Instance.new("Frame")
 inner.Name = "Inner"
 inner.Size = UDim2.new(1,-8,1,-8)
 inner.Position = UDim2.fromOffset(4,4)
-inner.BackgroundColor3 = Color3.fromRGB(18,18,23)
+inner.BackgroundTransparency = 1
 inner.BorderSizePixel = 0
-inner.ZIndex = 0
+inner.ZIndex = 3
 inner.Parent = main
 
 local innerCorner = Instance.new("UICorner")
@@ -191,6 +206,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1,-12,0,28)
 title.Position = UDim2.fromOffset(6,6)
 title.BackgroundColor3 = Color3.fromRGB(30,8,12)
+title.BackgroundTransparency = 0.15
 title.Text = "Animal Rarity Hub"
 title.TextColor3 = Color3.new(1,1,1)
 title.TextSize = 13
@@ -210,7 +226,7 @@ titleStroke.Transparency = 0.2
 titleStroke.Parent = title
 
 --==================================================
--- BUTTON STYLE
+-- BUTTON STYLE - MORE TRANSPARENT
 --==================================================
 
 local function styleButton(button)
@@ -224,6 +240,9 @@ local function styleButton(button)
 	s.Color = Color3.fromRGB(255,35,45)
 	s.Transparency = 0.3
 	s.Parent = button
+
+	-- شفافية أكثر للكبس
+	button.BackgroundTransparency = 0.4
 
 end
 
@@ -271,6 +290,7 @@ local espContent = Instance.new("Frame")
 espContent.Size = UDim2.new(1,-14,0,100)
 espContent.Position = UDim2.fromOffset(7,66)
 espContent.BackgroundColor3 = Color3.fromRGB(24,24,28)
+espContent.BackgroundTransparency = 0.1
 espContent.BorderSizePixel = 0
 espContent.Visible = false
 espContent.ZIndex = 4
@@ -347,6 +367,7 @@ local spawnContent = Instance.new("Frame")
 spawnContent.Size = UDim2.new(1,-14,0,100)
 spawnContent.Position = UDim2.fromOffset(7,66)
 spawnContent.BackgroundColor3 = Color3.fromRGB(24,24,28)
+spawnContent.BackgroundTransparency = 0.1
 spawnContent.BorderSizePixel = 0
 spawnContent.Visible = false
 spawnContent.ZIndex = 4
@@ -481,7 +502,7 @@ fpsButton.Parent = main
 styleButton(fpsButton)
 
 --==================================================
--- FPS BOOST SYSTEM
+-- FPS BOOST
 --==================================================
 
 local fpsBoostEnabled = false
@@ -509,23 +530,16 @@ local function enableFPSBoost()
 
 	for _,v in ipairs(game:GetDescendants()) do
 
-		-- Parts
 		if v:IsA("BasePart") then
-
 			fpsSave(v,"Material",v.Material)
 			v.Material = Enum.Material.SmoothPlastic
-
 		end
 
-		-- Mesh textures
 		if v:IsA("MeshPart") then
-
 			fpsSave(v,"TextureID",v.TextureID)
 			v.TextureID = ""
-
 		end
 
-		-- Particles
 		if v:IsA("ParticleEmitter")
 			or v:IsA("Trail")
 			or v:IsA("Beam")
@@ -535,10 +549,8 @@ local function enableFPSBoost()
 
 			fpsSave(v,"Enabled",v.Enabled)
 			v.Enabled = false
-
 		end
 
-		-- Visual effects
 		if v:IsA("BloomEffect")
 			or v:IsA("BlurEffect")
 			or v:IsA("ColorCorrectionEffect")
@@ -547,19 +559,15 @@ local function enableFPSBoost()
 
 			fpsSave(v,"Enabled",v.Enabled)
 			v.Enabled = false
-
 		end
 
-		-- Decals / Textures
 		if v:IsA("Decal")
 			or v:IsA("Texture") then
 
 			fpsSave(v,"Transparency",v.Transparency)
 			v.Transparency = 1
-
 		end
 
-		-- Sky
 		if v:IsA("Sky") then
 
 			fpsSave(v,"Parent",v.Parent)
@@ -570,7 +578,6 @@ local function enableFPSBoost()
 
 	fpsButton.Text = "FPS Boost ON"
 	fpsButton.BackgroundColor3 = GREEN
-
 end
 
 local function disableFPSBoost()
@@ -596,7 +603,6 @@ local function disableFPSBoost()
 
 	fpsButton.Text = "FPS Boost OFF"
 	fpsButton.BackgroundColor3 = NORMAL
-
 end
 
 fpsButton.MouseButton1Click:Connect(function()
@@ -610,7 +616,7 @@ fpsButton.MouseButton1Click:Connect(function()
 end)
 
 --==================================================
--- MUSIC BUTTON
+-- MUSIC
 --==================================================
 
 musicButton.MouseButton1Click:Connect(function()
@@ -621,14 +627,12 @@ musicButton.MouseButton1Click:Connect(function()
 
 		musicButton.Text = "🔇 Music OFF"
 		musicButton.BackgroundColor3 = RED
-
 		muteBackgroundMusic()
 
 	else
 
 		musicButton.Text = "🔊 Music ON"
 		musicButton.BackgroundColor3 = GREEN
-
 		unmuteBackgroundMusic()
 
 	end
@@ -675,7 +679,6 @@ local function getPosition(model)
 	end
 
 	return nil
-
 end
 
 local function getAnimalFromBoard(board)
@@ -696,7 +699,6 @@ local function getAnimalFromBoard(board)
 	end
 
 	return nil
-
 end
 
 local function hasRarity(board,rarity)
@@ -713,7 +715,6 @@ local function hasRarity(board,rarity)
 	end
 
 	return false
-
 end
 
 local function getAnimalName(animal,board)
@@ -744,7 +745,6 @@ local function getAnimalName(animal,board)
 	end
 
 	return animal.Name
-
 end
 
 --==================================================
@@ -785,7 +785,6 @@ local function scanAnimals()
 	end
 
 	cachedAnimals = found
-
 end
 
 --==================================================
@@ -808,7 +807,6 @@ local function clearESP()
 
 	table.clear(tags)
 	table.clear(highlights)
-
 end
 
 local function createESP(data)
@@ -850,7 +848,6 @@ local function createESP(data)
 	highlight.Parent = data.Model
 
 	highlights[data.Model] = highlight
-
 end
 
 local function getESPDistance()
@@ -862,16 +859,13 @@ local function getESPDistance()
 	end
 
 	return math.min(value,ESP_MAX_DISTANCE)
-
 end
 
 local function updateESP()
 
 	if not enabledESP then
-
 		clearESP()
 		return
-
 	end
 
 	local character = player.Character
@@ -898,7 +892,6 @@ local function updateESP()
 				highlights[model]:Destroy()
 				highlights[model] = nil
 			end
-
 		end
 	end
 
@@ -950,7 +943,6 @@ local function updateESP()
 			end
 		end
 	end
-
 end
 
 --==================================================
@@ -968,7 +960,6 @@ exclusiveESP.MouseButton1Click:Connect(function()
 		or RED
 
 	updateESP()
-
 end)
 
 kittyESP.MouseButton1Click:Connect(function()
@@ -982,7 +973,6 @@ kittyESP.MouseButton1Click:Connect(function()
 		or RED
 
 	updateESP()
-
 end)
 
 --==================================================
@@ -1019,7 +1009,6 @@ local function updateLayout()
 		fpsButton.Position = UDim2.fromOffset(7,168)
 
 	end
-
 end
 
 espButton.MouseButton1Click:Connect(function()
@@ -1034,7 +1023,6 @@ espButton.MouseButton1Click:Connect(function()
 	spawnButton.BackgroundColor3 = NORMAL
 
 	updateLayout()
-
 end)
 
 spawnButton.MouseButton1Click:Connect(function()
@@ -1049,7 +1037,6 @@ spawnButton.MouseButton1Click:Connect(function()
 	espButton.BackgroundColor3 = GREEN
 
 	updateLayout()
-
 end)
 
 --==================================================
@@ -1065,7 +1052,6 @@ local function getSpawnDistance()
 	end
 
 	return value
-
 end
 
 local function teleportToAnimal(rarity)
@@ -1113,7 +1099,6 @@ local function teleportToAnimal(rarity)
 
 					closestDistance = distance
 					closestPosition = position
-
 				end
 			end
 		end
@@ -1125,9 +1110,7 @@ local function teleportToAnimal(rarity)
 			CFrame.new(
 				closestPosition + Vector3.new(0,4,0)
 			)
-
 	end
-
 end
 
 spawnExclusive.MouseButton1Click:Connect(function()
@@ -1155,10 +1138,8 @@ local function setPromptsInstant()
 			end
 
 			v.HoldDuration = 0
-
 		end
 	end
-
 end
 
 local function restorePrompts()
@@ -1168,11 +1149,9 @@ local function restorePrompts()
 		if prompt and prompt.Parent then
 			prompt.HoldDuration = duration
 		end
-
 	end
 
 	table.clear(originalHoldDurations)
-
 end
 
 Workspace.DescendantAdded:Connect(function(v)
@@ -1182,9 +1161,7 @@ Workspace.DescendantAdded:Connect(function(v)
 
 		originalHoldDurations[v] = v.HoldDuration
 		v.HoldDuration = 0
-
 	end
-
 end)
 
 promptButton.MouseButton1Click:Connect(function()
@@ -1204,9 +1181,7 @@ promptButton.MouseButton1Click:Connect(function()
 		promptButton.BackgroundColor3 = NORMAL
 
 		restorePrompts()
-
 	end
-
 end)
 
 --==================================================
@@ -1228,7 +1203,6 @@ local function applySpeed()
 		enabledSpeed
 		and SPEED_VALUE
 		or NORMAL_SPEED
-
 end
 
 speedButton.MouseButton1Click:Connect(function()
@@ -1244,11 +1218,9 @@ speedButton.MouseButton1Click:Connect(function()
 
 		speedButton.Text = "Speed 100 OFF"
 		speedButton.BackgroundColor3 = NORMAL
-
 	end
 
 	applySpeed()
-
 end)
 
 player.CharacterAdded:Connect(function(character)
@@ -1259,7 +1231,121 @@ player.CharacterAdded:Connect(function(character)
 	if humanoid and enabledSpeed then
 		humanoid.WalkSpeed = SPEED_VALUE
 	end
+end)
 
+--==================================================
+-- FPS DISPLAY ABOVE HEAD
+--==================================================
+
+local fpsFrames = 0
+local fpsLastTime = os.clock()
+local fpsText
+
+local function createFPS()
+
+	local character = player.Character
+
+	if not character then
+		return
+	end
+
+	local head = character:FindFirstChild("Head")
+
+	if not head then
+		return
+	end
+
+	local old = head:FindFirstChild("MyFPS")
+
+	if old then
+		old:Destroy()
+	end
+
+	local fpsGui = Instance.new("BillboardGui")
+
+	fpsGui.Name = "MyFPS"
+	fpsGui.Size = UDim2.fromOffset(110,35)
+	fpsGui.StudsOffset = Vector3.new(0,3,0)
+	fpsGui.AlwaysOnTop = true
+	fpsGui.MaxDistance = 1000
+	fpsGui.Parent = head
+
+	local text = Instance.new("TextLabel")
+
+	text.Size = UDim2.fromScale(1,1)
+	text.BackgroundTransparency = 1
+	text.Font = Enum.Font.GothamBold
+	text.TextScaled = true
+	text.TextStrokeTransparency = 0
+	text.Text = "FPS: ..."
+	text.Parent = fpsGui
+
+	return text
+end
+
+local function setupFPS()
+
+	task.wait(1)
+
+	fpsText = createFPS()
+end
+
+player.CharacterAdded:Connect(function()
+
+	task.wait(1)
+
+	fpsText = createFPS()
+
+end)
+
+if player.Character then
+	task.spawn(setupFPS)
+end
+
+RunService.RenderStepped:Connect(function()
+
+	fpsFrames += 1
+
+	local now = os.clock()
+
+	if now - fpsLastTime >= 1 then
+
+		local fps =
+			math.floor(
+				fpsFrames /
+				(now - fpsLastTime)
+			)
+
+		if fpsText and fpsText.Parent then
+
+			fpsText.Text = "FPS: " .. fps
+
+			if fps >= 120 then
+
+				fpsText.TextColor3 =
+					Color3.fromRGB(0,255,80)
+
+			elseif fps >= 60 then
+
+				fpsText.TextColor3 =
+					Color3.fromRGB(255,255,0)
+
+			elseif fps >= 30 then
+
+				fpsText.TextColor3 =
+					Color3.fromRGB(255,170,0)
+
+			else
+
+				fpsText.TextColor3 =
+					Color3.fromRGB(255,50,50)
+
+			end
+		end
+
+		fpsFrames = 0
+		fpsLastTime = now
+	end
 end)
 
 --==================================================
@@ -1268,12 +1354,84 @@ end)
 
 local menuVisible = true
 
+local cornerButton = Instance.new("ImageButton")
+
+cornerButton.Name = "CornerImage"
+cornerButton.Size = UDim2.fromOffset(36,36)
+cornerButton.Position = UDim2.fromOffset(5,5)
+cornerButton.BackgroundTransparency = 1
+cornerButton.BorderSizePixel = 0
+cornerButton.Image = "rbxassetid://124079604372236"
+cornerButton.ScaleType = Enum.ScaleType.Stretch
+cornerButton.ZIndex = 100
+cornerButton.Parent = gui
+
+local cornerCorner = Instance.new("UICorner")
+cornerCorner.CornerRadius = UDim.new(0,6)
+cornerCorner.Parent = cornerButton
+
+local cornerStroke = Instance.new("UIStroke")
+cornerStroke.Thickness = 2
+cornerStroke.Parent = cornerButton
+
+task.spawn(function()
+
+	while cornerButton.Parent do
+
+		cornerStroke.Color =
+			Color3.fromHSV(
+				(os.clock()*0.25)%1,
+				1,
+				1
+			)
+
+		task.wait(0.03)
+	end
+end)
+
 cornerButton.MouseButton1Click:Connect(function()
 
 	menuVisible = not menuVisible
 	main.Visible = menuVisible
 
 end)
+
+--==================================================
+-- CLICK SOUND
+--==================================================
+
+local CLICK_SOUND_ID = "rbxassetid://94964479268464"
+
+local function playClickSound()
+
+	local clickSound = Instance.new("Sound")
+
+	clickSound.Name = "ButtonClickSound"
+	clickSound.SoundId = CLICK_SOUND_ID
+	clickSound.Volume = 1
+	clickSound.Parent = SoundService
+
+	SoundService:PlayLocalSound(clickSound)
+
+	task.delay(3,function()
+
+		if clickSound and clickSound.Parent then
+			clickSound:Destroy()
+		end
+
+	end)
+end
+
+espButton.MouseButton1Click:Connect(playClickSound)
+spawnButton.MouseButton1Click:Connect(playClickSound)
+exclusiveESP.MouseButton1Click:Connect(playClickSound)
+kittyESP.MouseButton1Click:Connect(playClickSound)
+spawnExclusive.MouseButton1Click:Connect(playClickSound)
+spawnKitty.MouseButton1Click:Connect(playClickSound)
+promptButton.MouseButton1Click:Connect(playClickSound)
+speedButton.MouseButton1Click:Connect(playClickSound)
+musicButton.MouseButton1Click:Connect(playClickSound)
+fpsButton.MouseButton1Click:Connect(playClickSound)
 
 --==================================================
 -- START
@@ -1292,43 +1450,6 @@ task.defer(function()
 end)
 
 --==================================================
--- CLICK SOUND
---==================================================
-
-local CLICK_SOUND_ID = "rbxassetid://94964479268464"
-
-local function playClickSound()
-
-	local clickSound = Instance.new("Sound")
-	clickSound.Name = "ButtonClickSound"
-	clickSound.SoundId = CLICK_SOUND_ID
-	clickSound.Volume = 1
-	clickSound.Parent = SoundService
-
-	SoundService:PlayLocalSound(clickSound)
-
-	task.delay(3,function()
-
-		if clickSound and clickSound.Parent then
-			clickSound:Destroy()
-		end
-
-	end)
-
-end
-
-espButton.MouseButton1Click:Connect(playClickSound)
-spawnButton.MouseButton1Click:Connect(playClickSound)
-exclusiveESP.MouseButton1Click:Connect(playClickSound)
-kittyESP.MouseButton1Click:Connect(playClickSound)
-spawnExclusive.MouseButton1Click:Connect(playClickSound)
-spawnKitty.MouseButton1Click:Connect(playClickSound)
-promptButton.MouseButton1Click:Connect(playClickSound)
-speedButton.MouseButton1Click:Connect(playClickSound)
-musicButton.MouseButton1Click:Connect(playClickSound)
-fpsButton.MouseButton1Click:Connect(playClickSound)
-
---==================================================
 -- UPDATE
 --==================================================
 
@@ -1344,14 +1465,15 @@ RunService.Heartbeat:Connect(function(dt)
 	if enabledSpeed then
 
 		local character = player.Character
+
 		local humanoid =
-			character and character:FindFirstChildOfClass("Humanoid")
+			character and
+			character:FindFirstChildOfClass("Humanoid")
 
 		if humanoid
 			and humanoid.WalkSpeed ~= SPEED_VALUE then
 
 			humanoid.WalkSpeed = SPEED_VALUE
-
 		end
 	end
 
@@ -1359,15 +1481,18 @@ RunService.Heartbeat:Connect(function(dt)
 	espTimer += dt
 
 	if scanTimer >= 0.5 then
+
 		scanTimer = 0
 		scanAnimals()
+
 	end
 
 	if espTimer >= 0.1 then
+
 		espTimer = 0
 		updateESP()
-	end
 
+	end
 end)
 
 --==================================================
@@ -1378,16 +1503,17 @@ task.spawn(function()
 
 	while gui.Parent do
 
-		local backgroundMusic = findBackgroundMusic()
+		local backgroundMusic =
+			findBackgroundMusic()
 
-		if backgroundMusic and backgroundMuted then
+		if backgroundMusic
+			and backgroundMuted then
+
 			muteBackgroundMusic()
 		end
 
 		task.wait(0.5)
-
 	end
-
 end)
 
 --==================================================
@@ -1448,11 +1574,9 @@ local function shake(frame,power,duration)
 			)
 
 		task.wait(0.025)
-
 	end
 
 	frame.Position = original
-
 end
 
 local nameContainer = Instance.new("Frame")
@@ -1485,10 +1609,6 @@ secondLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 secondLayout.Padding = UDim.new(0,2)
 secondLayout.Parent = secondContainer
 
-local function getRainbow()
-	return Color3.fromHSV((os.clock()*0.25)%1,1,1)
-end
-
 task.spawn(function()
 
 	local hue = 0
@@ -1500,25 +1620,29 @@ task.spawn(function()
 		local color = Color3.fromHSV(hue,1,1)
 
 		for _,obj in ipairs(nameContainer:GetChildren()) do
+
 			if obj:IsA("TextLabel") then
 				obj.TextColor3 = color
 			end
+
 		end
 
 		for _,obj in ipairs(secondContainer:GetChildren()) do
+
 			if obj:IsA("TextLabel") then
 				obj.TextColor3 = color
 			end
+
 		end
 
 		task.wait(0.03)
 	end
-
 end)
 
 local function createBloodDrip(letterLabel)
 
 	local drip = Instance.new("Frame")
+
 	drip.AnchorPoint = Vector2.new(0.5,0)
 	drip.Position = UDim2.new(0.5,0,1,-2)
 	drip.Size = UDim2.fromOffset(7,0)
@@ -1533,6 +1657,7 @@ local function createBloodDrip(letterLabel)
 	corner.Parent = drip
 
 	local drop = Instance.new("Frame")
+
 	drop.AnchorPoint = Vector2.new(0.5,0.5)
 	drop.Position = UDim2.new(0.5,math.random(-8,8),1,0)
 	drop.Size = UDim2.fromOffset(9,9)
@@ -1605,9 +1730,7 @@ local function createBloodDrip(letterLabel)
 		if drop then
 			drop:Destroy()
 		end
-
 	end)
-
 end
 
 local function createLetter(parent,letter,index)
@@ -1652,7 +1775,6 @@ local function createLetter(parent,letter,index)
 	end)
 
 	return label
-
 end
 
 for i = 1,#NAME do
@@ -1664,7 +1786,6 @@ for i = 1,#NAME do
 	)
 
 	task.wait(LETTER_DELAY)
-
 end
 
 task.wait(0.8)
@@ -1678,7 +1799,6 @@ for i = 1,#NAME2 do
 	)
 
 	task.wait(LETTER_DELAY)
-
 end
 
 --==================================================
@@ -1750,9 +1870,7 @@ for side = 1,2 do
 				Size = UDim2.fromOffset(width,height)
 			}
 		):Play()
-
 	end
-
 end
 
 for side = 1,2 do
@@ -1811,9 +1929,7 @@ for side = 1,2 do
 				Size = UDim2.fromOffset(width,height)
 			}
 		):Play()
-
 	end
-
 end
 
 for i = 1,35 do
@@ -1843,7 +1959,6 @@ for i = 1,35 do
 	corner.Parent = drip
 
 	table.insert(bloodObjects,drip)
-
 end
 
 --==================================================
@@ -1885,7 +2000,6 @@ for i = 1,10 do
 			TextTransparency = 0
 		}
 	):Play()
-
 end
 
 task.spawn(function()
@@ -1903,13 +2017,10 @@ task.spawn(function()
 					0.52+
 					math.sin(os.clock()*5+i)*0.025
 				)
-
 		end
 
 		task.wait(0.03)
-
 	end
-
 end)
 
 task.spawn(function()
@@ -1967,9 +2078,7 @@ for _,obj in ipairs(nameContainer:GetChildren()) do
 				TextStrokeTransparency = 1
 			}
 		):Play()
-
 	end
-
 end
 
 for _,obj in ipairs(secondContainer:GetChildren()) do
@@ -1984,9 +2093,7 @@ for _,obj in ipairs(secondContainer:GetChildren()) do
 				TextStrokeTransparency = 1
 			}
 		):Play()
-
 	end
-
 end
 
 for _,fire in ipairs(fireObjects) do
@@ -1998,7 +2105,6 @@ for _,fire in ipairs(fireObjects) do
 			TextTransparency = 1
 		}
 	):Play()
-
 end
 
 TweenService:Create(
@@ -2018,7 +2124,6 @@ for _,blood in ipairs(bloodObjects) do
 			BackgroundTransparency = 1
 		}
 	):Play()
-
 end
 
 TweenService:Create(
@@ -2131,78 +2236,4 @@ horrorGui:Destroy()
 
 --==================================================
 -- END
---==================================================local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-
-local player = Players.LocalPlayer
-
-local frames = 0
-local lastTime = os.clock()
-
-local function createFPS()
-	local character = player.Character
-	if not character then return end
-
-	local head = character:FindFirstChild("Head")
-	if not head then return end
-
-	local old = head:FindFirstChild("MyFPS")
-	if old then old:Destroy() end
-
-	local gui = Instance.new("BillboardGui")
-	gui.Name = "MyFPS"
-	gui.Size = UDim2.fromOffset(110, 35)
-	gui.StudsOffset = Vector3.new(0, 3, 0)
-	gui.AlwaysOnTop = true
-	gui.Parent = head
-
-	local text = Instance.new("TextLabel")
-	text.Size = UDim2.fromScale(1, 1)
-	text.BackgroundTransparency = 1
-	text.Font = Enum.Font.GothamBold
-	text.TextScaled = true
-	text.TextStrokeTransparency = 0
-	text.Parent = gui
-
-	return text
-end
-
-local fpsText
-
-local function setup()
-	task.wait(1)
-	fpsText = createFPS()
-end
-
-player.CharacterAdded:Connect(setup)
-
-if player.Character then
-	setup()
-end
-
-RunService.RenderStepped:Connect(function()
-	frames += 1
-
-	local now = os.clock()
-
-	if now - lastTime >= 1 then
-		local fps = math.floor(frames / (now - lastTime))
-
-		if fpsText then
-			fpsText.Text = "FPS: " .. fps
-
-			if fps >= 120 then
-				fpsText.TextColor3 = Color3.fromRGB(0, 255, 80)
-			elseif fps >= 60 then
-				fpsText.TextColor3 = Color3.fromRGB(255, 255, 0)
-			elseif fps >= 30 then
-				fpsText.TextColor3 = Color3.fromRGB(255, 170, 0)
-			else
-				fpsText.TextColor3 = Color3.fromRGB(255, 50, 50)
-			end
-		end
-
-		frames = 0
-		lastTime = now
-	end
-end)
+--==================================================
