@@ -1122,47 +1122,61 @@ spawnKitty.MouseButton1Click:Connect(function()
 end)
 
 --==================================================
--- PROXIMITY PROMPT
+-- PROXIMITY PROMPT BIG DISTANCE
 --==================================================
 
-local originalHoldDurations = {}
+local originalPromptSettings = {}
 
-local function setPromptsInstant()
+local function setPromptsBig()
 
 	for _,v in ipairs(Workspace:GetDescendants()) do
 
 		if v:IsA("ProximityPrompt") then
 
-			if originalHoldDurations[v] == nil then
-				originalHoldDurations[v] = v.HoldDuration
+			if originalPromptSettings[v] == nil then
+				originalPromptSettings[v] = {
+					HoldDuration = v.HoldDuration,
+					MaxDistance = v.MaxActivationDistance
+				}
 			end
 
 			v.HoldDuration = 0
+			v.MaxActivationDistance = 100
 		end
 	end
 end
+
 
 local function restorePrompts()
 
-	for prompt,duration in pairs(originalHoldDurations) do
+	for prompt,data in pairs(originalPromptSettings) do
 
 		if prompt and prompt.Parent then
-			prompt.HoldDuration = duration
+			prompt.HoldDuration = data.HoldDuration
+			prompt.MaxActivationDistance = data.MaxDistance
 		end
+
 	end
 
-	table.clear(originalHoldDurations)
+	table.clear(originalPromptSettings)
 end
+
 
 Workspace.DescendantAdded:Connect(function(v)
 
-	if enabledPrompt
-		and v:IsA("ProximityPrompt") then
+	if enabledPrompt and v:IsA("ProximityPrompt") then
 
-		originalHoldDurations[v] = v.HoldDuration
+		originalPromptSettings[v] = {
+			HoldDuration = v.HoldDuration,
+			MaxDistance = v.MaxActivationDistance
+		}
+
 		v.HoldDuration = 0
+		v.MaxActivationDistance = 100
 	end
+
 end)
+
 
 promptButton.MouseButton1Click:Connect(function()
 
@@ -1173,7 +1187,7 @@ promptButton.MouseButton1Click:Connect(function()
 		promptButton.Text = "ProximityPrompt ON"
 		promptButton.BackgroundColor3 = GREEN
 
-		setPromptsInstant()
+		setPromptsBig()
 
 	else
 
@@ -1181,7 +1195,9 @@ promptButton.MouseButton1Click:Connect(function()
 		promptButton.BackgroundColor3 = NORMAL
 
 		restorePrompts()
+
 	end
+
 end)
 
 --==================================================
