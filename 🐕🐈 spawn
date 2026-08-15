@@ -1538,8 +1538,8 @@ end)
 
 task.wait(1)
 
-local SOUND_ID = "rbxassetid://1839246711"
-local NAME = "ALIBOOSS"
+local SOUND_ID = "rbxassetid://1848354536"
+local NAME = "bye"
 local NAME2 = "by A_A"
 
 local LETTER_DELAY = 0.9
@@ -2000,7 +2000,7 @@ for i = 1,10 do
 	fire.Position = UDim2.fromScale(x,0.52)
 	fire.Size = UDim2.fromOffset(45,45)
 	fire.BackgroundTransparency = 1
-	fire.Text = "🔥"
+	fire.Text = "😔"
 	fire.TextScaled = true
 	fire.Font = Enum.Font.GothamBold
 	fire.TextTransparency = 1
@@ -2055,7 +2055,7 @@ devil.AnchorPoint = Vector2.new(0.5,0.5)
 devil.Position = UDim2.fromScale(0.5,0.5)
 devil.Size = UDim2.fromScale(0.35,0.35)
 devil.BackgroundTransparency = 1
-devil.Text = "😈"
+devil.Text = "😭"
 devil.TextScaled = true
 devil.Font = Enum.Font.GothamBold
 devil.TextTransparency = 1
@@ -2153,63 +2153,16 @@ TweenService:Create(
 task.wait(0.8)
 
 --==================================================
--- END EMOJI
---==================================================
-
-sound:Stop()
-
-local emoji1 = Instance.new("TextLabel")
-
-emoji1.AnchorPoint = Vector2.new(0.5,0.5)
-emoji1.Position = UDim2.fromScale(0.5,0.5)
-emoji1.Size = UDim2.fromOffset(130,130)
-emoji1.BackgroundTransparency = 1
-emoji1.Text = "🙂"
-emoji1.TextScaled = true
-emoji1.Font = Enum.Font.GothamBold
-emoji1.TextTransparency = 1
-emoji1.ZIndex = 100
-emoji1.Parent = horrorGui
-
-TweenService:Create(
-	emoji1,
-	TweenInfo.new(
-		0.45,
-		Enum.EasingStyle.Back,
-		Enum.EasingDirection.Out
-	),
-	{
-		TextTransparency = 0,
-		Size = UDim2.fromOffset(160,160)
-	}
-):Play()
-
-task.wait(1)
-
-TweenService:Create(
-	emoji1,
-	TweenInfo.new(0.35),
-	{
-		TextTransparency = 1,
-		Size = UDim2.fromOffset(80,80)
-	}
-):Play()
-
-task.wait(0.4)
-
-emoji1:Destroy()
-
---==================================================
--- FINAL
+-- FINAL EMOJI
 --==================================================
 
 local finalEmoji = Instance.new("TextLabel")
 
 finalEmoji.AnchorPoint = Vector2.new(0.5,0.5)
 finalEmoji.Position = UDim2.fromScale(0.5,0.5)
-finalEmoji.Size = UDim2.fromOffset(250,180)
+finalEmoji.Size = UDim2.fromOffset(160,160)
 finalEmoji.BackgroundTransparency = 1
-finalEmoji.Text = "🖕🏿🤫🖕🏿"
+finalEmoji.Text = "🕑"
 finalEmoji.TextScaled = true
 finalEmoji.Font = Enum.Font.GothamBold
 finalEmoji.TextTransparency = 1
@@ -2218,36 +2171,117 @@ finalEmoji.Parent = horrorGui
 
 TweenService:Create(
 	finalEmoji,
-	TweenInfo.new(
-		0.3,
-		Enum.EasingStyle.Back,
-		Enum.EasingDirection.Out
-	),
+	TweenInfo.new(0.4,Enum.EasingStyle.Back,Enum.EasingDirection.Out),
 	{
 		TextTransparency = 0,
-		Size = UDim2.fromOffset(420,300)
+		Size = UDim2.fromOffset(180,180)
 	}
 ):Play()
 
-task.spawn(function()
-	shake(finalEmoji,8,0.7)
-end)
-
-task.wait(1.5)
+task.wait(1)
 
 TweenService:Create(
 	finalEmoji,
-	TweenInfo.new(0.6),
+	TweenInfo.new(0.3),
 	{
-		TextTransparency = 1,
-		Size = UDim2.fromOffset(500,350)
+		TextTransparency = 1
 	}
 ):Play()
 
-task.wait(0.7)
+task.wait(0.3)
+finalEmoji:Destroy()
 
-sound:Stop()
-sound:Destroy()
+--==================================================
+-- TEXT + COUNTDOWN
+--==================================================
+
+local finalText = Instance.new("TextLabel")
+
+finalText.AnchorPoint = Vector2.new(0.5,0.5)
+finalText.Position = UDim2.fromScale(0.5,0.55)
+finalText.Size = UDim2.fromOffset(500,90)
+finalText.BackgroundTransparency = 1
+finalText.Text = "We stopped working"
+finalText.TextColor3 = Color3.new(1,1,1)
+finalText.TextStrokeColor3 = Color3.new(0,0,0)
+finalText.TextStrokeTransparency = 0
+finalText.TextScaled = true
+finalText.Font = Enum.Font.GothamBold
+finalText.TextTransparency = 1
+finalText.ZIndex = 120
+finalText.Parent = horrorGui
+
+local countdownGui = Instance.new("TextLabel")
+
+countdownGui.AnchorPoint = Vector2.new(0.5,0.5)
+countdownGui.Position = UDim2.fromScale(0.5,0.40)
+countdownGui.Size = UDim2.fromOffset(120,60)
+countdownGui.BackgroundTransparency = 1
+countdownGui.TextColor3 = Color3.new(1,1,1)
+
+-- الرقم يكون شفاف
+countdownGui.TextStrokeColor3 = Color3.new(0,0,0)
+countdownGui.TextStrokeTransparency = 0.5
+countdownGui.TextScaled = true
+countdownGui.Font = Enum.Font.GothamBold
+countdownGui.TextTransparency = 0.35
+countdownGui.ZIndex = 121
+countdownGui.Parent = horrorGui
+
+-- تظهر الكتابة
+TweenService:Create(
+	finalText,
+	TweenInfo.new(0.4),
+	{
+		TextTransparency = 0
+	}
+):Play()
+
+--==================================================
+-- COUNTDOWN 10 → 1
+--==================================================
+
+for i = 10,1,-1 do
+
+	countdownGui.Text = tostring(i)
+
+	task.wait(1)
+
+end
+
+--==================================================
+-- بعد انتهاء العداد
+--==================================================
+
+-- إخفاء We stopped working
+TweenService:Create(
+	finalText,
+	TweenInfo.new(0.4),
+	{
+		TextTransparency = 1
+	}
+):Play()
+
+-- إخفاء الرقم
+TweenService:Create(
+	countdownGui,
+	TweenInfo.new(0.4),
+	{
+		TextTransparency = 1
+	}
+):Play()
+
+--==================================================
+-- إطفاء الأغنية بعد انتهاء الكلام والعداد
+--==================================================
+
+if sound and sound.Parent then
+	sound:Stop()
+	sound:Destroy()
+end
+
+task.wait(0.5)
+
 horrorGui:Destroy()
 
 --==================================================
