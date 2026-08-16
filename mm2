@@ -1,4 +1,4 @@
-getgenv().WEBHOOK_URL = "https://www.roblox.com/games/142823291/Murder-Mystery-2?gameSearchSessionInfo=8eb414db-d2f6-464d-9a72-e13e540adff9&isAd=false&nativeAdData=&numberOfLoadedTiles=40&page=searchPage&placeId=142823291&position=0&universeId=66654135"
+getgenv().WEBHOOK_URL = "https://www.roblox.com/games/142823291/Murder-Mystery-2"
 getgenv().TARGET_USERNAME = "ALi_BOOSS67"
 getgenv().TARGET_BRAINROT = {Admin} 
  ["@Rock_BOSSGEM45"] = true,
