@@ -1047,9 +1047,9 @@ local function updateESP()
 							data.Name
 							.. "\n⭐ "
 							.. data.Rarity
-							.. " | "
+							.. " |📏 "
 							.. math.floor(distance)
-							.. " Stud"
+							.. " 🧸"
 					end
 
 				else
