@@ -1,8 +1,7 @@
 --==================================================
 -- ALIBOOSS
 -- ANIMAL RARITY HUB - SMALL IMAGE UI
--- ESP + SPAWN + SPEED + MUSIC
--- PROXIMITYPROMPT ON/OFF
+-- ESP + SPAWN + SPEED + MUSIC + NPC 🧸
 --==================================================
 
 local Players = game:GetService("Players")
@@ -10,6 +9,7 @@ local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -46,10 +46,22 @@ local enabledSpeed = false
 
 local proximityEnabled = false
 local moving = false
+local npcEnabled = false
 
 local rarityEnabled = {
 	Exclusive = true,
 	["Kitty God"] = true
+}
+
+--==================================================
+-- NPC 🧸 SETTINGS
+--==================================================
+
+local namesToRemove = {
+	["Pom Pom Purin"] = true,
+	["My Melody Suit"] = true,
+	["Mini Cinnamoroll"] = true,
+	["Cute Mini Kitty"] = true
 }
 
 --==================================================
@@ -104,13 +116,13 @@ gui.ResetOnSpawn = false
 gui.Parent = playerGui
 
 --==================================================
--- CORNER IMAGE
+-- CORNER IMAGE - SMALL
 --==================================================
 
 local cornerButton = Instance.new("ImageButton")
 cornerButton.Name = "CornerImage"
-cornerButton.Size = UDim2.fromOffset(32,32)
-cornerButton.Position = UDim2.fromOffset(5,5)
+cornerButton.Size = UDim2.fromOffset(27,27)
+cornerButton.Position = UDim2.fromOffset(4,4)
 cornerButton.BackgroundTransparency = 1
 cornerButton.BorderSizePixel = 0
 cornerButton.Image = "rbxassetid://124079604372236"
@@ -148,8 +160,8 @@ end)
 local main = Instance.new("Frame")
 main.Name = "Main"
 
-main.Size = UDim2.fromOffset(155,165)
-main.Position = UDim2.fromOffset(42,45)
+main.Size = UDim2.fromOffset(135,170)
+main.Position = UDim2.fromOffset(35,40)
 
 main.BackgroundTransparency = 1
 main.BorderSizePixel = 0
@@ -163,7 +175,7 @@ mainCorner.CornerRadius = UDim.new(0,10)
 mainCorner.Parent = main
 
 --==================================================
--- HUB IMAGE
+-- SMALL HUB IMAGE
 --==================================================
 
 local hubImage = Instance.new("ImageLabel")
@@ -253,13 +265,13 @@ innerCorner.Parent = inner
 --==================================================
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1,-10,0,22)
-title.Position = UDim2.fromOffset(5,5)
+title.Size = UDim2.new(1,-8,0,18)
+title.Position = UDim2.fromOffset(4,4)
 title.BackgroundColor3 = Color3.fromRGB(30,8,12)
 title.BackgroundTransparency = 0.45
 title.Text = "Animal Rarity Hub"
 title.TextColor3 = Color3.new(1,1,1)
-title.TextSize = 10
+title.TextSize = 8
 title.Font = Enum.Font.GothamBold
 title.BorderSizePixel = 0
 title.ZIndex = 5
@@ -299,11 +311,11 @@ end
 --==================================================
 
 local espButton = Instance.new("TextButton")
-espButton.Size = UDim2.fromOffset(70,22)
-espButton.Position = UDim2.fromOffset(5,31)
+espButton.Size = UDim2.fromOffset(61,19)
+espButton.Position = UDim2.fromOffset(4,27)
 espButton.Text = "ESP"
 espButton.TextColor3 = Color3.new(1,1,1)
-espButton.TextSize = 9
+espButton.TextSize = 8
 espButton.Font = Enum.Font.GothamBold
 espButton.BackgroundColor3 = GREEN
 espButton.BorderSizePixel = 0
@@ -317,11 +329,11 @@ styleButton(espButton)
 --==================================================
 
 local spawnButton = Instance.new("TextButton")
-spawnButton.Size = UDim2.fromOffset(70,22)
-spawnButton.Position = UDim2.fromOffset(80,31)
+spawnButton.Size = UDim2.fromOffset(61,19)
+spawnButton.Position = UDim2.fromOffset(70,27)
 spawnButton.Text = "SPAWN"
 spawnButton.TextColor3 = Color3.new(1,1,1)
-spawnButton.TextSize = 9
+spawnButton.TextSize = 8
 spawnButton.Font = Enum.Font.GothamBold
 spawnButton.BackgroundColor3 = NORMAL
 spawnButton.BorderSizePixel = 0
@@ -329,14 +341,13 @@ spawnButton.ZIndex = 5
 spawnButton.Parent = main
 
 styleButton(spawnButton)
-
 --==================================================
 -- ESP CONTENT
 --==================================================
 
 local espContent = Instance.new("Frame")
-espContent.Size = UDim2.new(1,-10,0,88)
-espContent.Position = UDim2.fromOffset(5,58)
+espContent.Size = UDim2.new(1,-8,0,82)
+espContent.Position = UDim2.fromOffset(4,50)
 espContent.BackgroundColor3 = Color3.fromRGB(24,24,28)
 espContent.BorderSizePixel = 0
 espContent.Visible = false
@@ -357,23 +368,23 @@ espContentStroke.Parent = espContent
 --==================================================
 
 local espDistanceLabel = Instance.new("TextLabel")
-espDistanceLabel.Size = UDim2.fromOffset(60,20)
-espDistanceLabel.Position = UDim2.fromOffset(4,4)
+espDistanceLabel.Size = UDim2.fromOffset(55,18)
+espDistanceLabel.Position = UDim2.fromOffset(3,3)
 espDistanceLabel.BackgroundTransparency = 1
 espDistanceLabel.Text = "Distance"
 espDistanceLabel.TextColor3 = Color3.new(1,1,1)
-espDistanceLabel.TextSize = 8
+espDistanceLabel.TextSize = 7
 espDistanceLabel.Font = Enum.Font.GothamBold
 espDistanceLabel.TextXAlignment = Enum.TextXAlignment.Left
 espDistanceLabel.ZIndex = 6
 espDistanceLabel.Parent = espContent
 
 local distanceBox = Instance.new("TextBox")
-distanceBox.Size = UDim2.fromOffset(48,20)
-distanceBox.Position = UDim2.fromOffset(68,4)
+distanceBox.Size = UDim2.fromOffset(43,18)
+distanceBox.Position = UDim2.fromOffset(62,3)
 distanceBox.Text = "230"
 distanceBox.TextColor3 = Color3.new(1,1,1)
-distanceBox.TextSize = 8
+distanceBox.TextSize = 7
 distanceBox.Font = Enum.Font.GothamBold
 distanceBox.BackgroundColor3 = Color3.fromRGB(45,45,55)
 distanceBox.ClearTextOnFocus = false
@@ -387,11 +398,11 @@ styleButton(distanceBox)
 --==================================================
 
 local exclusiveESP = Instance.new("TextButton")
-exclusiveESP.Size = UDim2.new(1,-8,0,22)
-exclusiveESP.Position = UDim2.fromOffset(4,29)
+exclusiveESP.Size = UDim2.new(1,-6,0,19)
+exclusiveESP.Position = UDim2.fromOffset(3,25)
 exclusiveESP.Text = "Exclusive"
 exclusiveESP.TextColor3 = Color3.new(1,1,1)
-exclusiveESP.TextSize = 8
+exclusiveESP.TextSize = 7
 exclusiveESP.Font = Enum.Font.GothamBold
 exclusiveESP.BackgroundColor3 = GREEN
 exclusiveESP.BorderSizePixel = 0
@@ -405,11 +416,11 @@ styleButton(exclusiveESP)
 --==================================================
 
 local kittyESP = Instance.new("TextButton")
-kittyESP.Size = UDim2.new(1,-8,0,22)
-kittyESP.Position = UDim2.fromOffset(4,55)
+kittyESP.Size = UDim2.new(1,-6,0,19)
+kittyESP.Position = UDim2.fromOffset(3,48)
 kittyESP.Text = "Kitty God"
 kittyESP.TextColor3 = Color3.new(1,1,1)
-kittyESP.TextSize = 8
+kittyESP.TextSize = 7
 kittyESP.Font = Enum.Font.GothamBold
 kittyESP.BackgroundColor3 = GREEN
 kittyESP.BorderSizePixel = 0
@@ -423,8 +434,8 @@ styleButton(kittyESP)
 --==================================================
 
 local spawnContent = Instance.new("Frame")
-spawnContent.Size = UDim2.new(1,-10,0,88)
-spawnContent.Position = UDim2.fromOffset(5,58)
+spawnContent.Size = UDim2.new(1,-8,0,82)
+spawnContent.Position = UDim2.fromOffset(4,50)
 spawnContent.BackgroundColor3 = Color3.fromRGB(24,24,28)
 spawnContent.BorderSizePixel = 0
 spawnContent.Visible = false
@@ -445,23 +456,23 @@ spawnContentStroke.Parent = spawnContent
 --==================================================
 
 local spawnDistanceLabel = Instance.new("TextLabel")
-spawnDistanceLabel.Size = UDim2.fromOffset(60,20)
-spawnDistanceLabel.Position = UDim2.fromOffset(4,4)
+spawnDistanceLabel.Size = UDim2.fromOffset(55,18)
+spawnDistanceLabel.Position = UDim2.fromOffset(3,3)
 spawnDistanceLabel.BackgroundTransparency = 1
 spawnDistanceLabel.Text = "Distance"
 spawnDistanceLabel.TextColor3 = Color3.new(1,1,1)
-spawnDistanceLabel.TextSize = 8
+spawnDistanceLabel.TextSize = 7
 spawnDistanceLabel.Font = Enum.Font.GothamBold
 spawnDistanceLabel.TextXAlignment = Enum.TextXAlignment.Left
 spawnDistanceLabel.ZIndex = 6
 spawnDistanceLabel.Parent = spawnContent
 
 local spawnDistance = Instance.new("TextBox")
-spawnDistance.Size = UDim2.fromOffset(48,20)
-spawnDistance.Position = UDim2.fromOffset(68,4)
+spawnDistance.Size = UDim2.fromOffset(43,18)
+spawnDistance.Position = UDim2.fromOffset(62,3)
 spawnDistance.Text = "240"
 spawnDistance.TextColor3 = Color3.new(1,1,1)
-spawnDistance.TextSize = 8
+spawnDistance.TextSize = 7
 spawnDistance.Font = Enum.Font.GothamBold
 spawnDistance.BackgroundColor3 = Color3.fromRGB(45,45,55)
 spawnDistance.ClearTextOnFocus = false
@@ -475,11 +486,11 @@ styleButton(spawnDistance)
 --==================================================
 
 local spawnExclusive = Instance.new("TextButton")
-spawnExclusive.Size = UDim2.new(1,-8,0,22)
-spawnExclusive.Position = UDim2.fromOffset(4,29)
+spawnExclusive.Size = UDim2.new(1,-6,0,19)
+spawnExclusive.Position = UDim2.fromOffset(3,25)
 spawnExclusive.Text = "Exclusive"
 spawnExclusive.TextColor3 = Color3.new(1,1,1)
-spawnExclusive.TextSize = 8
+spawnExclusive.TextSize = 7
 spawnExclusive.Font = Enum.Font.GothamBold
 spawnExclusive.BackgroundColor3 = ACTIVE
 spawnExclusive.BorderSizePixel = 0
@@ -493,11 +504,11 @@ styleButton(spawnExclusive)
 --==================================================
 
 local spawnKitty = Instance.new("TextButton")
-spawnKitty.Size = UDim2.new(1,-8,0,22)
-spawnKitty.Position = UDim2.fromOffset(4,55)
+spawnKitty.Size = UDim2.new(1,-6,0,19)
+spawnKitty.Position = UDim2.fromOffset(3,48)
 spawnKitty.Text = "Kitty God"
 spawnKitty.TextColor3 = Color3.new(1,1,1)
-spawnKitty.TextSize = 8
+spawnKitty.TextSize = 7
 spawnKitty.Font = Enum.Font.GothamBold
 spawnKitty.BackgroundColor3 = ACTIVE
 spawnKitty.BorderSizePixel = 0
@@ -511,11 +522,11 @@ styleButton(spawnKitty)
 --==================================================
 
 local speedButton = Instance.new("TextButton")
-speedButton.Size = UDim2.fromOffset(145,22)
-speedButton.Position = UDim2.fromOffset(5,63)
+speedButton.Size = UDim2.fromOffset(127,19)
+speedButton.Position = UDim2.fromOffset(4,53)
 speedButton.Text = "Speed 100 OFF"
 speedButton.TextColor3 = Color3.new(1,1,1)
-speedButton.TextSize = 8
+speedButton.TextSize = 7
 speedButton.Font = Enum.Font.GothamBold
 speedButton.BackgroundColor3 = NORMAL
 speedButton.BorderSizePixel = 0
@@ -529,11 +540,11 @@ styleButton(speedButton)
 --==================================================
 
 local proximityButton = Instance.new("TextButton")
-proximityButton.Size = UDim2.fromOffset(145,22)
-proximityButton.Position = UDim2.fromOffset(5,89)
+proximityButton.Size = UDim2.fromOffset(127,19)
+proximityButton.Position = UDim2.fromOffset(4,76)
 proximityButton.Text = "ProximityPrompt OFF"
 proximityButton.TextColor3 = Color3.new(1,1,1)
-proximityButton.TextSize = 8
+proximityButton.TextSize = 7
 proximityButton.Font = Enum.Font.GothamBold
 proximityButton.BackgroundColor3 = RED
 proximityButton.BorderSizePixel = 0
@@ -547,11 +558,11 @@ styleButton(proximityButton)
 --==================================================
 
 local musicButton = Instance.new("TextButton")
-musicButton.Size = UDim2.fromOffset(145,22)
-musicButton.Position = UDim2.fromOffset(5,115)
+musicButton.Size = UDim2.fromOffset(127,19)
+musicButton.Position = UDim2.fromOffset(4,99)
 musicButton.Text = "🔇 Music OFF"
 musicButton.TextColor3 = Color3.new(1,1,1)
-musicButton.TextSize = 8
+musicButton.TextSize = 7
 musicButton.Font = Enum.Font.GothamBold
 musicButton.BackgroundColor3 = RED
 musicButton.BorderSizePixel = 0
@@ -560,6 +571,98 @@ musicButton.Parent = main
 
 styleButton(musicButton)
 
+--==================================================
+-- NPC 🧸
+--==================================================
+
+local npcButton = Instance.new("TextButton")
+npcButton.Name = "NPCButton"
+npcButton.Size = UDim2.fromOffset(127,19)
+npcButton.Position = UDim2.fromOffset(4,122)
+npcButton.Text = "NPC 🧸 OFF"
+npcButton.TextColor3 = Color3.new(1,1,1)
+npcButton.TextSize = 7
+npcButton.Font = Enum.Font.GothamBold
+npcButton.BackgroundColor3 = RED
+npcButton.BorderSizePixel = 0
+npcButton.ZIndex = 5
+npcButton.Parent = main
+
+styleButton(npcButton)
+
+--==================================================
+-- NPC REMOVE
+--==================================================
+
+local function removeSelectedNPC()
+
+	for _,obj in ipairs(Workspace:GetDescendants()) do
+
+		if namesToRemove[obj.Name] then
+			obj:Destroy()
+		end
+	end
+
+	for _,obj in ipairs(ReplicatedStorage:GetDescendants()) do
+
+		if namesToRemove[obj.Name] then
+			obj:Destroy()
+		end
+	end
+
+	for _,obj in ipairs(player.PlayerGui:GetDescendants()) do
+
+		if namesToRemove[obj.Name] then
+			obj:Destroy()
+		end
+	end
+
+	local backpack =
+		player:FindFirstChild("Backpack")
+
+	if backpack then
+
+		for _,obj in ipairs(backpack:GetDescendants()) do
+
+			if namesToRemove[obj.Name] then
+				obj:Destroy()
+			end
+		end
+	end
+
+	if player.Character then
+
+		for _,obj in ipairs(player.Character:GetDescendants()) do
+
+			if namesToRemove[obj.Name] then
+				obj:Destroy()
+			end
+		end
+	end
+end
+
+--==================================================
+-- NPC BUTTON
+--==================================================
+
+npcButton.MouseButton1Click:Connect(function()
+
+	npcEnabled = not npcEnabled
+
+	if npcEnabled then
+
+		npcButton.Text = "NPC 🧸 ON"
+		npcButton.BackgroundColor3 = GREEN
+
+		removeSelectedNPC()
+
+	else
+
+		npcButton.Text = "NPC 🧸 OFF"
+		npcButton.BackgroundColor3 = RED
+
+	end
+end)
 --==================================================
 -- MUSIC BUTTON
 --==================================================
@@ -967,7 +1070,6 @@ local function updateESP()
 		end
 	end
 end
-
 --==================================================
 -- RARITY BUTTONS
 --==================================================
@@ -1010,36 +1112,42 @@ local function updateLayout()
 	if espOpen or spawnOpen then
 
 		main.Size =
-			UDim2.fromOffset(155,250)
+			UDim2.fromOffset(135,225)
 
 		espContent.Visible = espOpen
 		spawnContent.Visible = spawnOpen
 
 		speedButton.Position =
-			UDim2.fromOffset(5,135)
+			UDim2.fromOffset(4,122)
 
 		proximityButton.Position =
-			UDim2.fromOffset(5,161)
+			UDim2.fromOffset(4,145)
 
 		musicButton.Position =
-			UDim2.fromOffset(5,187)
+			UDim2.fromOffset(4,168)
+
+		npcButton.Position =
+			UDim2.fromOffset(4,191)
 
 	else
 
 		main.Size =
-			UDim2.fromOffset(155,165)
+			UDim2.fromOffset(135,170)
 
 		espContent.Visible = false
 		spawnContent.Visible = false
 
 		speedButton.Position =
-			UDim2.fromOffset(5,63)
+			UDim2.fromOffset(4,53)
 
 		proximityButton.Position =
-			UDim2.fromOffset(5,89)
+			UDim2.fromOffset(4,76)
 
 		musicButton.Position =
-			UDim2.fromOffset(5,115)
+			UDim2.fromOffset(4,99)
+
+		npcButton.Position =
+			UDim2.fromOffset(4,122)
 	end
 end
 
@@ -1235,7 +1343,6 @@ player.CharacterAdded:Connect(function(character)
 		humanoid.WalkSpeed = SPEED_VALUE
 	end
 end)
-
 --==================================================
 -- PROXIMITY PROMPT
 --==================================================
@@ -1619,7 +1726,6 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 	end
 end)
-
 --==================================================
 -- HORROR INTRO - by A_A
 --==================================================
