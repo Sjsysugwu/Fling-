@@ -1,1 +1,53 @@
-OG
+--==================================================
+-- ALI BOOSS - BAN SCREEN
+--==================================================
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "BanScreen"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- الخلفية
+local background = Instance.new("Frame")
+background.Size = UDim2.fromScale(1, 1)
+background.Position = UDim2.fromScale(0, 0)
+background.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+background.BorderSizePixel = 0
+background.Parent = gui
+
+-- كلمة BAN
+local banText = Instance.new("TextLabel")
+banText.Size = UDim2.new(1, 0, 0, 100)
+banText.Position = UDim2.new(0, 0, 0.32, 0)
+banText.BackgroundTransparency = 1
+banText.Text = "BANNED"
+banText.TextColor3 = Color3.fromRGB(255, 60, 60)
+banText.TextScaled = true
+banText.Font = Enum.Font.GothamBold
+banText.Parent = background
+
+-- الرسالة
+local message = Instance.new("TextLabel")
+message.Size = UDim2.new(0.9, 0, 0, 80)
+message.Position = UDim2.new(0.05, 0, 0.48, 0)
+message.BackgroundTransparency = 1
+message.Text = "Skate isn't BANNED, the site is down"
+message.TextColor3 = Color3.fromRGB(255, 255, 255)
+message.TextScaled = true
+message.Font = Enum.Font.Gotham
+message.Parent = background
+
+-- رقم/سبب إضافي
+local reason = Instance.new("TextLabel")
+reason.Size = UDim2.new(1, 0, 0, 40)
+reason.Position = UDim2.new(0, 0, 0.61, 0)
+reason.BackgroundTransparency = 1
+reason.Text = "You have been banned from this experience. "
+reason.TextColor3 = Color3.fromRGB(180, 180, 180)
+reason.TextScaled = true
+reason.Font = Enum.Font.Gotham
+reason.Parent = background
