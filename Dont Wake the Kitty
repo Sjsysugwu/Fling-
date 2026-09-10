@@ -208,7 +208,7 @@ local gui =
 	Instance.new("ScreenGui")
 
 gui.Name =
-	"AnimalRarityHub"
+	"XR"
 
 gui.ResetOnSpawn =
 	false
@@ -593,13 +593,13 @@ title.BackgroundTransparency =
 	0.45
 
 title.Text =
-	"Animal Rarity Hub"
+	"XR"
 
 title.TextColor3 =
-	Color3.new(
-		1,
-		1,
-		1
+	Color3.fromRGB(
+		255,
+		215,
+		0
 	)
 
 title.TextSize =
