@@ -3,6 +3,10 @@
 --  PRESET 1200m/60m + FAILSAFE TRANSLATOR
 --  DEFAULT LANGUAGE: ENGLISH
 -- ==============================================================================
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+player:Kick("key https://discord.gg/vHCC9rNhB")
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
