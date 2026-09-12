@@ -3,10 +3,772 @@
 --  PRESET 1200m/60m + FAILSAFE TRANSLATOR
 --  DEFAULT LANGUAGE: ENGLISH
 -- ==============================================================================
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+-- Created by Alwi / Mainery-foxxie
+if getgenv().Velocity_X_Loader then
+    local Notify: any = nil
+    pcall(function()
+        Notify = loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/Mainery-foxxie/Main/refs/heads/main/UI%20Libary/Nofication/BocusLuke.lua"
+        ))()
+    end)
+    if Notify then
+        pcall(function()
+            Notify:Notify({
+                Title = "Alwi Hub",
+                Description = "This session is already loaded. Do you want to delete the config file?",
+            }, {
+                OutlineColor = Color3.fromRGB(255, 80, 80),
+                Time = 10,
+                Type = "option",
+            }, {
+                Callback = function(choice: boolean)
+                    if choice then
+                        local CONFIG_FILE: string = "Alwi Hub/AlwiHub_Settings.json"
+                        local deleted: boolean = false
+                        if isfile and delfile then
+                            pcall(function()
+                                if isfile(CONFIG_FILE) then
+                                    delfile(CONFIG_FILE)
+                                    deleted = true
+                                    getgenv().Velocity_X_Loader = false
+                                end
+                            end)
+                        end
+                        if deleted then
+                            pcall(function()
+                                Notify:Notify({
+                                    Title = "Config Deleted",
+                                    Description = "Settings file has been removed.",
+                                }, {
+                                    OutlineColor = Color3.fromRGB(255, 100, 100),
+                                    Time = 3,
+                                    Type = "default",
+                                }, {
+                                    Image = "rbxassetid://103887859853708",
+                                    ImageColor = Color3.fromRGB(255, 255, 255),
+                                })
+                            end)
+                        end
+                    else
+                        pcall(function()
+                            Notify:Notify({
+                                Title = "Loader Already Running",
+                                Description = "Alwi Hub is already active in this session.",
+                            }, {
+                                OutlineColor = Color3.fromRGB(255, 50, 50),
+                                Time = 4,
+                                Type = "default",
+                            }, {
+                                Image = "rbxassetid://103887859853708",
+                                ImageColor = Color3.fromRGB(255, 255, 255),
+                            })
+                        end)
+                    end
+                end
+            })
+        end)
+    else
+        warn("Alwi hub is already active.")
+    end
+    return
+end
 
-player:Kick("key https://discord.gg/vHCC9rNhB")
+getgenv().Velocity_X_Loader = true
+
+local _syn:    any = rawget(_G, "syn")
+local _fluxus: any = rawget(_G, "fluxus")
+local _http:   any = rawget(_G, "http")
+
+local http_request_fn: ((req: {[string]:any}) -> {[string]:any})?
+    = (rawget(_G, "http_request") or rawget(_G, "request"))
+    or (_syn    and _syn.request)
+    or (_fluxus and _fluxus.request)
+    or (_http   and _http.request)
+    or nil
+
+local function getThumbnail(userId: number): string
+    local ok, url = pcall(function()
+        return game:GetService("Players"):GetUserThumbnailAsync(
+            userId,
+            Enum.ThumbnailType.HeadShot,
+            Enum.ThumbnailSize.Size150x150
+        )
+    end)
+    if ok and url and #url > 4 then
+        warn(string.format("[VelocityX] Thumb URL → %s", url))
+        return url
+    end
+    local fallback = string.format(
+        "rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150", userId)
+    warn(string.format("[VelocityX] Thumb fallback → %s", fallback))
+    return fallback
+end
+
+if not cloneref then
+    local _probe: Part = Instance.new("Part")
+    local _instanceList: { [any]: any }? = nil
+
+    for _: any, _tbl: any in getreg() do
+        if type(_tbl) == "table" and #_tbl >= 0 then
+            if rawget(_tbl, "__mode") == "kvs" then
+                for _k: any, _v: any in _tbl do
+                    if _v == _probe then
+                        _instanceList = _tbl
+                        break
+                    end
+                end
+            end
+        end
+        if _instanceList then break end
+    end
+
+    local function _invalidate(obj: Instance): Instance?
+        if not _instanceList then return obj end
+        for k: any, v: any in _instanceList :: { [any]: any } do
+            if v == obj then
+                (_instanceList :: { [any]: any })[k] = nil
+                return obj
+            end
+        end
+        return obj
+    end
+
+    getgenv().cloneref = _invalidate
+end
+local cloneref: (obj: any) -> any = cloneref or function(obj: any): any return obj end
+local HttpService  = cloneref(game:GetService("HttpService"))
+local TweenService = game:GetService("TweenService")
+local RunService   = game:GetService("RunService")
+local Players      = game:GetService("Players")
+local player       = Players.LocalPlayer
+
+local CoreGui: Instance
+if RunService:IsStudio() then
+    CoreGui = player.PlayerGui
+else
+    CoreGui = cloneref(game:GetService("CoreGui"))
+end
+
+-- ── neriumR icon pack ────────────────────────────────────────────────────────
+local icons: {[string]: string} = {}
+pcall(function()
+    local loaded = loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/Van1a/neriumR/refs/heads/main/components/icons.lua"
+    ))().assets  -- key is .assets (NOT .assest)
+    if loaded and type(loaded) == "table" then icons = loaded end
+end)
+-- Get icon asset ID, falls back to "" so callers never crash
+local function icon(name: string): string
+    return icons["lucide-" .. name] or ""
+end
+-- Create a small ImageLabel icon inline (used in rows/headers)
+local function makeIconLabel(parent: Instance, assetId: string, size: number, col: Color3?): ImageLabel
+    local img: ImageLabel = Instance.new("ImageLabel", parent)
+    img.BackgroundTransparency = 1
+    img.Size        = UDim2.new(0, size, 0, size)
+    img.Image       = assetId
+    img.ImageColor3 = col or Color3.fromRGB(160, 160, 160)
+    img.ZIndex      = 5
+    return img
+end
+
+local gui: ScreenGui = Instance.new("ScreenGui")
+gui.Name            = "Introvert"
+gui.Parent          = CoreGui
+gui.IgnoreGuiInset  = true
+gui.ResetOnSpawn    = false
+gui.DisplayOrder    = 999999
+
+local sound: Sound = Instance.new("Sound")
+sound.Parent  = gui
+sound.SoundId = "rbxassetid://8745692251"
+sound.Volume  = 2
+
+local _earlySkipIntro: boolean = false
+pcall(function()
+    if readfile and isfile then
+        local _cfgPath: string = "Alwi Hub/AlwiHub_Settings.json"
+        if isfile(_cfgPath) then
+            local _d: any = HttpService:JSONDecode(readfile(_cfgPath))
+            _earlySkipIntro = _d and _d.skipIntroUI == true
+        end
+    end
+end)
+
+local function log()
+    task.spawn(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Mainery-foxxie/Main/refs/heads/main/Velocity%20X/config/Log.luau"))()
+    end)
+end
+
+task.spawn(function()
+    log()
+end)
+if not _earlySkipIntro then
+    sound:Play()
+
+    local bg: Frame = Instance.new("Frame")
+    bg.Parent           = gui
+    bg.Size             = UDim2.new(1, 0, 1, 0)
+    bg.BackgroundColor3 = Color3.new(0, 0, 0)
+    bg.BorderSizePixel  = 0
+
+    local image: ImageLabel = Instance.new("ImageLabel")
+    image.Parent             = gui
+    image.BackgroundTransparency = 1
+    image.Image              = "rbxassetid://117699318173215"
+    image.Size               = UDim2.new(0, 0, 0, 0)
+    image.Position           = UDim2.new(0.5, 0, 0.5, 0)
+    image.AnchorPoint        = Vector2.new(0.5, 0.5)
+    image.ImageTransparency  = 1
+    image.Rotation           = -180
+    image.ZIndex             = 5
+
+    local glow: ImageLabel = Instance.new("ImageLabel")
+    glow.Parent              = gui
+    glow.BackgroundTransparency = 1
+    glow.Image               = "rbxassetid://117699318173215"
+    glow.Size                = UDim2.new(0, 0, 0, 0)
+    glow.Position            = UDim2.new(0.5, 0, 0.5, 0)
+    glow.AnchorPoint         = Vector2.new(0.5, 0.5)
+    glow.ImageTransparency   = 1
+    glow.ZIndex              = 4
+
+    local title: TextLabel = Instance.new("TextLabel")
+    title.Parent               = gui
+    title.BackgroundTransparency = 1
+    title.Size                 = UDim2.new(1, 0, 0.12, 0)
+    title.Position             = UDim2.new(0, -1000, 0.34, 0)
+    title.Text                 = "by XR"
+    title.Font                 = Enum.Font.Arcade
+    title.TextScaled           = true
+    title.TextTransparency     = 1
+    title.TextColor3           = Color3.fromRGB(255, 215, 0)
+    title.TextStrokeTransparency = 0
+    title.TextStrokeColor3     = Color3.fromRGB(120, 80, 0)
+    title.ZIndex               = 10
+
+    local sub: TextLabel = Instance.new("TextLabel")
+    sub.Parent               = gui
+    sub.BackgroundTransparency = 1
+    sub.Size                 = UDim2.new(1, 0, 0.05, 0)
+    sub.Position             = UDim2.new(0, 1000, 0.47, 0)
+    sub.Text                 = "onhub script"
+    sub.Font                 = Enum.Font.Arcade
+    sub.TextScaled           = true
+    sub.TextColor3           = Color3.fromRGB(255, 255, 255)
+    sub.TextTransparency     = 1
+    sub.ZIndex               = 10
+
+    local barBg: Frame = Instance.new("Frame")
+    barBg.Parent           = gui
+    barBg.Size             = UDim2.new(0.4, 0, 0, 6)
+    barBg.Position         = UDim2.new(0.3, 0, 0.7, 0)
+    barBg.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+    barBg.BorderSizePixel  = 0
+    barBg.Visible          = false
+    do
+        local barBgStroke: UIStroke = Instance.new("UIStroke", barBg)
+        barBgStroke.Color       = Color3.fromRGB(60, 60, 80)
+        barBgStroke.Thickness   = 1
+        barBgStroke.Transparency = 0.5
+    end
+
+    local corner: UICorner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent       = barBg
+
+    local bar: Frame = Instance.new("Frame")
+    bar.Parent        = barBg
+    bar.Size          = UDim2.new(0, 0, 1, 0)
+    bar.BorderSizePixel = 0
+    bar.ZIndex        = 2
+
+    local corner2: UICorner = Instance.new("UICorner")
+    corner2.CornerRadius = UDim.new(1, 0)
+    corner2.Parent       = bar
+
+    local barGradient: UIGradient = Instance.new("UIGradient")
+    barGradient.Parent = bar
+
+    local progressText: TextLabel = Instance.new("TextLabel")
+    progressText.Parent               = gui
+    progressText.BackgroundTransparency = 1
+    progressText.Size                 = UDim2.new(0.4, 0, 0.04, 0)
+    progressText.Position             = UDim2.new(0.3, 0, 0.718, 0)
+    progressText.Font                 = Enum.Font.Code
+    progressText.TextScaled           = true
+    progressText.TextColor3           = Color3.fromRGB(220, 220, 220)
+    progressText.TextStrokeTransparency = 0.5
+    progressText.TextStrokeColor3     = Color3.fromRGB(0, 0, 0)
+    progressText.Text                 = "0%"
+    progressText.ZIndex               = 20
+
+    local progressGradient: UIGradient = Instance.new("UIGradient")
+    progressGradient.Parent = progressText
+
+    local flash: Frame = Instance.new("Frame")
+    flash.Parent               = gui
+    flash.Size                 = UDim2.new(1, 0, 1, 0)
+    flash.BackgroundColor3     = Color3.new(1, 1, 1)
+    flash.BackgroundTransparency = 1
+    flash.ZIndex               = 100
+
+    local goldGradient: ColorSequence = ColorSequence.new{
+        ColorSequenceKeypoint.new(0,   Color3.fromRGB(255, 215, 0)),
+        ColorSequenceKeypoint.new(0.3, Color3.fromRGB(255, 240, 150)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(0.7, Color3.fromRGB(255, 220, 50)),
+        ColorSequenceKeypoint.new(1,   Color3.fromRGB(255, 170, 0)),
+    }
+
+    barGradient.Color      = goldGradient
+    progressGradient.Color = goldGradient
+
+    task.spawn(function()
+        local _gradFrame: number = 0
+        while gui.Parent do
+            _gradFrame += 1
+            if _gradFrame % 4 == 0 then
+                local t: number = tick()
+                barGradient.Rotation      += 4
+                progressGradient.Rotation += 4
+                barGradient.Offset        = Vector2.new(math.sin(t) * 0.3, 0)
+                progressGradient.Offset   = Vector2.new(math.sin(t) * 0.3, 0)
+            end
+            task.wait()
+        end
+    end)
+
+    -- Scanline vignette overlay on intro
+    local scanlineVig: Frame = Instance.new("Frame", gui)
+    scanlineVig.Size               = UDim2.new(1, 0, 1, 0)
+    scanlineVig.BackgroundColor3   = Color3.new(0, 0, 0)
+    scanlineVig.BackgroundTransparency = 1
+    scanlineVig.BorderSizePixel    = 0
+    scanlineVig.ZIndex             = 3
+    do
+        local vigGrad: UIGradient = Instance.new("UIGradient", scanlineVig)
+        vigGrad.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0,   Color3.new(0, 0, 0)),
+            ColorSequenceKeypoint.new(0.5, Color3.new(0, 0, 0)),
+            ColorSequenceKeypoint.new(1,   Color3.new(0, 0, 0)),
+        }
+        vigGrad.Transparency = NumberSequence.new{
+            NumberSequenceKeypoint.new(0,   0.5),
+            NumberSequenceKeypoint.new(0.5, 1),
+            NumberSequenceKeypoint.new(1,   0.5),
+        }
+        vigGrad.Rotation = 90
+    end
+    task.spawn(function()
+        task.wait(3.5)
+        pcall(function()
+            TweenService:Create(scanlineVig, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {
+                BackgroundTransparency = 0.85
+            }):Play()
+        end)
+    end)
+
+    TweenService:Create(flash, TweenInfo.new(0.15), { BackgroundTransparency = 0.4 }):Play()
+    task.wait(0.15)
+    TweenService:Create(flash, TweenInfo.new(0.5),  { BackgroundTransparency = 1   }):Play()
+
+    TweenService:Create(image, TweenInfo.new(1.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, 500, 0, 500), Rotation = 0, ImageTransparency = 0
+    }):Play()
+    TweenService:Create(glow, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, 700, 0, 700), ImageTransparency = 0.5
+    }):Play()
+
+    task.wait(0.3)
+
+    TweenService:Create(title, TweenInfo.new(1, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0, 0, 0.34, 0), TextTransparency = 0
+    }):Play()
+
+    task.wait(0.2)
+
+    TweenService:Create(sub, TweenInfo.new(1, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0, 0, 0.47, 0), TextTransparency = 0
+    }):Play()
+
+    task.wait(0.5)
+    barBg.Visible = true
+
+    task.spawn(function()
+        for i: number = 0, 100 do
+            progressText.Text = i .. "%"
+            bar.Size = UDim2.new(i / 100, 0, 1, 0)
+            task.wait(0.03)
+        end
+        progressText.Text = "✓ Ready"
+        TweenService:Create(progressText, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Rotation = 2
+        }):Play()
+        TweenService:Create(flash, TweenInfo.new(0.2), { BackgroundTransparency = 0.7 }):Play()
+        task.wait(0.2)
+        TweenService:Create(flash, TweenInfo.new(0.4), { BackgroundTransparency = 1   }):Play()
+    end)
+
+    task.spawn(function()
+        while gui.Parent do
+            TweenService:Create(image, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                Rotation = 8, Size = UDim2.new(0, 530, 0, 530)
+            }):Play()
+            TweenService:Create(glow, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                Rotation = -15, Size = UDim2.new(0, 760, 0, 760)
+            }):Play()
+            task.wait(2)
+            TweenService:Create(image, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                Rotation = -8, Size = UDim2.new(0, 500, 0, 500)
+            }):Play()
+            TweenService:Create(glow, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                Rotation = 15, Size = UDim2.new(0, 700, 0, 700)
+            }):Play()
+            task.wait(2)
+        end
+    end)
+
+    task.wait(4)
+
+    TweenService:Create(flash, TweenInfo.new(0.4), { BackgroundTransparency = 0.2 }):Play()
+    task.wait(0.3)
+
+    TweenService:Create(image, TweenInfo.new(1, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+        Size = UDim2.new(0, 0, 0, 0), Rotation = 180, ImageTransparency = 1
+    }):Play()
+    TweenService:Create(glow, TweenInfo.new(1), { ImageTransparency = 1, Size = UDim2.new(0, 0, 0, 0) }):Play()
+    TweenService:Create(title, TweenInfo.new(1), { Position = UDim2.new(0, -1000, 0.34, 0), TextTransparency = 1 }):Play()
+    TweenService:Create(sub, TweenInfo.new(1),   { Position = UDim2.new(0, 1000,  0.47, 0), TextTransparency = 1 }):Play()
+    TweenService:Create(barBg, TweenInfo.new(1), { BackgroundTransparency = 1 }):Play()
+    TweenService:Create(bar, TweenInfo.new(1),   { BackgroundTransparency = 1 }):Play()
+    TweenService:Create(progressText, TweenInfo.new(1), { TextTransparency = 1 }):Play()
+
+    task.wait(1.5)
+    gui:Destroy()
+end
+
+if _earlySkipIntro then
+    pcall(function() gui:Destroy() end)
+end
+
+local Notify: any = nil
+do
+local notifyOk: boolean, notifyErr: any = pcall(function()
+    local src: string = game:HttpGet(
+        "https://raw.githubusercontent.com/Mainery-foxxie/Main/refs/heads/main/UI%20Libary/Nofication/BocusLuke.lua"
+    )
+    if not src or #src == 0 then error("Empty notification library response") end
+    Notify = loadstring(src)()
+end)
+
+if not notifyOk then
+    print("[VelocityX] ❌ Notification UI failed to load.")
+    print("[VelocityX] Reason: " .. tostring(notifyErr))
+    print("[VelocityX] Falling back to print-based notifications.")
+end
+end -- notifyOk
+
+local function showNotification(
+    title: string,
+    desc: string,
+    outlineColor: Color3?,
+    duration: number?,
+    imageId: string?
+)
+    if Notify then
+        pcall(function()
+            Notify:Notify({
+                Title       = title,
+                Description = desc,
+            }, {
+                OutlineColor = outlineColor or Color3.fromRGB(0, 170, 255),
+                Time         = duration or 4,
+                Type         = "default",
+            }, {
+                Image      = imageId or "rbxassetid://117699318173215",
+                ImageColor = Color3.fromRGB(255, 255, 255),
+            })
+        end)
+    else
+
+        print("[VelocityX] 🔔 " .. title .. " | " .. desc)
+    end
+end
+
+local function randomString(len: number): string
+    local chars: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    local str: string = ""
+    for _: number = 1, len do
+        local r: number = math.random(1, #chars)
+        str ..= chars:sub(r, r)
+    end
+    return str
+end
+
+local function GetGreetingAndTime(): (string, string, string)
+    local currentTime: any = os.date("*t")
+    local hour: number   = currentTime.hour
+    local minute: number = currentTime.min
+    local greeting: string
+    local emoji: string
+
+    if hour >= 6 and hour < 12 then
+        greeting = "Good Morning"
+        emoji    = "🌅"
+    elseif hour >= 12 and hour < 15 then
+        greeting = "Good Noon"
+        emoji    = "☀️🕛"
+    elseif hour >= 15 and hour < 18 then
+        greeting = "Good Afternoon"
+        emoji    = "🌞"
+    elseif hour >= 18 or hour < 6 then
+        greeting = "Good Night"
+        emoji    = "🌙"
+    else
+        greeting = "Hello"
+        emoji    = "🌄"
+    end
+
+    local hour12: number = hour % 12
+    if hour12 == 0 then hour12 = 12 end
+    local ampm: string   = hour < 12 and "AM" or "PM"
+    local timeStr: string = string.format("%02d:%02d %s", hour12, minute, ampm)
+
+    return greeting, emoji, timeStr
+end
+
+local _b64chars: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+local _b64lut: { [number]: number } = {}
+for i: number = 1, #_b64chars do
+    _b64lut[string.byte(_b64chars, i)] = i - 1
+end
+
+local function base64_decode(data: string): string
+
+    data = data:gsub("[^A-Za-z0-9+/=]", "")
+    local out: { string } = {}
+    local len: number = #data
+    local i:   number = 1
+    while i <= len do
+        local b0: number = _b64lut[string.byte(data, i)]     or 0
+        local b1: number = _b64lut[string.byte(data, i + 1)] or 0
+        local b2: number = _b64lut[string.byte(data, i + 2)] or 0
+        local b3: number = _b64lut[string.byte(data, i + 3)] or 0
+        local n:  number = (b0 * 0x40000) + (b1 * 0x1000) + (b2 * 0x40) + b3
+        out[#out + 1] = string.char(
+            math.floor(n / 0x10000) % 256,
+            math.floor(n / 0x100)   % 256,
+            n % 256
+        )
+        i += 4
+    end
+    local result: string = table.concat(out)
+
+    local pad: number = 0
+    if data:sub(-1) == "=" then pad += 1 end
+    if data:sub(-2, -2) == "=" then pad += 1 end
+    return pad > 0 and result:sub(1, #result - pad) or result
+end
+
+local _b64Pattern: string = "^[A-Za-z0-9+/]+=?=?$"
+local function _isBase64(s: string): boolean
+    return (#s > 0) and (#s % 4 == 0) and (s:match(_b64Pattern) ~= nil)
+end
+
+local function decode_obfuscated(obj: any): any
+    if type(obj) == "table" then
+        local new: { [any]: any } = {}
+        for k: any, v: any in obj do
+            local sk: string = tostring(k)
+            local dk: string = _isBase64(sk) and base64_decode(sk) or sk
+            new[dk] = decode_obfuscated(v)
+        end
+        return new
+    elseif type(obj) == "string" then
+        local s: string = obj :: string
+        return _isBase64(s) and base64_decode(s) or s
+    end
+    return obj
+end
+
+local RealZzHub: ScreenGui = Instance.new("ScreenGui")
+RealZzHub.Name            = "Velocity_" .. randomString(10)
+RealZzHub.ZIndexBehavior  = Enum.ZIndexBehavior.Sibling
+
+pcall(function()
+    if _syn and _syn.protect_gui then
+        _syn.protect_gui(RealZzHub)
+        RealZzHub.Parent = CoreGui
+    else
+        local _gethui: any = rawget(_G, "gethui")
+        if _gethui then
+            RealZzHub.Parent = _gethui()
+        end
+    end
+end)
+
+if not RealZzHub.Parent then
+    RealZzHub.Parent = CoreGui
+end
+
+local MainBackground: ImageLabel = Instance.new("ImageLabel", RealZzHub)
+MainBackground.AnchorPoint        = Vector2.new(0.5, 0.5)
+MainBackground.Position           = UDim2.new(0.5, 0, 0.5, 0)
+MainBackground.Size               = UDim2.new(0, 1, 0, 1)
+MainBackground.Image              = "rbxassetid://117699318173215"
+MainBackground.BackgroundColor3   = Color3.new(1, 1, 1)
+MainBackground.BorderSizePixel    = 0
+MainBackground.ClipsDescendants   = false
+MainBackground.Visible            = false
+MainBackground.ImageTransparency  = 1
+
+local Gradient: UIGradient = Instance.new("UIGradient", MainBackground)
+Gradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 120)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 170, 255)),
+}
+Gradient.Rotation = 45
+
+do
+local ShadowStroke: UIStroke = Instance.new("UIStroke", MainBackground)
+ShadowStroke.Color       = Color3.fromRGB(0, 100, 150)
+ShadowStroke.Thickness   = 4.5
+ShadowStroke.Transparency = 0.6
+end
+
+do
+local EdgeStroke: UIStroke = Instance.new("UIStroke", MainBackground)
+EdgeStroke.Thickness   = 3.5
+EdgeStroke.Transparency = 0.3
+EdgeStroke.Color       = Color3.fromRGB(0, 255, 120)
+end
+
+do
+    local Corner: UICorner = Instance.new("UICorner", MainBackground)
+    Corner.CornerRadius = UDim.new(0, 8)
+end
+
+-- Top glass highlight strip
+local TopShimmer: Frame = Instance.new("Frame", MainBackground)
+TopShimmer.Size             = UDim2.new(0.7, 0, 0, 1)
+TopShimmer.Position         = UDim2.new(0.15, 0, 0, 2)
+TopShimmer.BorderSizePixel  = 0
+TopShimmer.ZIndex           = 2
+do
+    local ShimmerCorner: UICorner = Instance.new("UICorner", TopShimmer)
+    ShimmerCorner.CornerRadius = UDim.new(1, 0)
+    local ShimmerGrad: UIGradient = Instance.new("UIGradient", TopShimmer)
+    ShimmerGrad.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0,   Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200, 255, 240)),
+        ColorSequenceKeypoint.new(1,   Color3.fromRGB(255, 255, 255)),
+    }
+    ShimmerGrad.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0,   1),
+        NumberSequenceKeypoint.new(0.2, 0.55),
+        NumberSequenceKeypoint.new(0.5, 0.3),
+        NumberSequenceKeypoint.new(0.8, 0.55),
+        NumberSequenceKeypoint.new(1,   1),
+    }
+end
+
+-- Accent bar on bottom of header
+local HeaderAccent: Frame = Instance.new("Frame", MainBackground)
+HeaderAccent.Size             = UDim2.new(1, 0, 0, 1)
+HeaderAccent.Position         = UDim2.new(0, 0, 0, 32)
+HeaderAccent.BorderSizePixel  = 0
+HeaderAccent.ZIndex           = 2
+do
+    local HAccentGrad: UIGradient = Instance.new("UIGradient", HeaderAccent)
+    HAccentGrad.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0,   Color3.fromRGB(0, 255, 120)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 200, 255)),
+        ColorSequenceKeypoint.new(1,   Color3.fromRGB(0, 255, 120)),
+    }
+    HAccentGrad.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0,   1),
+        NumberSequenceKeypoint.new(0.1, 0.2),
+        NumberSequenceKeypoint.new(0.9, 0.2),
+        NumberSequenceKeypoint.new(1,   1),
+    }
+end
+
+local Logo: ImageButton = Instance.new("ImageButton", MainBackground)
+Logo.BackgroundTransparency = 1
+Logo.Position = UDim2.new(0, 6, 0, 6)
+Logo.Size     = UDim2.new(0, 22, 0, 22)
+Logo.Image    = "rbxassetid://117699318173215"
+Logo.Visible  = false
+
+local Name: TextLabel = Instance.new("TextLabel", MainBackground)
+Name.BackgroundTransparency = 1
+Name.Position             = UDim2.new(0, 33, 0, 7)
+Name.Size                 = UDim2.new(0.72, 0, 0, 18)
+Name.Font                 = Enum.Font.Arcade
+Name.Text                 = "A_A"
+Name.TextSize             = 13
+Name.TextXAlignment       = Enum.TextXAlignment.Left
+Name.TextColor3           = Color3.fromRGB(0, 255, 160)
+Name.TextStrokeTransparency = 0.3
+Name.TextStrokeColor3     = Color3.fromRGB(0, 80, 40)
+Name.Visible              = false
+do
+    local NameStroke: UIStroke = Instance.new("UIStroke", Name)
+    NameStroke.Color       = Color3.fromRGB(0, 200, 120)
+    NameStroke.Thickness   = 1
+    NameStroke.Transparency = 0.7
+end
+
+local InjectButton: TextButton = Instance.new("TextButton", MainBackground)
+InjectButton.BackgroundColor3     = Color3.fromRGB(255, 255, 255)
+InjectButton.BackgroundTransparency = 1
+InjectButton.AnchorPoint          = Vector2.new(0.5, 0.5)
+InjectButton.Position             = UDim2.new(0.5, 0, 0.48, 0)
+InjectButton.Size                 = UDim2.new(0.80, 0, 0, 44)
+InjectButton.Font                 = Enum.Font.Arcade
+InjectButton.Text                 = "Initializing..."
+InjectButton.TextScaled           = true
+InjectButton.TextColor3           = Color3.fromRGB(5, 5, 5)
+InjectButton.Visible              = false
+InjectButton.AutoButtonColor      = false
+
+Instance.new("UICorner", InjectButton).CornerRadius = UDim.new(0, 8)
+
+-- Pulse glow ring behind button
+local BtnGlowRing: Frame = Instance.new("Frame", MainBackground)
+BtnGlowRing.AnchorPoint        = Vector2.new(0.5, 0.5)
+BtnGlowRing.Position           = UDim2.new(0.5, 0, 0.48, 0)
+BtnGlowRing.Size               = UDim2.new(0.80, 0, 0, 44)
+BtnGlowRing.BackgroundTransparency = 1
+BtnGlowRing.BorderSizePixel    = 0
+BtnGlowRing.ZIndex             = 0
+Instance.new("UICorner", BtnGlowRing).CornerRadius = UDim.new(0, 10)
+do
+    local GlowStroke: UIStroke = Instance.new("UIStroke", BtnGlowRing)
+    GlowStroke.Color       = Color3.fromRGB(0, 255, 140)
+    GlowStroke.Thickness   = 3
+    GlowStroke.Transparency = 0.7
+    task.spawn(function()
+        while BtnGlowRing and BtnGlowRing.Parent do
+            pcall(function()
+                TweenService:Create(GlowStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    Transparency = 0.3, Thickness = 5
+                }):Play()
+            end)
+            task.wait(1.2)
+            pcall(function()
+                TweenService:Create(GlowStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    Transparency = 0.7, Thickness = 3
+                }):Play()
+            end)
+            task.wait(1.2)
+        end
+    end)
+end
+
+local BtnGradient: UIGradient
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
