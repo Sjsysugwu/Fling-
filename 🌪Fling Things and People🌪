@@ -1,0 +1,746 @@
+-- =========================================================
+--  by A_A - IMAGE + TEXT UI
+-- =========================================================
+
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ✏️ الكتابة
+local TEXT = "https://discord.gg/eQwq3FdZX"
+
+-- 🖼️ الصورة
+local IMAGE_ID = "rbxassetid://117699318173215"
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "A_A_ImageText"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = playerGui
+
+-- الحاوية
+local frame = Instance.new("Frame")
+frame.Name = "Main"
+frame.Size = UDim2.new(0, 230, 0, 145)
+frame.Position = UDim2.new(0.5, -115, 0, 25)
+frame.BackgroundTransparency = 1
+frame.Parent = gui
+
+-- 🖼️ الصورة فوق
+local image = Instance.new("ImageLabel")
+image.Name = "TopImage"
+image.Size = UDim2.new(0, 80, 0, 80)
+image.Position = UDim2.new(0.5, -40, 0, 0)
+image.BackgroundTransparency = 1
+image.Image = IMAGE_ID
+image.ScaleType = Enum.ScaleType.Fit
+image.Parent = frame
+
+-- ✏️ الكتابة تحت الصورة
+local text = Instance.new("TextLabel")
+text.Name = "Text"
+text.Size = UDim2.new(1, 0, 0, 50)
+text.Position = UDim2.new(0, 0, 0, 88)
+text.BackgroundTransparency = 1
+text.Text = TEXT
+
+-- 🎨 غيّر لون الكتابة من هنا
+text.TextColor3 = Color3.fromRGB(255, 0, 0)
+
+-- حدود الكتابة
+text.TextStrokeTransparency = 0
+text.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+
+text.TextScaled = true
+text.Font = Enum.Font.GothamBold
+text.TextWrapped = true
+text.Parent = frame
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+
+local isActive = false
+local isCompressing = false
+local isMinimized = false
+
+local activeProps = {}
+local explodedBlacklist = {}
+local globalItemCount = 0
+
+--==================================================
+-- GUI
+--==================================================
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "TarekScripterTornadoGUI"
+screenGui.ResetOnSpawn = false
+
+if syn and syn.protect_gui then
+	syn.protect_gui(screenGui)
+	screenGui.Parent = game:GetService("CoreGui")
+elseif gethui then
+	screenGui.Parent = gethui()
+else
+	screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 220, 0, 155)
+mainFrame.Position = UDim2.new(0.65, 0, 0.35, 0)
+mainFrame.BackgroundTransparency = 1
+mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
+mainFrame.Active = true
+mainFrame.Parent = screenGui
+
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 10)
+
+--==================================================
+-- BACKGROUND IMAGE
+--==================================================
+
+local backgroundImage = Instance.new("ImageLabel")
+backgroundImage.Name = "BackgroundImage"
+backgroundImage.Size = UDim2.new(1, 0, 1, 0)
+backgroundImage.Position = UDim2.new(0, 0, 0, 0)
+backgroundImage.BackgroundTransparency = 1
+backgroundImage.Image = "rbxassetid://131039661990217"
+backgroundImage.ImageTransparency = 0
+backgroundImage.ScaleType = Enum.ScaleType.Stretch
+backgroundImage.ZIndex = 0
+backgroundImage.Parent = mainFrame
+
+Instance.new("UICorner", backgroundImage).CornerRadius = UDim.new(0, 10)
+
+--==================================================
+-- MAIN BORDER
+--==================================================
+
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Thickness = 3
+mainStroke.Color = Color3.fromRGB(255, 0, 0)
+mainStroke.Parent = mainFrame
+
+--==================================================
+-- TITLE BAR
+--==================================================
+
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 35)
+titleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+titleBar.BackgroundTransparency = 0.35
+titleBar.BorderSizePixel = 0
+titleBar.ZIndex = 2
+titleBar.Parent = mainFrame
+
+Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 10)
+
+local titleStroke = Instance.new("UIStroke")
+titleStroke.Thickness = 2
+titleStroke.Color = Color3.fromRGB(0, 120, 255)
+titleStroke.Parent = titleBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -65, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "🌪by XR🌪"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextTransparency = 0
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 12
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.ZIndex = 3
+titleLabel.Parent = titleBar
+
+--==================================================
+-- MINIMIZE BUTTON
+--==================================================
+
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.new(0, 25, 0, 25)
+minBtn.Position = UDim2.new(1, -55, 0, 5)
+minBtn.BackgroundColor3 = Color3.fromRGB(0, 110, 255)
+minBtn.BackgroundTransparency = 0.55
+minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minBtn.TextTransparency = 0
+minBtn.Font = Enum.Font.SourceSansBold
+minBtn.Text = "-"
+minBtn.TextSize = 16
+minBtn.ZIndex = 3
+minBtn.Parent = titleBar
+
+Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 5)
+
+--==================================================
+-- CLOSE BUTTON
+--==================================================
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 25, 0, 25)
+closeBtn.Position = UDim2.new(1, -28, 0, 5)
+closeBtn.BackgroundColor3 = Color3.fromRGB(220, 0, 0)
+closeBtn.BackgroundTransparency = 0.55
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.TextTransparency = 0
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.Text = "X"
+closeBtn.TextSize = 14
+closeBtn.ZIndex = 3
+closeBtn.Parent = titleBar
+
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 5)
+
+--==================================================
+-- CONTENT
+--==================================================
+
+local contentFrame = Instance.new("Frame")
+contentFrame.Name = "ContentFrame"
+contentFrame.Size = UDim2.new(1, 0, 1, -35)
+contentFrame.Position = UDim2.new(0, 0, 0, 35)
+contentFrame.BackgroundTransparency = 1
+contentFrame.ZIndex = 2
+contentFrame.Parent = mainFrame
+
+--==================================================
+-- TORNADO BUTTON
+--==================================================
+
+local btn = Instance.new("TextButton")
+btn.Name = "TornadoButton"
+btn.Size = UDim2.new(0.9, 0, 0, 40)
+btn.Position = UDim2.new(0.05, 0, 0.08, 0)
+
+btn.BackgroundTransparency = 1
+btn.BorderSizePixel = 0
+
+btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+btn.TextTransparency = 0
+btn.Font = Enum.Font.SourceSansBold
+btn.Text = "🌪 OFF 🌪"
+btn.TextScaled = true
+
+btn.ZIndex = 3
+btn.Parent = contentFrame
+
+Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
+local btnStroke = Instance.new("UIStroke")
+btnStroke.Transparency = 1
+btnStroke.Parent = btn
+
+--==================================================
+-- BLAST BUTTON
+--==================================================
+
+local blastBtn = Instance.new("TextButton")
+blastBtn.Name = "BlastButton"
+blastBtn.Size = UDim2.new(0.9, 0, 0, 40)
+blastBtn.Position = UDim2.new(0.05, 0, 0.52, 0)
+
+blastBtn.BackgroundTransparency = 1
+blastBtn.BorderSizePixel = 0
+
+blastBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+blastBtn.TextTransparency = 0
+blastBtn.Font = Enum.Font.SourceSansBold
+blastBtn.Text = "💥"
+blastBtn.TextScaled = true
+
+blastBtn.ZIndex = 3
+blastBtn.Parent = contentFrame
+
+Instance.new("UICorner", blastBtn).CornerRadius = UDim.new(0, 8)
+
+local blastStroke = Instance.new("UIStroke")
+blastStroke.Transparency = 1
+blastStroke.Parent = blastBtn
+
+--==================================================
+-- ANIMATED BORDER
+--==================================================
+
+local colorTime = 0
+
+RunService.RenderStepped:Connect(function(dt)
+	colorTime += dt
+
+	local borderWave = (math.sin(colorTime * 2) + 1) / 2
+
+	mainStroke.Color = Color3.new(
+		borderWave,
+		0,
+		1 - borderWave
+	)
+
+	titleStroke.Color = Color3.new(
+		1 - borderWave,
+		0,
+		borderWave
+	)
+
+	btn.BackgroundTransparency = 1
+	blastBtn.BackgroundTransparency = 1
+end)
+
+--==================================================
+-- DRAG
+--==================================================
+
+local dragging = false
+local dragStart
+local startPos
+
+titleBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and (
+		input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseMovement
+	) then
+
+		local delta = input.Position - dragStart
+
+		mainFrame.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch
+		or input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		dragging = false
+	end
+end)
+
+--==================================================
+-- MINIMIZE
+--==================================================
+
+minBtn.Activated:Connect(function()
+	isMinimized = not isMinimized
+
+	if isMinimized then
+		contentFrame.Visible = false
+		mainFrame.Size = UDim2.new(0, 220, 0, 35)
+		minBtn.Text = "+"
+	else
+		contentFrame.Visible = true
+		mainFrame.Size = UDim2.new(0, 220, 0, 155)
+		minBtn.Text = "-"
+	end
+end)
+
+--==================================================
+-- PROP VALIDATION
+--==================================================
+
+local function isValidProp(part)
+	if not part or not part:IsA("BasePart") or part.Anchored then
+		return false
+	end
+
+	if explodedBlacklist[part] then
+		return false
+	end
+
+	local ancestor = part:FindFirstAncestorOfClass("Model")
+
+	if ancestor and ancestor:FindFirstChildOfClass("Humanoid") then
+		return false
+	end
+
+	if part.Parent and part.Parent:FindFirstChildOfClass("Humanoid") then
+		return false
+	end
+
+	return true
+end
+
+--==================================================
+-- REMOVE PHYSICS
+--==================================================
+
+local function removePropPhysics(part)
+	if activeProps[part] then
+		local data = activeProps[part]
+
+		if data.AP then
+			data.AP:Destroy()
+		end
+
+		if data.AO then
+			data.AO:Destroy()
+		end
+
+		if data.Att then
+			data.Att:Destroy()
+		end
+
+		activeProps[part] = nil
+	end
+end
+
+--==================================================
+-- STOP
+--==================================================
+
+local function stopTornado()
+	isActive = false
+	isCompressing = false
+	globalItemCount = 0
+
+	btn.Text = "🌪 OFF 🌪"
+
+	for part, _ in pairs(activeProps) do
+		removePropPhysics(part)
+	end
+
+	activeProps = {}
+	explodedBlacklist = {}
+end
+
+closeBtn.Activated:Connect(function()
+	stopTornado()
+	screenGui:Destroy()
+end)
+
+--==================================================
+-- ATTACH PHYSICS
+--==================================================
+
+local function attachPhysicsToProp(part)
+	if activeProps[part] or not isValidProp(part) then
+		return
+	end
+
+	pcall(function()
+		part:SetNetworkOwner(LocalPlayer)
+	end)
+
+	local att = Instance.new("Attachment")
+	att.Name = "TornadoGrabbedAtt"
+	att.Parent = part
+
+	local ao = Instance.new("AlignOrientation")
+	ao.Mode = Enum.OrientationAlignmentMode.OneAttachment
+	ao.Attachment0 = att
+	ao.MaxTorque = math.huge
+	ao.Responsiveness = 100
+	ao.CFrame = part.CFrame
+	ao.Parent = part
+
+	local ap = Instance.new("AlignPosition")
+	ap.Mode = Enum.PositionAlignmentMode.OneAttachment
+	ap.Attachment0 = att
+	ap.MaxForce = math.huge
+	ap.MaxVelocity = 1200
+	ap.Responsiveness = 90
+	ap.Parent = part
+
+	globalItemCount += 1
+
+	local section = ((globalItemCount - 1) % 3) + 1
+	local subSlot = math.floor((globalItemCount - 1) / 3) % 10
+
+	activeProps[part] = {
+		Part = part,
+		Att = att,
+		AO = ao,
+		AP = ap,
+		Section = section,
+		SubSlot = subSlot,
+		AngleOffset = globalItemCount * 0.5
+	}
+end
+
+--==================================================
+-- GRAB PARTS
+--==================================================
+
+Workspace.ChildAdded:Connect(function(child)
+	if not isActive then
+		return
+	end
+
+	if child.Name == "GrabParts" then
+		task.spawn(function()
+
+			local success, grabbedPart = pcall(function()
+				local grabPart = child:WaitForChild("GrabPart", 1.5)
+				local weld = grabPart:WaitForChild("WeldConstraint", 1.5)
+
+				return weld.Part1
+			end)
+
+			if success and grabbedPart and isValidProp(grabbedPart) then
+				attachPhysicsToProp(grabbedPart)
+			end
+		end)
+	end
+end)
+
+--==================================================
+-- COMPRESS & BLAST
+--==================================================
+
+local function triggerCompressAndBlast()
+	if not isActive or isCompressing then
+		return
+	end
+
+	isCompressing = true
+
+	local char = LocalPlayer.Character
+
+	if not char then
+		isCompressing = false
+		return
+	end
+
+	local root = char:FindFirstChild("HumanoidRootPart")
+
+	if not root then
+		isCompressing = false
+		return
+	end
+
+	local compressPoint = root.Position + Vector3.new(0, 110, 0)
+
+	for part, data in pairs(activeProps) do
+		if part and part:IsDescendantOf(workspace) then
+			data.AP.Position = compressPoint
+		end
+	end
+
+	task.wait(1)
+
+	local exp = Instance.new("Explosion")
+	exp.Position = compressPoint
+	exp.BlastRadius = 150
+	exp.BlastPressure = 0
+	exp.Parent = workspace
+
+	local propsToBlast = {}
+
+	for part, _ in pairs(activeProps) do
+		table.insert(propsToBlast, part)
+	end
+
+	for _, part in ipairs(propsToBlast) do
+
+		if part and part:IsDescendantOf(workspace) then
+
+			removePropPhysics(part)
+
+			explodedBlacklist[part] = true
+
+			task.delay(2.5, function()
+				explodedBlacklist[part] = nil
+			end)
+
+			pcall(function()
+				part:SetNetworkOwner(LocalPlayer)
+			end)
+
+			local randomDirection = Vector3.new(
+				math.random(-100, 100),
+				math.random(30, 120),
+				math.random(-100, 100)
+			).Unit
+
+			local blastSpeed = math.random(1200, 2500)
+
+			part.AssemblyLinearVelocity =
+				randomDirection * blastSpeed
+
+			part.AssemblyAngularVelocity = Vector3.new(
+				math.random(-200, 200),
+				math.random(-200, 200),
+				math.random(-200, 200)
+			)
+		end
+	end
+
+	isCompressing = false
+end
+
+--==================================================
+-- START TORNADO
+--==================================================
+
+local function startTornado()
+	local char = LocalPlayer.Character
+
+	if not char then
+		return
+	end
+
+	local root = char:FindFirstChild("HumanoidRootPart")
+
+	if not root then
+		return
+	end
+
+	isActive = true
+	globalItemCount = 0
+
+	btn.Text = "🌪 ON 🌪"
+end
+
+local function toggleTornado()
+	if isActive then
+		stopTornado()
+	else
+		startTornado()
+	end
+end
+
+btn.Activated:Connect(toggleTornado)
+blastBtn.Activated:Connect(triggerCompressAndBlast)
+
+--==================================================
+-- KEYBOARD
+--==================================================
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+
+	if gpe then
+		return
+	end
+
+	if input.KeyCode == Enum.KeyCode.R then
+
+		toggleTornado()
+
+	elseif input.KeyCode == Enum.KeyCode.T then
+
+		triggerCompressAndBlast()
+
+	elseif input.KeyCode == Enum.KeyCode.M then
+
+		mainFrame.Visible = not mainFrame.Visible
+	end
+end)
+
+--==================================================
+-- TORNADO MOVEMENT
+--==================================================
+
+RunService.Stepped:Connect(function()
+
+	if not isActive or isCompressing then
+		return
+	end
+
+	local char = LocalPlayer.Character
+
+	if not char then
+		return
+	end
+
+	local root = char:FindFirstChild("HumanoidRootPart")
+
+	if not root then
+		return
+	end
+
+	local rootPos = root.Position
+	local timeSeconds = workspace.DistributedGameTime
+
+	for part, data in pairs(activeProps) do
+
+		if not part
+			or not part:IsDescendantOf(workspace)
+			or part.Anchored then
+
+			removePropPhysics(part)
+
+		else
+
+			local angle =
+				(timeSeconds * 3.5)
+				+ data.AngleOffset
+
+			local baseHeight = 10
+			local sectionLength = 50
+			local startRadius = 15
+			local endRadius = 35
+
+			if data.Section == 1 then
+
+				baseHeight = 10
+				sectionLength = 50
+				startRadius = 15
+				endRadius = 35
+
+			elseif data.Section == 2 then
+
+				baseHeight = 60
+				sectionLength = 75
+				startRadius = 35
+				endRadius = 75
+
+			elseif data.Section == 3 then
+
+				baseHeight = 135
+				sectionLength = 100
+				startRadius = 75
+				endRadius = 130
+			end
+
+			local slotProgress =
+				(data.SubSlot + 0.5) / 10
+
+			local height =
+				baseHeight
+				+ (slotProgress * sectionLength)
+
+			local radius =
+				startRadius
+				+ (slotProgress * (endRadius - startRadius))
+
+			local targetPos =
+				rootPos
+				+ Vector3.new(
+					math.cos(angle) * radius,
+					height,
+					math.sin(angle) * radius
+				)
+
+			data.AP.Position = targetPos
+
+			data.AO.CFrame =
+				CFrame.new(part.Position, targetPos)
+		end
+	end
+end)
+
+--==================================================
+-- CHARACTER RESET
+--==================================================
+
+LocalPlayer.CharacterAdded:Connect(function()
+	stopTornado()
+end)
