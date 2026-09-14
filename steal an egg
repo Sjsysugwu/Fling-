@@ -181,7 +181,7 @@ gui.DisplayOrder    = 999999
 
 local sound: Sound = Instance.new("Sound")
 sound.Parent  = gui
-sound.SoundId = "rbxassetid://102710215948261"
+sound.SoundId = "rbxassetid://135609653444873"
 sound.Volume  = 2
 
 local _earlySkipIntro: boolean = false
