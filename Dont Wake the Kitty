@@ -1,6 +1,101 @@
 --==================================================
 -- GAME GUARD
 --==================================================
+EdgeStroke.Color       = Color3.fromRGB(0, 255, 120)
+end
+
+do
+    local Corner: UICorner = Instance.new("UICorner", MainBackground)
+    Corner.CornerRadius = UDim.new(0, 8)
+end
+
+-- Top glass highlight strip
+local TopShimmer: Frame = Instance.new("Frame", MainBackground)
+TopShimmer.Size             = UDim2.new(0.7, 0, 0, 1)
+TopShimmer.Position         = UDim2.new(0.15, 0, 0, 2)
+TopShimmer.BorderSizePixel  = 0
+TopShimmer.ZIndex           = 2
+do
+    local ShimmerCorner: UICorner = Instance.new("UICorner", TopShimmer)
+    ShimmerCorner.CornerRadius = UDim.new(1, 0)
+    local ShimmerGrad: UIGradient = Instance.new("UIGradient", TopShimmer)
+    ShimmerGrad.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0,   Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200, 255, 240)),
+        ColorSequenceKeypoint.new(1,   Color3.fromRGB(255, 255, 255)),
+    }
+    ShimmerGrad.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0,   1),
+        NumberSequenceKeypoint.new(0.2, 0.55),
+        NumberSequenceKeypoint.new(0.5, 0.3),
+        NumberSequenceKeypoint.new(0.8, 0.55),
+        NumberSequenceKeypoint.new(1,   1),
+    }
+end
+
+-- Accent bar on bottom of header
+local HeaderAccent: Frame = Instance.new("Frame", MainBackground)
+HeaderAccent.Size             = UDim2.new(1, 0, 0, 1)
+HeaderAccent.Position         = UDim2.new(0, 0, 0, 32)
+HeaderAccent.BorderSizePixel  = 0
+HeaderAccent.ZIndex           = 2
+do
+    local HAccentGrad: UIGradient = Instance.new("UIGradient", HeaderAccent)
+    HAccentGrad.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0,   Color3.fromRGB(0, 255, 120)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 200, 255)),
+        ColorSequenceKeypoint.new(1,   Color3.fromRGB(0, 255, 120)),
+    }
+    HAccentGrad.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0,   1),
+        NumberSequenceKeypoint.new(0.1, 0.2),
+        NumberSequenceKeypoint.new(0.9, 0.2),
+        NumberSequenceKeypoint.new(1,   1),
+    }
+end
+
+local Logo: ImageButton = Instance.new("ImageButton", MainBackground)
+Logo.BackgroundTransparency = 1
+Logo.Position = UDim2.new(0, 6, 0, 6)
+Logo.Size     = UDim2.new(0, 22, 0, 22)
+Logo.Image    = "rbxassetid://117699318173215"
+Logo.Visible  = false
+
+local Name: TextLabel = Instance.new("TextLabel", MainBackground)
+Name.BackgroundTransparency = 1
+Name.Position             = UDim2.new(0, 33, 0, 7)
+Name.Size                 = UDim2.new(0.72, 0, 0, 18)
+Name.Font                 = Enum.Font.Arcade
+Name.Text                 = "A_A"
+Name.TextSize             = 13
+Name.TextXAlignment       = Enum.TextXAlignment.Left
+Name.TextColor3           = Color3.fromRGB(0, 255, 160)
+Name.TextStrokeTransparency = 0.3
+Name.TextStrokeColor3     = Color3.fromRGB(0, 80, 40)
+Name.Visible              = false
+do
+    local NameStroke: UIStroke = Instance.new("UIStroke", Name)
+    NameStroke.Color       = Color3.fromRGB(0, 200, 120)
+    NameStroke.Thickness   = 1
+    NameStroke.Transparency = 0.7
+end
+
+local InjectButton: TextButton = Instance.new("TextButton", MainBackground)
+InjectButton.BackgroundColor3     = Color3.fromRGB(255, 255, 255)
+InjectButton.BackgroundTransparency = 1
+InjectButton.AnchorPoint          = Vector2.new(0.5, 0.5)
+InjectButton.Position             = UDim2.new(0.5, 0, 0.48, 0)
+InjectButton.Size                 = UDim2.new(0.80, 0, 0, 44)
+InjectButton.Font                 = Enum.Font.Arcade
+InjectButton.Text                 = "Initializing..."
+InjectButton.TextScaled           = true
+InjectButton.TextColor3           = Color3.fromRGB(5, 5, 5)
+InjectButton.Visible              = false
+InjectButton.AutoButtonColor      = false
+
+Instance.new("UICorner", InjectButton).CornerRadius = UDim.new(0, 8)
+
+-- Pulse glow ring behind button
 
 local ALLOWED_PLACE_ID = 92942575852492
 
