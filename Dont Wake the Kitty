@@ -1,4 +1,3 @@
-
 local ALLOWED_PLACE_ID = 92942575852492
 
 if game.PlaceId ~= ALLOWED_PLACE_ID then
