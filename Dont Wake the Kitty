@@ -241,7 +241,7 @@ cornerButton.BorderSizePixel =
 	0
 
 cornerButton.Image =
-	"rbxassetid://117699318173215"
+	"rbxassetid://112455005216101"
 
 cornerButton.ScaleType =
 	Enum.ScaleType.Stretch
@@ -365,7 +365,7 @@ hubImage.BackgroundTransparency =
 	1
 
 hubImage.Image =
-	"rbxassetid://117699318173215"
+	"rbxassetid://112455005216101"
 
 hubImage.ImageTransparency =
 	0
