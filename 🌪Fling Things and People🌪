@@ -8,7 +8,7 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- ✏️ الكتابة
-local TEXT = "https://discord.gg/eQwq3FdZX"
+local TEXT = "https://discord.gg/taQSdHKg6"
 
 -- 🖼️ الصورة
 local IMAGE_ID = "rbxassetid://112455005216101"
