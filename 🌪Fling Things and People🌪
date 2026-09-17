@@ -11,7 +11,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local TEXT = "https://discord.gg/eQwq3FdZX"
 
 -- 🖼️ الصورة
-local IMAGE_ID = "rbxassetid://117699318173215"
+local IMAGE_ID = "rbxassetid://112455005216101"
 
 -- GUI
 local gui = Instance.new("ScreenGui")
