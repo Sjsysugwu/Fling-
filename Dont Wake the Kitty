@@ -204,7 +204,7 @@ local gui =
 	Instance.new("ScreenGui")
 
 gui.Name =
-	"XR"
+	"TOY HOB"
 
 gui.ResetOnSpawn =
 	false
@@ -589,7 +589,7 @@ title.BackgroundTransparency =
 	0.45
 
 title.Text =
-	"XR"
+	"TOY HOB"
 
 title.TextColor3 =
 	Color3.fromRGB(
