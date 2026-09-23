@@ -1,0 +1,2799 @@
+--[[
+    XR Egg
+    SPYMM v1.2 - Obsidian UI
+    Dead Shelter
+]]
+
+-- ═══════════════════════════════════════════════════════════════
+-- SERVICES & REFERENCES
+-- ═══════════════════════════════════════════════════════════════
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- ═══════════════════════════════════════════════════════════════
+-- GAME PATHS
+-- ═══════════════════════════════════════════════════════════════
+
+local ENEMIES_FOLDER = Workspace:FindFirstChild("Enemies")
+local ITEMS_FOLDER = Workspace:FindFirstChild("DraggableFolder")
+local REMOTE_EVENTS = ReplicatedStorage:FindFirstChild("RemoteEvents")
+local DRAG_EVENTS = ReplicatedStorage:FindFirstChild("DragEvents")
+
+local GetLocalWeldRemote = nil
+
+if DRAG_EVENTS then
+    GetLocalWeldRemote =
+        DRAG_EVENTS:FindFirstChild("GetLocalWeld")
+end
+
+local KNOWN_ENEMIES = {
+    "Cave Zombie",
+    "Dynamite Zombie",
+    "Police Zombie",
+    "Ranged Zombie",
+    "Runner Zombie",
+    "Sewer Zombie",
+    "Tank Zombie",
+    "Zombie"
+}
+
+local MELEE_WEAPONS = {
+    "Katana",
+    "Spiked Bat",
+    "Rusted Pipe",
+    "Repair Hammer",
+    "Torch",
+    "Molotov",
+    "Dynamite"
+}
+
+local BRING_ITEMS_WHITELIST = {
+    "Bandage",
+    "Defibrillator",
+    "Desert Eagle",
+    "Glock",
+    "Katana",
+    "Pump Shotgun",
+    "Sawed-off Shotgun",
+    "Spiked Bat",
+    "Molotov",
+    "Dynamite",
+    "Pistol Ammo",
+    "Rifle Ammo",
+    "Shotgun Ammo",
+    "Blue Keycard",
+    "Green Keycard",
+    "Red Keycard",
+    "Power Fuse",
+    "Lockpick",
+    "Gold Bar",
+    "Silver Bar",
+    "Deadbuck",
+    "Zombie",
+    "Zombie Seller",
+    "Lantern",
+    "Laptop",
+    "Vacuum Cleaner",
+    "Money Printer"
+}
+
+local ALL_ITEMS = {
+    "Bandage",
+    "Barbed Wire",
+    "Big Plank",
+    "Big Sheet Metal",
+    "Blue Keycard",
+    "Brick Wall",
+    "Bricks",
+    "Cardboard Box",
+    "Chair",
+    "Construction Barricade",
+    "Construction Lamp",
+    "Deadbuck",
+    "Defibrillator",
+    "Desert Eagle",
+    "Dynamite",
+    "Electric Fence",
+    "Glock",
+    "Gold Bar",
+    "Green Keycard",
+    "Katana",
+    "Lantern",
+    "Laptop",
+    "Lockpick",
+    "Long Sheet Metal",
+    "Metal Barrel",
+    "Metal Fence",
+    "Metal Shelf",
+    "Molotov",
+    "Money Printer",
+    "Pistol Ammo",
+    "Plank",
+    "Power Fuse",
+    "Power Generator",
+    "Pump Shotgun",
+    "Red Keycard",
+    "Repair Hammer",
+    "Rifle Ammo",
+    "Rusted Pipe",
+    "Sawed-off Shotgun",
+    "Sheet Metal",
+    "Shotgun Ammo",
+    "Silver Bar",
+    "Silver Painting",
+    "Silver Vase",
+    "Small Plank",
+    "Spiked Bat",
+    "Table",
+    "Torch",
+    "Vacuum Cleaner",
+    "Window",
+    "Wood Barrel",
+    "Wood Painting",
+    "Wood Pallet",
+    "Wood Wall",
+    "Zombie",
+    "Zombie Seller"
+}
+
+-- ═══════════════════════════════════════════════════════════════
+-- OBSIDIAN UI SETUP
+-- ═══════════════════════════════════════════════════════════════
+
+local repo =
+    "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+
+local Library =
+    loadstring(game:HttpGet(
+        repo .. "Library.lua"
+    ))()
+
+local ThemeManager =
+    loadstring(game:HttpGet(
+        repo .. "addons/ThemeManager.lua"
+    ))()
+
+local SaveManager =
+    loadstring(game:HttpGet(
+        repo .. "addons/SaveManager.lua"
+    ))()
+
+local Options = Library.Options
+local Toggles = Library.Toggles
+
+Library.ForceCheckbox = false
+Library.ShowToggleFrameInKeybinds = true
+
+-- ═══════════════════════════════════════════════════════════════
+-- XR EGG WINDOW
+-- ═══════════════════════════════════════════════════════════════
+
+local Window = Library:CreateWindow({
+    Title = "👑XR Egg👑",
+    Footer = "👑XR EGG HOB v1.3👑",
+    NotifySide = "Right",
+    ShowCustomCursor = true,
+    Center = true,
+    Resizable = true,
+    Size = UDim2.fromOffset(500, 460),
+})
+
+-- ═══════════════════════════════════════════════════════════════
+-- COLORS
+-- ═══════════════════════════════════════════════════════════════
+
+local COLORS = {
+
+    ["Purple"] = {
+        Main = Color3.fromRGB(115, 45, 180),
+        Hover = Color3.fromRGB(145, 65, 220),
+        Press = Color3.fromRGB(75, 25, 120),
+    },
+
+    ["Royal Blue"] = {
+        Main = Color3.fromRGB(35, 80, 190),
+        Hover = Color3.fromRGB(55, 110, 235),
+        Press = Color3.fromRGB(20, 50, 120),
+    },
+
+    ["Dark Red"] = {
+        Main = Color3.fromRGB(155, 25, 35),
+        Hover = Color3.fromRGB(200, 40, 50),
+        Press = Color3.fromRGB(95, 10, 18),
+    },
+
+    ["Cyan"] = {
+        Main = Color3.fromRGB(25, 155, 190),
+        Hover = Color3.fromRGB(45, 195, 225),
+        Press = Color3.fromRGB(15, 95, 120),
+    },
+
+    ["Emerald"] = {
+        Main = Color3.fromRGB(25, 150, 90),
+        Hover = Color3.fromRGB(40, 190, 115),
+        Press = Color3.fromRGB(15, 90, 55),
+    },
+
+    ["Pink"] = {
+        Main = Color3.fromRGB(190, 45, 125),
+        Hover = Color3.fromRGB(230, 65, 155),
+        Press = Color3.fromRGB(120, 20, 75),
+    },
+}
+
+local CurrentColor = "Purple"
+
+local BUTTON_TWEEN_TIME = 0.45
+
+-- ═══════════════════════════════════════════════════════════════
+-- TABS
+-- ═══════════════════════════════════════════════════════════════
+
+local Tabs = {
+    Egg = Window:AddTab(
+        "Egg",
+        "egg"
+    ),
+
+    ["UI Settings"] = Window:AddTab(
+        "UI Settings",
+        "settings"
+    ),
+}
+
+-- ═══════════════════════════════════════════════════════════════
+-- BUTTON STORAGE
+-- ═══════════════════════════════════════════════════════════════
+
+local StyledButtons = {}
+
+local function getCurrentColors()
+
+    return COLORS[CurrentColor]
+
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- STYLE BUTTON
+-- ═══════════════════════════════════════════════════════════════
+
+local function styleButton(button)
+
+    if not button then
+        return
+    end
+
+    if not button:IsA("TextButton") then
+        return
+    end
+
+    if StyledButtons[button] then
+        return
+    end
+
+    StyledButtons[button] = true
+
+    local colors = getCurrentColors()
+
+    button.BackgroundColor3 =
+        colors.Main
+
+    button.AutoButtonColor = false
+
+    button.MouseEnter:Connect(function()
+
+        if not button.Parent then
+            return
+        end
+
+        local c = getCurrentColors()
+
+        TweenService:Create(
+            button,
+            TweenInfo.new(
+                BUTTON_TWEEN_TIME,
+                Enum.EasingStyle.Quad,
+                Enum.EasingDirection.Out
+            ),
+            {
+                BackgroundColor3 = c.Hover
+            }
+        ):Play()
+
+    end)
+
+    button.MouseLeave:Connect(function()
+
+        if not button.Parent then
+            return
+        end
+
+        local c = getCurrentColors()
+
+        TweenService:Create(
+            button,
+            TweenInfo.new(
+                BUTTON_TWEEN_TIME,
+                Enum.EasingStyle.Quad,
+                Enum.EasingDirection.Out
+            ),
+            {
+                BackgroundColor3 = c.Main
+            }
+        ):Play()
+
+    end)
+
+    button.MouseButton1Down:Connect(function()
+
+        if not button.Parent then
+            return
+        end
+
+        local c = getCurrentColors()
+
+        TweenService:Create(
+            button,
+            TweenInfo.new(
+                BUTTON_TWEEN_TIME,
+                Enum.EasingStyle.Quad,
+                Enum.EasingDirection.Out
+            ),
+            {
+                BackgroundColor3 = c.Press
+            }
+        ):Play()
+
+    end)
+
+    button.MouseButton1Up:Connect(function()
+
+        if not button.Parent then
+            return
+        end
+
+        local c = getCurrentColors()
+
+        TweenService:Create(
+            button,
+            TweenInfo.new(
+                BUTTON_TWEEN_TIME,
+                Enum.EasingStyle.Quad,
+                Enum.EasingDirection.Out
+            ),
+            {
+                BackgroundColor3 = c.Hover
+            }
+        ):Play()
+
+    end)
+
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- APPLY CURRENT COLOR
+-- ═══════════════════════════════════════════════════════════════
+
+local function applyCurrentColor()
+
+    local colors = getCurrentColors()
+
+    for button in pairs(StyledButtons) do
+
+        if button and button.Parent then
+
+            TweenService:Create(
+                button,
+                TweenInfo.new(
+                    0.55,
+                    Enum.EasingStyle.Quad,
+                    Enum.EasingDirection.Out
+                ),
+                {
+                    BackgroundColor3 = colors.Main
+                }
+            ):Play()
+
+        else
+
+            StyledButtons[button] = nil
+
+        end
+
+    end
+
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- SCAN BUTTONS
+-- ═══════════════════════════════════════════════════════════════
+
+local function scanButtons()
+
+    for _, obj in ipairs(game:GetDescendants()) do
+
+        if obj:IsA("TextButton") then
+            styleButton(obj)
+        end
+
+    end
+
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- NEW BUTTONS
+-- ═══════════════════════════════════════════════════════════════
+
+game.DescendantAdded:Connect(function(obj)
+
+    if obj:IsA("TextButton") then
+
+        task.defer(function()
+
+            styleButton(obj)
+
+        end)
+
+    end
+
+end)
+
+-- ═══════════════════════════════════════════════════════════════
+-- BUTTON CREATOR
+-- ═══════════════════════════════════════════════════════════════
+
+local function makeButton(box, text, callback)
+
+    local button =
+        box:AddButton({
+            Text = text,
+            Func = callback,
+        })
+
+    task.defer(function()
+
+        if button then
+
+            styleButton(button)
+
+            for _, obj in ipairs(
+                button:GetDescendants()
+            ) do
+
+                if obj:IsA("TextButton") then
+                    styleButton(obj)
+                end
+
+            end
+
+        end
+
+        scanButtons()
+
+    end)
+
+    return button
+
+end
+
+-- ═══════════════════════════════════════════════════════════════
+-- EGG SECTION
+-- ═══════════════════════════════════════════════════════════════
+
+
+
+local ColorBox =
+    Tabs["UI Settings"]:AddLeftGroupbox(
+        "Color Settings"
+    )
+
+makeButton(
+    ColorBox,
+    "🟣 DARK PURPLE",
+    function()
+
+        CurrentColor = "Purple"
+        applyCurrentColor()
+
+    end
+)
+
+makeButton(
+    ColorBox,
+    "🔵 ROYAL BLUE",
+    function()
+
+        CurrentColor = "Royal Blue"
+        applyCurrentColor()
+
+    end
+)
+
+makeButton(
+    ColorBox,
+    "🔴 DARK RED",
+    function()
+
+        CurrentColor = "Dark Red"
+        applyCurrentColor()
+
+    end
+)
+
+makeButton(
+    ColorBox,
+    "🩵 CYAN",
+    function()
+
+        CurrentColor = "Cyan"
+        applyCurrentColor()
+
+    end
+)
+
+makeButton(
+    ColorBox,
+    "🟢 EMERALD",
+    function()
+
+        CurrentColor = "Emerald"
+        applyCurrentColor()
+
+    end
+)
+
+makeButton(
+    ColorBox,
+    "🩷 PINK",
+    function()
+
+        CurrentColor = "Pink"
+        applyCurrentColor()
+
+    end
+)
+
+-- ═══════════════════════════════════════════════════════════════
+-- FINAL SCANS
+-- ═══════════════════════════════════════════════════════════════
+
+task.delay(0.5, function()
+    scanButtons()
+end)
+
+task.delay(1.5, function()
+    scanButtons()
+end)
+
+task.delay(3, function()
+    scanButtons()
+end)
+
+--[[
+    SPYMM v1.3 - Obsidian UI
+    Dead Shelter
+    ALIBOOSS EGG HUB
+]]
+
+--// =========================================================
+--// SERVICES
+--// =========================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+
+--// =========================================================
+--// SETTINGS
+--// =========================================================
+
+local SCAN_DELAY = 1
+
+local EGG_FLY_SPEED = 700
+local HOME_FLY_SPEED = 300
+
+local EGG_DISTANCE = 5
+local TELEPORT_HEIGHT = 3
+
+local BETWEEN_TAKES = 0.08
+local COUNT_DELAY = 1
+local AFTER_TAKE_WAIT = 0.10
+local BETWEEN_AUTO_EGGS = 0.15
+
+--// ONLY 1M+
+local MIN_EGG_PRICE = 1000000
+
+--// ONLY FAR EGGS
+local MIN_EGG_DISTANCE = 50
+
+local CAMERA_DISTANCE = 10
+local CAMERA_HEIGHT = 5
+local CAMERA_LOOK_HEIGHT = 2
+
+local HOME_CFRAME = nil
+
+--// =========================================================
+--// STATE
+--// =========================================================
+
+local autoBestEnabled = false
+local processing = false
+local currentEgg = nil
+
+local cameraConnection = nil
+
+local completedEggs = {}
+
+local EggElements = {}
+local AnimalElements = {}
+
+--// =========================================================
+--// SOUND
+--// =========================================================
+
+local oldSound =
+    SoundService:FindFirstChild(
+        "ALIBOOSS_EggTapSound"
+    )
+
+if oldSound then
+    oldSound:Destroy()
+end
+
+local EggTapSound =
+    Instance.new("Sound")
+
+EggTapSound.Name =
+    "ALIBOOSS_EggTapSound"
+
+EggTapSound.SoundId =
+    "rbxassetid://71262389650741"
+
+EggTapSound.Volume = 1
+EggTapSound.Looped = false
+EggTapSound.Parent =
+    SoundService
+
+--// =========================================================
+--// CHARACTER
+--// =========================================================
+
+local function getCharacter()
+
+    return LocalPlayer.Character
+
+end
+
+local function getRoot()
+
+    local character =
+        getCharacter()
+
+    if not character then
+        return nil
+    end
+
+    return character:FindFirstChild(
+        "HumanoidRootPart"
+    )
+
+end
+
+local function getHumanoid()
+
+    local character =
+        getCharacter()
+
+    if not character then
+        return nil
+    end
+
+    return character:FindFirstChildOfClass(
+        "Humanoid"
+    )
+
+end
+
+--// =========================================================
+--// SAVE HOME
+--// =========================================================
+
+task.wait(1)
+
+do
+
+    local root =
+        getRoot()
+
+    if root then
+
+        HOME_CFRAME =
+            root.CFrame
+
+    end
+
+end
+
+--// =========================================================
+--// BLOCKER
+--// =========================================================
+
+local function isBlocked(obj)
+
+    if not obj then
+        return false
+    end
+
+    local current = obj
+
+    while current
+        and current ~= Workspace do
+
+        if string.lower(
+            current.Name
+        ) == "blockers" then
+
+            return true
+
+        end
+
+        current =
+            current.Parent
+
+    end
+
+    return false
+
+end
+
+--// =========================================================
+--// TRACK
+--// =========================================================
+
+local function isTrack(obj)
+
+    if not obj then
+        return false
+    end
+
+    local current = obj
+
+    while current
+        and current ~= Workspace do
+
+        local name =
+            string.lower(
+                current.Name
+            )
+
+        if string.find(
+            name,
+            "track"
+        ) then
+
+            return true
+
+        end
+
+        current =
+            current.Parent
+
+    end
+
+    return false
+
+end
+
+--// =========================================================
+--// EGG CHECK
+--// =========================================================
+
+local function isEgg(obj)
+
+    if not obj then
+        return false
+    end
+
+    if isBlocked(obj) then
+        return false
+    end
+
+    if isTrack(obj) then
+        return false
+    end
+
+    local name =
+        string.lower(
+            obj.Name
+        )
+
+    return
+        string.find(
+            name,
+            "egg"
+        )
+        or
+        string.find(
+            name,
+            "بيض"
+        )
+
+end
+
+--// =========================================================
+--// GET PART
+--// =========================================================
+
+local function getEggPart(egg)
+
+    if not egg then
+        return nil
+    end
+
+    if egg:IsA("BasePart") then
+        return egg
+    end
+
+    if egg:IsA("Model") then
+
+        if egg.PrimaryPart then
+            return egg.PrimaryPart
+        end
+
+        local rootPart =
+            egg:FindFirstChild(
+                "HumanoidRootPart",
+                true
+            )
+
+        if rootPart
+            and rootPart:IsA(
+                "BasePart"
+            ) then
+
+            return rootPart
+
+        end
+
+        for _, obj in ipairs(
+            egg:GetDescendants()
+        ) do
+
+            if obj:IsA("BasePart") then
+
+                return obj
+
+            end
+
+        end
+
+    end
+
+    return nil
+
+end
+
+--// =========================================================
+--// GET PROMPT
+--// =========================================================
+
+local function getPrompt(egg)
+
+    if not egg then
+        return nil
+    end
+
+    if egg:IsA(
+        "ProximityPrompt"
+    ) then
+
+        return egg
+
+    end
+
+    return egg:FindFirstChildWhichIsA(
+        "ProximityPrompt",
+        true
+    )
+
+end
+
+--// =========================================================
+--// NUMBER PARSER
+--// =========================================================
+
+local function extractNumber(text)
+
+    if not text then
+        return nil
+    end
+
+    text =
+        tostring(text)
+
+    text =
+        text:gsub(
+            ",",
+            ""
+        )
+
+    local lower =
+        string.lower(text)
+
+    local number, suffix =
+        string.match(
+            lower,
+            "(%d+%.?%d*)%s*([kmbt])"
+        )
+
+    if number and suffix then
+
+        number =
+            tonumber(number)
+
+        if suffix == "k" then
+            return number * 1000
+        end
+
+        if suffix == "m" then
+            return number * 1000000
+        end
+
+        if suffix == "b" then
+            return number * 1000000000
+        end
+
+        if suffix == "t" then
+            return number * 1000000000000
+        end
+
+    end
+
+    local normal =
+        string.match(
+            text,
+            "%d+%.?%d*"
+        )
+
+    if normal then
+
+        return tonumber(normal)
+
+    end
+
+    return nil
+
+end
+
+--// =========================================================
+--// FORMAT PRICE
+--// ONLY M / B / T
+--// =========================================================
+
+local function formatPrice(value)
+
+    value =
+        tonumber(value) or 0
+
+    if value < 1000000 then
+        return nil
+    end
+
+    if value >= 1000000000000 then
+
+        local n =
+            value / 1000000000000
+
+        return string.format(
+            "%.2fT",
+            n
+        ):gsub(
+            "%.00T$",
+            "T"
+        ):gsub(
+            "(%..-)0T$",
+            "%1T"
+        )
+
+    elseif value >= 1000000000 then
+
+        local n =
+            value / 1000000000
+
+        return string.format(
+            "%.2fB",
+            n
+        ):gsub(
+            "%.00B$",
+            "B"
+        ):gsub(
+            "(%..-)0B$",
+            "%1B"
+        )
+
+    elseif value >= 1000000 then
+
+        local n =
+            value / 1000000
+
+        return string.format(
+            "%.2fM",
+            n
+        ):gsub(
+            "%.00M$",
+            "M"
+        ):gsub(
+            "(%..-)0M$",
+            "%1M"
+        )
+
+    end
+
+    return nil
+
+end
+
+--// =========================================================
+--// GET EGG PRICE
+--// =========================================================
+
+local function getEggPrice(egg)
+
+    if not egg then
+        return 0
+    end
+
+    local attributes = {
+
+        "Price",
+        "price",
+        "Cost",
+        "cost",
+        "Value",
+        "value",
+        "EggPrice",
+        "EggValue"
+
+    }
+
+    for _, attributeName in ipairs(
+        attributes
+    ) do
+
+        local value =
+            egg:GetAttribute(
+                attributeName
+            )
+
+        if typeof(value) == "number" then
+
+            return value
+
+        end
+
+        if typeof(value) == "string" then
+
+            local number =
+                extractNumber(
+                    value
+                )
+
+            if number then
+                return number
+            end
+
+        end
+
+    end
+
+    for _, obj in ipairs(
+        egg:GetDescendants()
+    ) do
+
+        if obj:IsA(
+            "TextLabel"
+        )
+        or obj:IsA(
+            "TextButton"
+        )
+        or obj:IsA(
+            "TextBox"
+        ) then
+
+            local text =
+                obj.Text
+
+            if text
+                and text ~= "" then
+
+                local lower =
+                    string.lower(
+                        text
+                    )
+
+                if string.find(
+                    lower,
+                    "$"
+                )
+                or string.find(
+                    lower,
+                    "price"
+                )
+                or string.find(
+                    lower,
+                    "cost"
+                )
+                or string.find(
+                    lower,
+                    "value"
+                ) then
+
+                    local number =
+                        extractNumber(
+                            text
+                        )
+
+                    if number then
+                        return number
+                    end
+
+                end
+
+            end
+
+        end
+
+    end
+
+    local namePrice =
+        extractNumber(
+            egg.Name
+        )
+
+    if namePrice then
+        return namePrice
+    end
+
+    return 0
+
+end
+
+--// =========================================================
+--// DISTANCE
+--// =========================================================
+
+local function getDistanceFromPart(part)
+
+    local root =
+        getRoot()
+
+    if not root
+        or not part then
+
+        return math.huge
+
+    end
+
+    return (
+        root.Position
+        - part.Position
+    ).Magnitude
+
+end
+
+local function getEggDistance(egg)
+
+    return getDistanceFromPart(
+        getEggPart(egg)
+    )
+
+end
+
+local function isFarEnough(egg)
+
+    return
+        getEggDistance(egg)
+        >= MIN_EGG_DISTANCE
+
+end
+
+--// =========================================================
+--// VALID EGG
+--// =========================================================
+
+local function isValidEgg(egg)
+
+    if not egg
+        or not egg.Parent then
+
+        return false
+
+    end
+
+    if completedEggs[egg] then
+        return false
+    end
+
+    if not isEgg(egg) then
+        return false
+    end
+
+    local price =
+        getEggPrice(egg)
+
+    if price < MIN_EGG_PRICE then
+        return false
+    end
+
+    local distance =
+        getEggDistance(egg)
+
+    if distance < MIN_EGG_DISTANCE then
+        return false
+    end
+
+    if not getEggPart(egg) then
+        return false
+    end
+
+    if not getPrompt(egg) then
+        return false
+    end
+
+    return true
+
+end
+
+--// =========================================================
+--// EGG TEXT
+--// =========================================================
+
+local function getEggText(egg)
+
+    if not isValidEgg(egg) then
+        return nil
+    end
+
+    local price =
+        getEggPrice(egg)
+
+    local distance =
+        getEggDistance(egg)
+
+    local priceText =
+        formatPrice(price)
+
+    if not priceText then
+        return nil
+    end
+
+    return
+        "EGG: "
+        .. egg.Name
+        .. "\nPRICE: $"
+        .. priceText
+        .. "  |  DISTANCE: "
+        .. math.floor(distance)
+        .. " STUDS"
+
+end
+
+--// =========================================================
+--// ANIMAL FILTER
+--// =========================================================
+
+local BAD_ANIMAL_WORDS = {
+
+    price = true,
+    cost = true,
+    value = true,
+    money = true,
+    cash = true,
+    buy = true,
+    purchase = true,
+    open = true,
+    hatch = true,
+    egg = true,
+    eggs = true,
+    claim = true,
+    collect = true,
+    close = true,
+    cancel = true,
+    spawn = true,
+    rarity = true,
+    common = true,
+    rare = true,
+    epic = true,
+    legendary = true
+
+}
+
+local function cleanAnimalName(text)
+
+    if not text then
+        return nil
+    end
+
+    text =
+        tostring(text)
+
+    text =
+        text:gsub(
+            "^%s+",
+            ""
+        )
+
+    text =
+        text:gsub(
+            "%s+$",
+            ""
+        )
+
+    if text == "" then
+        return nil
+    end
+
+    if #text < 2
+        or #text > 50 then
+
+        return nil
+
+    end
+
+    local lower =
+        string.lower(text)
+
+    if BAD_ANIMAL_WORDS[lower] then
+        return nil
+    end
+
+    if string.match(
+        text,
+        "^%$?[%d%.,]+[KkMmBbTt]?$"
+    ) then
+
+        return nil
+
+    end
+
+    return text
+
+end
+
+--// =========================================================
+--// FIND ANIMAL ENTRIES
+--// =========================================================
+
+local function getAnimalEntries(egg)
+
+    local entries = {}
+    local seen = {}
+
+    local function addEntry(
+        name,
+        target
+    )
+
+        name =
+            cleanAnimalName(name)
+
+        if not name then
+            return
+        end
+
+        local key =
+            string.lower(name)
+
+        if seen[key] then
+            return
+        end
+
+        seen[key] = true
+
+        table.insert(
+            entries,
+            {
+                Name = name,
+                Target = target
+            }
+        )
+
+    end
+
+    --// ATTRIBUTES
+
+    for _, attributeName in ipairs({
+
+        "Animal",
+        "AnimalName",
+        "Pet",
+        "PetName",
+        "Creature",
+        "CreatureName",
+        "Reward",
+        "RewardName"
+
+    }) do
+
+        local value =
+            egg:GetAttribute(
+                attributeName
+            )
+
+        if typeof(value) == "string" then
+
+            addEntry(
+                value,
+                egg
+            )
+
+        end
+
+    end
+
+    --// DESCENDANTS
+
+    for _, obj in ipairs(
+        egg:GetDescendants()
+    ) do
+
+        if obj:IsA(
+            "TextLabel"
+        )
+        or obj:IsA(
+            "TextButton"
+        )
+        or obj:IsA(
+            "TextBox"
+        ) then
+
+            local text =
+                obj.Text
+
+            local parentName =
+                string.lower(
+                    obj.Parent
+                    and obj.Parent.Name
+                    or ""
+                )
+
+            local objectName =
+                string.lower(
+                    obj.Name
+                )
+
+            local animalText =
+                string.find(
+                    parentName,
+                    "animal"
+                )
+                or string.find(
+                    parentName,
+                    "pet"
+                )
+                or string.find(
+                    parentName,
+                    "reward"
+                )
+                or string.find(
+                    objectName,
+                    "animal"
+                )
+                or string.find(
+                    objectName,
+                    "pet"
+                )
+                or string.find(
+                    objectName,
+                    "reward"
+                )
+
+            if animalText then
+
+                addEntry(
+                    text,
+                    obj
+                )
+
+            end
+
+        end
+
+        if obj:IsA("Model") then
+
+            local name =
+                cleanAnimalName(
+                    obj.Name
+                )
+
+            if name then
+
+                local lower =
+                    string.lower(name)
+
+                if not string.find(
+                    lower,
+                    "egg"
+                )
+                and not string.find(
+                    lower,
+                    "prompt"
+                )
+                and not string.find(
+                    lower,
+                    "button"
+                )
+                and not string.find(
+                    lower,
+                    "price"
+                ) then
+
+                    addEntry(
+                        name,
+                        obj
+                    )
+
+                end
+
+            end
+
+        end
+
+    end
+
+    return entries
+
+end
+
+--// =========================================================
+--// TARGET PART
+--// =========================================================
+
+local function getTargetPart(target)
+
+    if not target then
+        return nil
+    end
+
+    if target:IsA(
+        "BasePart"
+    ) then
+
+        return target
+
+    end
+
+    if target:IsA(
+        "Model"
+    ) then
+
+        if target.PrimaryPart then
+            return target.PrimaryPart
+        end
+
+        local hrp =
+            target:FindFirstChild(
+                "HumanoidRootPart",
+                true
+            )
+
+        if hrp
+            and hrp:IsA(
+                "BasePart"
+            ) then
+
+            return hrp
+
+        end
+
+        for _, obj in ipairs(
+            target:GetDescendants()
+        ) do
+
+            if obj:IsA(
+                "BasePart"
+            ) then
+
+                return obj
+
+            end
+
+        end
+
+    end
+
+    if target:IsA(
+        "GuiObject"
+    ) then
+
+        local current =
+            target.Parent
+
+        while current
+            and current ~= Workspace do
+
+            if current:IsA(
+                "Model"
+            ) then
+
+                return getTargetPart(
+                    current
+                )
+
+            end
+
+            current =
+                current.Parent
+
+        end
+
+    end
+
+    return nil
+
+end
+
+--// =========================================================
+--// CAMERA
+--// =========================================================
+
+local function startCameraFollow()
+
+    if cameraConnection then
+
+        cameraConnection:Disconnect()
+
+        cameraConnection = nil
+
+    end
+
+    local camera =
+        Workspace.CurrentCamera
+
+    if not camera then
+        return
+    end
+
+    camera.CameraType =
+        Enum.CameraType.Scriptable
+
+    cameraConnection =
+        RunService.RenderStepped:
+        Connect(function()
+
+            local root =
+                getRoot()
+
+            if not root then
+                return
+            end
+
+            local cameraPosition =
+                root.Position
+                - root.CFrame.LookVector
+                * CAMERA_DISTANCE
+                + Vector3.new(
+                    0,
+                    CAMERA_HEIGHT,
+                    0
+                )
+
+            local lookPosition =
+                root.Position
+                + Vector3.new(
+                    0,
+                    CAMERA_LOOK_HEIGHT,
+                    0
+                )
+
+            camera.CFrame =
+                CFrame.lookAt(
+                    cameraPosition,
+                    lookPosition
+                )
+
+        end)
+
+end
+
+local function stopCameraFollow()
+
+    if cameraConnection then
+
+        cameraConnection:Disconnect()
+
+        cameraConnection = nil
+
+    end
+
+    local camera =
+        Workspace.CurrentCamera
+
+    if not camera then
+        return
+    end
+
+    camera.CameraType =
+        Enum.CameraType.Custom
+
+    local humanoid =
+        getHumanoid()
+
+    if humanoid then
+
+        camera.CameraSubject =
+            humanoid
+
+    end
+
+end
+
+--// =========================================================
+--// LOCK
+--// =========================================================
+
+local savedWalkSpeed
+local savedJumpPower
+local savedAutoRotate
+local savedAnchored
+
+local function lockPlayer()
+
+    local humanoid =
+        getHumanoid()
+
+    local root =
+        getRoot()
+
+    if humanoid then
+
+        savedWalkSpeed =
+            humanoid.WalkSpeed
+
+        savedJumpPower =
+            humanoid.JumpPower
+
+        savedAutoRotate =
+            humanoid.AutoRotate
+
+        humanoid.WalkSpeed = 0
+        humanoid.JumpPower = 0
+        humanoid.AutoRotate = false
+
+    end
+
+    if root then
+
+        savedAnchored =
+            root.Anchored
+
+    end
+
+    startCameraFollow()
+
+end
+
+local function restorePlayer()
+
+    local humanoid =
+        getHumanoid()
+
+    local root =
+        getRoot()
+
+    if humanoid then
+
+        if savedWalkSpeed ~= nil then
+            humanoid.WalkSpeed =
+                savedWalkSpeed
+        end
+
+        if savedJumpPower ~= nil then
+            humanoid.JumpPower =
+                savedJumpPower
+        end
+
+        if savedAutoRotate ~= nil then
+            humanoid.AutoRotate =
+                savedAutoRotate
+        end
+
+    end
+
+    if root then
+
+        root.Anchored =
+            savedAnchored or false
+
+    end
+
+    stopCameraFollow()
+
+end
+
+--// =========================================================
+--// FLY
+--// =========================================================
+
+local function flyToPosition(
+    position,
+    speed
+)
+
+    local root =
+        getRoot()
+
+    if not root then
+        return false
+    end
+
+    local distance =
+        (
+            root.Position
+            - position
+        ).Magnitude
+
+    if distance <= 1 then
+
+        root.CFrame =
+            CFrame.new(
+                position
+            )
+
+        return true
+
+    end
+
+    local duration =
+        distance / speed
+
+    local tween =
+        TweenService:Create(
+            root,
+            TweenInfo.new(
+                duration,
+                Enum.EasingStyle.Linear,
+                Enum.EasingDirection.Out
+            ),
+            {
+                CFrame =
+                    CFrame.new(
+                        position
+                    )
+            }
+        )
+
+    tween:Play()
+    tween.Completed:Wait()
+
+    return true
+
+end
+
+--// =========================================================
+--// TAP
+--// =========================================================
+
+local function tapEgg(prompt)
+
+    if not prompt then
+        return
+    end
+
+    pcall(function()
+
+        prompt.HoldDuration = 0
+
+    end)
+
+    pcall(function()
+
+        EggTapSound:Stop()
+
+        EggTapSound.TimePosition = 0
+
+        EggTapSound:Play()
+
+    end)
+
+    pcall(function()
+
+        prompt:InputHoldBegin()
+
+    end)
+
+    task.wait(0.035)
+
+    pcall(function()
+
+        prompt:InputHoldEnd()
+
+    end)
+
+end
+
+--// =========================================================
+--// OBSIDIAN UI
+--// =========================================================
+
+local EggTab =
+    Tabs.Egg
+
+local EggControl =
+    EggTab:AddLeftGroupbox(
+        "Egg Control"
+    )
+
+local EggListBox =
+    EggTab:AddLeftGroupbox(
+        "Available Eggs"
+    )
+
+local AnimalBox =
+    EggTab:AddRightGroupbox(
+        "Animals"
+    )
+
+local StatusLabel =
+    EggControl:AddLabel({
+        Text =
+            "AUTO OFF",
+        DoesWrap = true
+    })
+
+local SelectedLabel =
+    AnimalBox:AddLabel({
+        Text =
+            "No animal selected",
+        DoesWrap = true
+    })
+
+--// =========================================================
+--// CLEAR ANIMALS
+--// =========================================================
+
+local function clearAnimalButtons()
+
+    for _, button in pairs(
+        AnimalElements
+    ) do
+
+        pcall(function()
+
+            button:Destroy()
+
+        end)
+
+    end
+
+    AnimalElements = {}
+
+end
+
+--// =========================================================
+--// SHOW ANIMALS
+--// =========================================================
+
+local function showAnimals(egg)
+
+    clearAnimalButtons()
+
+    if not egg then
+        return
+    end
+
+    local entries =
+        getAnimalEntries(
+            egg
+        )
+
+    if #entries == 0 then
+
+        AnimalBox:AddLabel({
+            Text =
+                "No animal names detected."
+        })
+
+        return
+
+    end
+
+    local bestEntry = nil
+    local bestDistance = math.huge
+
+    for _, entry in ipairs(
+        entries
+    ) do
+
+        local part =
+            getTargetPart(
+                entry.Target
+            )
+
+        local distance =
+            getDistanceFromPart(
+                part
+            )
+
+        if distance < bestDistance then
+
+            bestDistance =
+                distance
+
+            bestEntry =
+                entry
+
+        end
+
+    end
+
+    --// ANIMAL BUTTONS
+
+    for _, entry in ipairs(
+        entries
+    ) do
+
+        local button =
+            AnimalBox:AddButton({
+
+                Text =
+                    "🐾 "
+                    .. entry.Name,
+
+                Func = function()
+
+                    local targetPart =
+                        getTargetPart(
+                            entry.Target
+                        )
+
+                    if targetPart then
+
+                        local distance =
+                            getDistanceFromPart(
+                                targetPart
+                            )
+
+                        SelectedLabel:SetText(
+                            "Selected: "
+                            .. entry.Name
+                            .. "\nDistance: "
+                            .. math.floor(
+                                distance
+                            )
+                            .. " STUDS"
+                        )
+
+                        flyToPosition(
+                            targetPart.Position
+                            + Vector3.new(
+                                0,
+                                TELEPORT_HEIGHT,
+                                EGG_DISTANCE
+                            ),
+                            EGG_FLY_SPEED
+                        )
+
+                    else
+
+                        local eggPart =
+                            getEggPart(
+                                egg
+                            )
+
+                        if eggPart then
+
+                            SelectedLabel:SetText(
+                                "Selected: "
+                                .. entry.Name
+                                .. "\nUsing egg position"
+                            )
+
+                            flyToPosition(
+                                eggPart.Position
+                                + Vector3.new(
+                                    0,
+                                    TELEPORT_HEIGHT,
+                                    EGG_DISTANCE
+                                ),
+                                EGG_FLY_SPEED
+                            )
+
+                        end
+
+                    end
+
+                end
+
+            })
+
+        table.insert(
+            AnimalElements,
+            button
+        )
+
+    end
+
+    --// BEST ANIMAL
+
+    if bestEntry then
+
+        local bestButton =
+            AnimalBox:AddButton({
+
+                Text =
+                    "BEST ANIMAL: "
+                    .. bestEntry.Name,
+
+                Func = function()
+
+                    local targetPart =
+                        getTargetPart(
+                            bestEntry.Target
+                        )
+
+                    if targetPart then
+
+                        flyToPosition(
+                            targetPart.Position
+                            + Vector3.new(
+                                0,
+                                TELEPORT_HEIGHT,
+                                EGG_DISTANCE
+                            ),
+                            EGG_FLY_SPEED
+                        )
+
+                    else
+
+                        local eggPart =
+                            getEggPart(
+                                egg
+                            )
+
+                        if eggPart then
+
+                            flyToPosition(
+                                eggPart.Position
+                                + Vector3.new(
+                                    0,
+                                    TELEPORT_HEIGHT,
+                                    EGG_DISTANCE
+                                ),
+                                EGG_FLY_SPEED
+                            )
+
+                        end
+
+                    end
+
+                    SelectedLabel:SetText(
+                        "Selected: "
+                        .. bestEntry.Name
+                    )
+
+                end
+
+            })
+
+        table.insert(
+            AnimalElements,
+            bestButton
+        )
+
+    end
+
+end
+
+--// =========================================================
+--// PROCESS EGG
+--// =========================================================
+
+local function processEgg(
+    egg,
+    isAuto
+)
+
+    if processing then
+        return false
+    end
+
+    if not isValidEgg(
+        egg
+    ) then
+
+        return false
+
+    end
+
+    local part =
+        getEggPart(
+            egg
+        )
+
+    local prompt =
+        getPrompt(
+            egg
+        )
+
+    processing = true
+    currentEgg = egg
+
+    local price =
+        getEggPrice(
+            egg
+        )
+
+    showAnimals(
+        egg
+    )
+
+    StatusLabel:SetText(
+        "Going to: "
+        .. egg.Name
+        .. "\nPRICE: $"
+        .. formatPrice(
+            price
+        )
+    )
+
+    lockPlayer()
+
+    local targetPosition =
+        part.Position
+        + Vector3.new(
+            0,
+            TELEPORT_HEIGHT,
+            EGG_DISTANCE
+        )
+
+    flyToPosition(
+        targetPosition,
+        EGG_FLY_SPEED
+    )
+
+    task.wait(0.05)
+
+    local root =
+        getRoot()
+
+    if root then
+
+        root.CFrame =
+            CFrame.new(
+                targetPosition
+            )
+
+        root.Anchored = true
+
+    end
+
+    --// TAP 1
+
+    StatusLabel:SetText(
+        "TAP 1 / 3\n"
+        .. egg.Name
+    )
+
+    tapEgg(
+        prompt
+    )
+
+    task.wait(
+        BETWEEN_TAKES
+    )
+
+    --// TAP 2
+
+    StatusLabel:SetText(
+        "TAP 2 / 3\n"
+        .. egg.Name
+    )
+
+    tapEgg(
+        prompt
+    )
+
+    task.wait(
+        BETWEEN_TAKES
+    )
+
+    --// TAP 3
+
+    StatusLabel:SetText(
+        "TAP 3 / 3\n"
+        .. egg.Name
+    )
+
+    tapEgg(
+        prompt
+    )
+
+    task.wait(
+        AFTER_TAKE_WAIT
+    )
+
+    StatusLabel:SetText(
+        "Egg collected: "
+        .. egg.Name
+    )
+
+    task.wait(
+        COUNT_DELAY
+    )
+
+    --// RETURN HOME
+
+    StatusLabel:SetText(
+        "Returning home..."
+    )
+
+    root =
+        getRoot()
+
+    if root then
+        root.Anchored = false
+    end
+
+    if HOME_CFRAME then
+
+        flyToPosition(
+            HOME_CFRAME.Position,
+            HOME_FLY_SPEED
+        )
+
+    end
+
+    task.wait(0.1)
+
+    restorePlayer()
+
+    processing = false
+    currentEgg = nil
+
+    completedEggs[egg] =
+        true
+
+    if EggElements[egg] then
+
+        pcall(function()
+
+            EggElements[egg]:Destroy()
+
+        end)
+
+        EggElements[egg] =
+            nil
+
+    end
+
+    StatusLabel:SetText(
+        "Completed: "
+        .. egg.Name
+        .. "\nPRICE: $"
+        .. formatPrice(
+            price
+        )
+    )
+
+    return true
+
+end
+
+--// =========================================================
+--// CREATE EGG BUTTON
+--// =========================================================
+
+local function createEggButton(egg)
+
+    if EggElements[egg] then
+        return EggElements[egg]
+    end
+
+    if not isValidEgg(
+        egg
+    ) then
+
+        return nil
+
+    end
+
+    local eggText =
+        getEggText(
+            egg
+        )
+
+    if not eggText then
+        return nil
+    end
+
+    local button =
+        EggListBox:AddButton({
+
+            Text =
+                eggText,
+
+            Func = function()
+
+                if processing then
+                    return
+                end
+
+                showAnimals(
+                    egg
+                )
+
+                processEgg(
+                    egg,
+                    false
+                )
+
+            end,
+
+            Tooltip =
+                "Select this egg"
+
+        })
+
+    EggElements[egg] =
+        button
+
+    return button
+
+end
+
+--// =========================================================
+--// FIND BEST EGG
+--// =========================================================
+
+local function findBestEgg()
+
+    local bestEgg = nil
+    local bestPrice = -1
+    local bestDistance = -1
+
+    for _, obj in ipairs(
+        Workspace:GetDescendants()
+    ) do
+
+        if isValidEgg(
+            obj
+        ) then
+
+            local price =
+                getEggPrice(
+                    obj
+                )
+
+            local distance =
+                getEggDistance(
+                    obj
+                )
+
+            if price > bestPrice then
+
+                bestEgg =
+                    obj
+
+                bestPrice =
+                    price
+
+                bestDistance =
+                    distance
+
+            elseif price == bestPrice
+                and distance > bestDistance then
+
+                bestEgg =
+                    obj
+
+                bestDistance =
+                    distance
+
+            end
+
+        end
+
+    end
+
+    return bestEgg
+
+end
+
+--// =========================================================
+--// AUTO BEST
+--// =========================================================
+
+local function autoTakeBestEgg()
+
+    if not autoBestEnabled then
+        return false
+    end
+
+    if processing then
+        return false
+    end
+
+    local egg =
+        findBestEgg()
+
+    if not egg then
+
+        StatusLabel:SetText(
+            "No valid egg found"
+        )
+
+        return false
+
+    end
+
+    createEggButton(
+        egg
+    )
+
+    showAnimals(
+        egg
+    )
+
+    StatusLabel:SetText(
+        "BEST EGG: "
+        .. egg.Name
+        .. "\nPRICE: $"
+        .. formatPrice(
+            getEggPrice(
+                egg
+            )
+        )
+    )
+
+    return processEgg(
+        egg,
+        true
+    )
+
+end
+
+--// =========================================================
+--// SCAN
+--// =========================================================
+
+local function scanEggs()
+
+    for _, obj in ipairs(
+        Workspace:GetDescendants()
+    ) do
+
+        if isValidEgg(
+            obj
+        ) then
+
+            createEggButton(
+                obj
+            )
+
+        end
+
+    end
+
+    --// REMOVE INVALID EGGS
+
+    for egg, button in pairs(
+        EggElements
+    ) do
+
+        if not isValidEgg(
+            egg
+        ) then
+
+            pcall(function()
+
+                button:Destroy()
+
+            end)
+
+            EggElements[egg] =
+                nil
+
+        end
+
+    end
+
+end
+
+--// =========================================================
+--// CONTROLS
+--// =========================================================
+
+EggControl:AddToggle(
+    "EggAutoBest",
+    {
+        Text =
+            "AUTO BEST EGG",
+
+        Default = false,
+
+        Callback =
+            function(Value)
+
+                autoBestEnabled =
+                    Value
+
+                if Value then
+
+                    StatusLabel:SetText(
+                        "AUTO ON"
+                    )
+
+                    task.spawn(
+                        function()
+
+                            while autoBestEnabled do
+
+                                if not processing then
+
+                                    local success =
+                                        autoTakeBestEgg()
+
+                                    if success then
+
+                                        task.wait(
+                                            BETWEEN_AUTO_EGGS
+                                        )
+
+                                    else
+
+                                        task.wait(
+                                            SCAN_DELAY
+                                        )
+
+                                    end
+
+                                else
+
+                                    task.wait(
+                                        0.05
+                                    )
+
+                                end
+
+                            end
+
+                        end
+                    )
+
+                else
+
+                    StatusLabel:SetText(
+                        "AUTO OFF"
+                    )
+
+                end
+
+            end
+    }
+)
+
+EggControl:AddButton({
+    Text =
+        "REFRESH EGGS",
+
+    Func =
+        function()
+
+            if not processing then
+
+                scanEggs()
+
+                StatusLabel:SetText(
+                    "Egg list refreshed"
+                )
+
+            end
+
+        end
+})
+
+EggControl:AddButton({
+    Text =
+        "FIND BEST EGG",
+
+    Func =
+        function()
+
+            if processing then
+                return
+            end
+
+            local egg =
+                findBestEgg()
+
+            if egg then
+
+                showAnimals(
+                    egg
+                )
+
+                StatusLabel:SetText(
+                    "BEST EGG: "
+                    .. egg.Name
+                    .. "\nPRICE: $"
+                    .. formatPrice(
+                        getEggPrice(
+                            egg
+                        )
+                    )
+                )
+
+            else
+
+                StatusLabel:SetText(
+                    "No valid egg found"
+                )
+
+            end
+
+        end
+})
+
+EggControl:AddDivider()
+
+EggControl:AddLabel({
+    Text =
+        "MINIMUM PRICE: $1M"
+        .. "\n"
+        .. "MINIMUM DISTANCE: "
+        .. MIN_EGG_DISTANCE
+        .. " STUDS"
+        .. "\n"
+        .. "PRICE FORMAT: M / B / T",
+
+    DoesWrap = true
+})
+
+--// =========================================================
+--// PROMPTS
+--// =========================================================
+
+local function setupPrompt(obj)
+
+    if not obj:IsA(
+        "ProximityPrompt"
+    ) then
+
+        return
+
+    end
+
+    pcall(function()
+
+        obj.HoldDuration = 0
+
+    end)
+
+end
+
+for _, obj in ipairs(
+    Workspace:GetDescendants()
+) do
+
+    setupPrompt(
+        obj
+    )
+
+end
+
+Workspace.Descendan
