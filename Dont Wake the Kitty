@@ -1,7 +1,7 @@
 --// =========================================================
 --// 👻 SPOOKY SKY AUTO
 --// CINEMATIC • CAMERA 999 • ROTATE • TEXT • COUNTDOWN
---// AUTO START • NO BUTTON • NO PLAYER KICK
+--// AUTO START • NO BUTTON
 --// =========================================================
 
 local Players = game:GetService("Players")
@@ -18,7 +18,9 @@ local ROTATE_TIME = 7
 local ROTATE_SPEED = 12
 
 local SKY_IMAGE = "rbxassetid://112455005216101"
-local SOUND_ID = "rbxassetid://"96227729196459"
+
+--// 🎵 NEW SONG
+local SOUND_ID = "rbxassetid://96227729196459"
 
 local MAIN_TEXT = "📃XR v1.? 🔑"
 local FINISH_TEXT = "🛡https://discord.gg/taQSdHKg6🛡"
@@ -128,7 +130,9 @@ end
 --// =========================================================
 
 local function createSky()
-	local currentSky = Lighting:FindFirstChildOfClass("Sky")
+
+	local currentSky =
+		Lighting:FindFirstChildOfClass("Sky")
 
 	if currentSky then
 		currentSky:Destroy()
@@ -152,6 +156,7 @@ end
 --// =========================================================
 
 local function showText(text)
+
 	MainText.Text = text
 	MainText.TextTransparency = 1
 
@@ -195,9 +200,11 @@ end
 --// =========================================================
 
 local function countdown()
+
 	Counter.TextTransparency = 1
 
 	for i = 1, 5 do
+
 		Counter.Text = tostring(i)
 
 		local fadeIn = TweenService:Create(
@@ -233,7 +240,9 @@ end
 --// =========================================================
 
 local function restoreSky()
-	local currentSky = Lighting:FindFirstChildOfClass("Sky")
+
+	local currentSky =
+		Lighting:FindFirstChildOfClass("Sky")
 
 	if currentSky then
 		currentSky:Destroy()
@@ -256,9 +265,14 @@ local function playEffect()
 
 	Played = true
 
-	local character = player.Character or player.CharacterAdded:Wait()
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	local root = character:FindFirstChild("HumanoidRootPart")
+	local character =
+		player.Character or player.CharacterAdded:Wait()
+
+	local humanoid =
+		character:FindFirstChildOfClass("Humanoid")
+
+	local root =
+		character:FindFirstChild("HumanoidRootPart")
 
 	if not humanoid or not root then
 		Played = false
