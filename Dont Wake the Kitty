@@ -18,7 +18,7 @@ local ROTATE_TIME = 7
 local ROTATE_SPEED = 12
 
 local SKY_IMAGE = "rbxassetid://112455005216101"
-local SOUND_ID = "rbxassetid://95156028272944"
+local SOUND_ID = "rbxassetid://"96227729196459"
 
 local MAIN_TEXT = "📃XR v1.? 🔑"
 local FINISH_TEXT = "🛡https://discord.gg/taQSdHKg6🛡"
