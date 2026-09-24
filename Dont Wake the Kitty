@@ -1,8 +1,456 @@
-local ALLOWED_PLACE_ID = 92942575852492
+--// =========================================================
+--// 👻 SPOOKY SKY AUTO
+--// CINEMATIC • CAMERA 999 • ROTATE • TEXT • COUNTDOWN
+--// AUTO START • NO BUTTON • NO PLAYER KICK
+--// =========================================================
 
-if game.PlaceId ~= ALLOWED_PLACE_ID then
-	return
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+--// SETTINGS
+local CAMERA_HEIGHT = 999
+local CAMERA_UP_TIME = 5
+local ROTATE_TIME = 7
+local ROTATE_SPEED = 12
+
+local SKY_IMAGE = "rbxassetid://112455005216101"
+local SOUND_ID = "rbxassetid://95156028272944"
+
+local MAIN_TEXT = "📃XR v1.? 🔑"
+local FINISH_TEXT = "🛡https://discord.gg/taQSdHKg6🛡"
+local SAFE_MESSAGE = "go"
+
+local Played = false
+
+--// =========================================================
+--// GUI
+--// =========================================================
+
+local playerGui = player:WaitForChild("PlayerGui")
+
+local oldGui = playerGui:FindFirstChild("SpookySkyGui")
+if oldGui then
+	oldGui:Destroy()
 end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SpookySkyGui"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.DisplayOrder = 999999
+ScreenGui.Parent = playerGui
+
+--// =========================================================
+--// MAIN TEXT
+--// =========================================================
+
+local MainText = Instance.new("TextLabel")
+MainText.Name = "MainText"
+MainText.Size = UDim2.new(1, 0, 0, 100)
+MainText.Position = UDim2.new(0, 0, 0.38, 0)
+MainText.BackgroundTransparency = 1
+MainText.Text = ""
+MainText.TextColor3 = Color3.fromRGB(255, 0, 0)
+MainText.TextScaled = true
+MainText.Font = Enum.Font.GothamBlack
+MainText.TextTransparency = 1
+MainText.Parent = ScreenGui
+
+local TextStroke = Instance.new("UIStroke")
+TextStroke.Color = Color3.fromRGB(0, 0, 0)
+TextStroke.Thickness = 4
+TextStroke.Parent = MainText
+
+--// =========================================================
+--// COUNTDOWN
+--// =========================================================
+
+local Counter = Instance.new("TextLabel")
+Counter.Name = "Counter"
+Counter.Size = UDim2.new(1, 0, 0, 150)
+Counter.Position = UDim2.new(0, 0, 0.48, 0)
+Counter.BackgroundTransparency = 1
+Counter.Text = ""
+Counter.TextColor3 = Color3.fromRGB(255, 255, 255)
+Counter.TextScaled = true
+Counter.Font = Enum.Font.GothamBlack
+Counter.TextTransparency = 1
+Counter.Parent = ScreenGui
+
+local CounterStroke = Instance.new("UIStroke")
+CounterStroke.Color = Color3.fromRGB(255, 0, 0)
+CounterStroke.Thickness = 5
+CounterStroke.Parent = Counter
+
+--// =========================================================
+--// BLACK FADE
+--// =========================================================
+
+local Fade = Instance.new("Frame")
+Fade.Name = "Fade"
+Fade.Size = UDim2.new(1, 0, 1, 0)
+Fade.Position = UDim2.new(0, 0, 0, 0)
+Fade.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Fade.BackgroundTransparency = 1
+Fade.BorderSizePixel = 0
+Fade.ZIndex = 100
+Fade.Parent = ScreenGui
+
+--// =========================================================
+--// SOUND
+--// =========================================================
+
+local Sound = Instance.new("Sound")
+Sound.Name = "SpookySound"
+Sound.SoundId = SOUND_ID
+Sound.Volume = 10
+Sound.PlaybackSpeed = 0.14
+Sound.Looped = true
+Sound.Parent = ScreenGui
+
+--// =========================================================
+--// SAVE SKY
+--// =========================================================
+
+local oldSky = Lighting:FindFirstChildOfClass("Sky")
+local savedSky
+
+if oldSky then
+	savedSky = oldSky:Clone()
+end
+
+--// =========================================================
+--// CREATE SPOOKY SKY
+--// =========================================================
+
+local function createSky()
+	local currentSky = Lighting:FindFirstChildOfClass("Sky")
+
+	if currentSky then
+		currentSky:Destroy()
+	end
+
+	local sky = Instance.new("Sky")
+	sky.Name = "SpookySky"
+
+	sky.SkyboxBk = SKY_IMAGE
+	sky.SkyboxDn = SKY_IMAGE
+	sky.SkyboxFt = SKY_IMAGE
+	sky.SkyboxLf = SKY_IMAGE
+	sky.SkyboxRt = SKY_IMAGE
+	sky.SkyboxUp = SKY_IMAGE
+
+	sky.Parent = Lighting
+end
+
+--// =========================================================
+--// SHOW TEXT
+--// =========================================================
+
+local function showText(text)
+	MainText.Text = text
+	MainText.TextTransparency = 1
+
+	local fadeIn = TweenService:Create(
+		MainText,
+		TweenInfo.new(
+			0.8,
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.Out
+		),
+		{
+			TextTransparency = 0
+		}
+	)
+
+	fadeIn:Play()
+	fadeIn.Completed:Wait()
+
+	task.wait(2)
+
+	local fadeOut = TweenService:Create(
+		MainText,
+		TweenInfo.new(
+			0.8,
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.In
+		),
+		{
+			TextTransparency = 1
+		}
+	)
+
+	fadeOut:Play()
+	fadeOut.Completed:Wait()
+
+	task.wait(0.8)
+end
+
+--// =========================================================
+--// COUNTDOWN
+--// =========================================================
+
+local function countdown()
+	Counter.TextTransparency = 1
+
+	for i = 1, 5 do
+		Counter.Text = tostring(i)
+
+		local fadeIn = TweenService:Create(
+			Counter,
+			TweenInfo.new(0.25),
+			{
+				TextTransparency = 0
+			}
+		)
+
+		fadeIn:Play()
+		fadeIn.Completed:Wait()
+
+		task.wait(0.7)
+
+		local fadeOut = TweenService:Create(
+			Counter,
+			TweenInfo.new(0.2),
+			{
+				TextTransparency = 1
+			}
+		)
+
+		fadeOut:Play()
+		fadeOut.Completed:Wait()
+
+		task.wait(0.3)
+	end
+end
+
+--// =========================================================
+--// RESTORE SKY
+--// =========================================================
+
+local function restoreSky()
+	local currentSky = Lighting:FindFirstChildOfClass("Sky")
+
+	if currentSky then
+		currentSky:Destroy()
+	end
+
+	if savedSky then
+		savedSky:Clone().Parent = Lighting
+	end
+end
+
+--// =========================================================
+--// MAIN EFFECT
+--// =========================================================
+
+local function playEffect()
+
+	if Played then
+		return
+	end
+
+	Played = true
+
+	local character = player.Character or player.CharacterAdded:Wait()
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	local root = character:FindFirstChild("HumanoidRootPart")
+
+	if not humanoid or not root then
+		Played = false
+		return
+	end
+
+	--// SAVE PLAYER
+	local oldWalkSpeed = humanoid.WalkSpeed
+	local oldJumpPower = humanoid.JumpPower
+	local oldAutoRotate = humanoid.AutoRotate
+
+	humanoid.WalkSpeed = 0
+	humanoid.JumpPower = 0
+	humanoid.AutoRotate = false
+
+	--// CAMERA
+	local camera = workspace.CurrentCamera
+
+	local oldCameraType = camera.CameraType
+	local oldCameraSubject = camera.CameraSubject
+	local oldCameraCFrame = camera.CFrame
+
+	camera.CameraType = Enum.CameraType.Scriptable
+
+	--// SPOOKY SKY
+	createSky()
+
+	--// SOUND
+	Sound:Play()
+
+	--// CAMERA START
+	local startPosition =
+		root.Position + Vector3.new(0, 8, 0)
+
+	local highPosition =
+		root.Position + Vector3.new(0, CAMERA_HEIGHT, 0)
+
+	camera.CFrame = CFrame.lookAt(
+		startPosition,
+		root.Position
+	)
+
+	--// CAMERA GO UP
+	local startTime = tick()
+
+	while tick() - startTime < CAMERA_UP_TIME do
+
+		local alpha =
+			(tick() - startTime) / CAMERA_UP_TIME
+
+		local position =
+			startPosition:Lerp(
+				highPosition,
+				alpha
+			)
+
+		camera.CFrame = CFrame.lookAt(
+			position,
+			root.Position
+		)
+
+		RunService.RenderStepped:Wait()
+	end
+
+	--// ROTATE CAMERA
+	local rotateStart = tick()
+
+	while tick() - rotateStart < ROTATE_TIME do
+
+		local elapsed =
+			tick() - rotateStart
+
+		local angle =
+			elapsed * math.rad(ROTATE_SPEED)
+
+		local rotation = CFrame.Angles(
+			math.rad(8),
+			angle,
+			0
+		)
+
+		camera.CFrame =
+			CFrame.new(highPosition)
+			* rotation
+			* CFrame.new(0, 0, -25)
+
+		RunService.RenderStepped:Wait()
+	end
+
+	--// MAIN TEXT
+	showText(MAIN_TEXT)
+
+	--// FINISH TEXT
+	showText(FINISH_TEXT)
+
+	--// COUNTDOWN 1 → 5
+	countdown()
+
+	--// AFTER 5
+	Counter.Text = SAFE_MESSAGE
+	Counter.TextColor3 = Color3.fromRGB(255, 0, 0)
+	Counter.TextTransparency = 1
+
+	local safeFade = TweenService:Create(
+		Counter,
+		TweenInfo.new(0.5),
+		{
+			TextTransparency = 0
+		}
+	)
+
+	safeFade:Play()
+	safeFade.Completed:Wait()
+
+	task.wait(2)
+
+	--// FADE OUT
+	local fadeIn = TweenService:Create(
+		Fade,
+		TweenInfo.new(1),
+		{
+			BackgroundTransparency = 0
+		}
+	)
+
+	fadeIn:Play()
+	fadeIn.Completed:Wait()
+
+	--// STOP SOUND
+	local soundFade = TweenService:Create(
+		Sound,
+		TweenInfo.new(1),
+		{
+			Volume = 0
+		}
+	)
+
+	soundFade:Play()
+	soundFade.Completed:Wait()
+
+	Sound:Stop()
+
+	--// RESTORE SKY
+	restoreSky()
+
+	--// RESTORE CAMERA
+	camera.CameraType = oldCameraType
+	camera.CameraSubject = oldCameraSubject
+	camera.CFrame = oldCameraCFrame
+
+	--// RESTORE PLAYER
+	humanoid.WalkSpeed = oldWalkSpeed
+	humanoid.JumpPower = oldJumpPower
+	humanoid.AutoRotate = oldAutoRotate
+
+	--// FADE BACK
+	local fadeOut = TweenService:Create(
+		Fade,
+		TweenInfo.new(1),
+		{
+			BackgroundTransparency = 1
+		}
+	)
+
+	fadeOut:Play()
+	fadeOut.Completed:Wait()
+
+	task.wait(0.5)
+
+	--// CLEANUP
+	MainText.Text = ""
+	Counter.Text = ""
+
+	ScreenGui:Destroy()
+end
+
+--// =========================================================
+--// AUTO START
+--// =========================================================
+
+task.spawn(function()
+	task.wait(1)
+	playEffect()
+end)
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+for i = 31, 1, -1 do
+    task.wait(1)
+end
+
+player:Kick("XR Key https://discord.gg/taQSdHKg6")
 
 --==================================================
 -- ALIBOOSS
