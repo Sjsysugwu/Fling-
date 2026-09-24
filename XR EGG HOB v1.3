@@ -180,12 +180,12 @@ Library.ShowToggleFrameInKeybinds = true
 
 local Window = Library:CreateWindow({
     Title = "👑XR Egg👑",
-    Footer = "👑XR EGG HOB v1.3👑",
+    Footer ="👑XR EGG HOB v1.3👑",
     NotifySide = "Right",
     ShowCustomCursor = true,
     Center = true,
     Resizable = true,
-    Size = UDim2.fromOffset(500, 460),
+    Size = UDim2.fromOffset(300, 380),
 })
 
 -- ═══════════════════════════════════════════════════════════════
@@ -491,7 +491,6 @@ end
 -- ═══════════════════════════════════════════════════════════════
 
 
-
 local ColorBox =
     Tabs["UI Settings"]:AddLeftGroupbox(
         "Color Settings"
@@ -579,6 +578,9 @@ task.delay(3, function()
     scanButtons()
 end)
 
+-- ═══════════════════════════════════════════════════════════════
+-- END
+-- ═══════════════════════════════════════════════════════════════
 --[[
     SPYMM v1.3 - Obsidian UI
     Dead Shelter
@@ -2796,4 +2798,69 @@ for _, obj in ipairs(
 
 end
 
-Workspace.Descendan
+Workspace.DescendantAdded:
+Connect(function(obj)
+
+    setupPrompt(
+        obj
+    )
+
+end)
+
+--// =========================================================
+--// RESPAWN
+--// =========================================================
+
+LocalPlayer.CharacterAdded:
+Connect(function()
+
+    task.wait(1)
+
+    local root =
+        getRoot()
+
+    if root then
+
+        HOME_CFRAME =
+            root.CFrame
+
+    end
+
+    processing = false
+    currentEgg = nil
+
+    stopCameraFollow()
+
+    task.wait(0.5)
+
+    scanEggs()
+
+end)
+
+--// =========================================================
+--// FIRST SCAN
+--// =========================================================
+
+scanEggs()
+
+--// =========================================================
+--// SCAN LOOP
+--// =========================================================
+
+task.spawn(function()
+
+    while true do
+
+        task.wait(
+            SCAN_DELAY
+        )
+
+        if not processing then
+
+            scanEggs()
+
+        end
+
+    end
+
+end)
