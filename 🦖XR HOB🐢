@@ -18,7 +18,7 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 -- SETTINGS
 --==========================================================
 
-local LogoID = "rbxassetid://112455005216101"
+local LogoID = "rbxassetid://107402235876527"
 
 local UltraTP = true
 local Busy = false
