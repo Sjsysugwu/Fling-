@@ -17,7 +17,7 @@ local CAMERA_UP_TIME = 5
 local ROTATE_TIME = 7
 local ROTATE_SPEED = 12
 
-local SKY_IMAGE = "rbxassetid://112455005216101"
+local SKY_IMAGE = "rbxassetid://107402235876527"
 
 --// 🎵 NEW SONG
 local SOUND_ID = "rbxassetid://96227729196459"
