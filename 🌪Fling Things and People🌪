@@ -13,8 +13,7 @@ local TEXT = "https://discord.gg/taQSdHKg6"
 -- 🖼️ الصورة
 local IMAGE_ID = "rbxassetid://107402235876527"
 
--- newetOnSpawni")
-gui.NreenGu
+-- GUI
 local gui = Instance.new("ScreenGui")
 gui.Name = "A_A_ImageText"
 gui.ResetOnSpawn = false
