@@ -11,9 +11,10 @@ local playerGui = player:WaitForChild("PlayerGui")
 local TEXT = "https://discord.gg/taQSdHKg6"
 
 -- 🖼️ الصورة
-local IMAGE_ID = "rbxassetid://112455005216101"
+local IMAGE_ID = "rbxassetid://107402235876527"
 
--- GUI
+-- newetOnSpawni")
+gui.NreenGu
 local gui = Instance.new("ScreenGui")
 gui.Name = "A_A_ImageText"
 gui.ResetOnSpawn = false
