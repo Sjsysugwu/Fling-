@@ -1,41 +1,25 @@
 --// =========================================================
---// 👑 KOXTA BLACK TP • XR HUB
---// RED + GOLD PREMIUM EDITION
+--// 👑 XR HUB • NXT ANTI-HIT • CLEAN PREMIUM
+--// الصور + العنوان + ANTI-HIT داخل نفس الواجهة
 --// =========================================================
 
 local Players = game:GetService("Players")
-local ProximityPromptService = game:GetService("ProximityPromptService")
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
+local PromptService = game:GetService("ProximityPromptService")
+local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
+local UserInputService = game:GetService("UserInputService")
 
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
+local Camera = Workspace.CurrentCamera
 
 --==========================================================
 -- SETTINGS
 --==========================================================
 
 local LogoID = "rbxassetid://107402235876527"
-
-local UltraTP = true
-local Busy = false
-local PanelVisible = true
-local PerformanceEnabled = true
-
-local TP_POINTS = {
-	Vector3.new(500.62,70.28,-366.64),
-	Vector3.new(508.3,70.28,-366.03),
-	Vector3.new(519.43,70.28,-366.47),
-	Vector3.new(529.22,70.28,-366.71),
-	Vector3.new(546.8,70.28,-364.4)
-}
-
---==========================================================
--- REMOVE OLD GUI
---==========================================================
+local MainImageID = "rbxassetid://107402235876527"
 
 local OldGUI = PlayerGui:FindFirstChild("KOXTA_BLACK_TP")
 
@@ -55,18 +39,17 @@ GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 GUI.Parent = PlayerGui
 
 --==========================================================
--- FLOAT BUTTON
+-- FLOAT IMAGE
 --==========================================================
 
-local Float = Instance.new("ImageButton")
-Float.Name = "KOXTA_FLOAT"
+local Float = Instance.new("ImageLabel")
+Float.Name = "XR_FLOAT_IMAGE"
 Float.Size = UDim2.fromOffset(54,54)
 Float.Position = UDim2.new(1,-68,0,16)
 Float.BackgroundColor3 = Color3.fromRGB(0,0,0)
 Float.BorderSizePixel = 0
 Float.Image = LogoID
 Float.ScaleType = Enum.ScaleType.Crop
-Float.AutoButtonColor = false
 Float.ZIndex = 200
 Float.Parent = GUI
 
@@ -84,7 +67,7 @@ FloatStroke.Parent = Float
 --==========================================================
 
 local Panel = Instance.new("Frame")
-Panel.Name = "KOXTA_PANEL"
+Panel.Name = "XR_PANEL"
 Panel.Size = UDim2.fromOffset(255,225)
 Panel.Position = UDim2.new(1,-265,0,76)
 Panel.BackgroundColor3 = Color3.fromRGB(2,2,2)
@@ -121,7 +104,7 @@ InnerCorner.CornerRadius = UDim.new(0,15)
 InnerCorner.Parent = InnerGlow
 
 --==========================================================
--- 🔴 RED PARTICLES
+-- RED PARTICLES
 --==========================================================
 
 local ParticleFolder = Instance.new("Folder")
@@ -142,12 +125,8 @@ for i = 1,25 do
 		0
 	)
 
-	Particle.BackgroundColor3 =
-		Color3.fromRGB(255,25,25)
-
-	Particle.BackgroundTransparency =
-		math.random(20,75)/100
-
+	Particle.BackgroundColor3 = Color3.fromRGB(255,25,25)
+	Particle.BackgroundTransparency = math.random(20,75)/100
 	Particle.BorderSizePixel = 0
 	Particle.ZIndex = 16
 	Particle.Parent = ParticleFolder
@@ -183,45 +162,34 @@ for i = 1,25 do
 			Move.Completed:Wait()
 
 		end
-
 	end)
-
 end
 
 --==========================================================
--- 🟡 GOLD MOVING LINE
+-- GOLD MOVING LINE
 --==========================================================
 
-local WhiteLine = Instance.new("Frame")
-WhiteLine.Name = "GOLD_MOVING_LINE"
-WhiteLine.Size = UDim2.new(1,0,0,2)
-WhiteLine.Position = UDim2.new(0,0,-0.08,0)
-
--- 🟡 ذهبي بدل الأبيض
-WhiteLine.BackgroundColor3 =
-	Color3.fromRGB(255,215,0)
-
-WhiteLine.BackgroundTransparency = 0.15
-WhiteLine.BorderSizePixel = 0
-WhiteLine.ZIndex = 40
-WhiteLine.Parent = Panel
+local GoldLine = Instance.new("Frame")
+GoldLine.Name = "GOLD_MOVING_LINE"
+GoldLine.Size = UDim2.new(1,0,0,2)
+GoldLine.Position = UDim2.new(0,0,-0.08,0)
+GoldLine.BackgroundColor3 = Color3.fromRGB(255,215,0)
+GoldLine.BackgroundTransparency = 0.15
+GoldLine.BorderSizePixel = 0
+GoldLine.ZIndex = 40
+GoldLine.Parent = Panel
 
 task.spawn(function()
 
-	while WhiteLine.Parent do
+	while GoldLine.Parent do
 
-		WhiteLine.Position =
-			UDim2.new(0,0,-0.08,0)
+		GoldLine.Position = UDim2.new(0,0,-0.08,0)
 
 		local Move = TweenService:Create(
-			WhiteLine,
-			TweenInfo.new(
-				1.35,
-				Enum.EasingStyle.Linear
-			),
+			GoldLine,
+			TweenInfo.new(1.35,Enum.EasingStyle.Linear),
 			{
-				Position =
-					UDim2.new(0,0,1.08,0)
+				Position = UDim2.new(0,0,1.08,0)
 			}
 		)
 
@@ -229,23 +197,23 @@ task.spawn(function()
 		Move.Completed:Wait()
 
 		task.wait(0.15)
-
 	end
 
 end)
 
 --==========================================================
--- LOGO
+-- SMALL IMAGE
 --==========================================================
 
 local Logo = Instance.new("ImageLabel")
+Logo.Name = "CornerImage"
 Logo.Size = UDim2.fromOffset(48,48)
 Logo.Position = UDim2.fromOffset(10,9)
 Logo.BackgroundColor3 = Color3.fromRGB(0,0,0)
 Logo.BorderSizePixel = 0
 Logo.Image = LogoID
 Logo.ScaleType = Enum.ScaleType.Crop
-Logo.ZIndex = 20
+Logo.ZIndex = 50
 Logo.Parent = Panel
 
 local LogoCorner = Instance.new("UICorner")
@@ -262,9 +230,10 @@ LogoStroke.Parent = Logo
 --==========================================================
 
 local Title = Instance.new("TextLabel")
+Title.Name = "Title"
 Title.BackgroundTransparency = 1
 Title.Position = UDim2.fromOffset(68,10)
-Title.Size = UDim2.new(1,-80,0,25)
+Title.Size = UDim2.new(1,-80,0,30)
 Title.Text = "👑XR HUB👑"
 Title.TextColor3 = Color3.fromRGB(255,40,40)
 Title.Font = Enum.Font.GothamBlack
@@ -274,115 +243,307 @@ Title.ZIndex = 50
 Title.Parent = Panel
 
 --==========================================================
--- DISCORD
+-- MAIN IMAGE
 --==========================================================
 
-local Discord = Instance.new("TextLabel")
-Discord.BackgroundTransparency = 1
-Discord.Position = UDim2.fromOffset(68,34)
-Discord.Size = UDim2.new(1,-80,0,16)
-Discord.Text = "꧁https://discord.gg/taQSdHKg6꧂"
-Discord.TextColor3 = Color3.fromRGB(180,180,180)
-Discord.Font = Enum.Font.Code
-Discord.TextSize = 7
-Discord.TextXAlignment = Enum.TextXAlignment.Left
-Discord.ZIndex = 50
-Discord.Parent = Panel
+local MainImage = Instance.new("ImageLabel")
+MainImage.Name = "MainImage"
+MainImage.Size = UDim2.new(1,-20,0,112)
+MainImage.Position = UDim2.fromOffset(10,58)
+MainImage.BackgroundColor3 = Color3.fromRGB(0,0,0)
+MainImage.BorderSizePixel = 0
+MainImage.Image = MainImageID
+MainImage.ScaleType = Enum.ScaleType.Crop
+MainImage.ZIndex = 30
+MainImage.Parent = Panel
+
+local MainImageCorner = Instance.new("UICorner")
+MainImageCorner.CornerRadius = UDim.new(0,12)
+MainImageCorner.Parent = MainImage
+
+local MainImageStroke = Instance.new("UIStroke")
+MainImageStroke.Thickness = 1.5
+MainImageStroke.Color = Color3.fromRGB(255,0,0)
+MainImageStroke.Parent = MainImage
 
 --==========================================================
--- SEPARATOR
+-- ANTI-HIT SECTION
 --==========================================================
 
-local Separator = Instance.new("Frame")
-Separator.Position = UDim2.fromOffset(10,64)
-Separator.Size = UDim2.new(1,-20,0,1)
-Separator.BackgroundColor3 = Color3.fromRGB(255,0,0)
-Separator.BackgroundTransparency = 0.25
-Separator.BorderSizePixel = 0
-Separator.ZIndex = 50
-Separator.Parent = Panel
+local AntiHitButton = Instance.new("TextButton")
+AntiHitButton.Name = "AntiHitToggle"
+AntiHitButton.Size = UDim2.new(1,-20,0,35)
+AntiHitButton.Position = UDim2.new(0,10,1,-45)
+AntiHitButton.BackgroundColor3 = Color3.fromRGB(45,15,20)
+AntiHitButton.BorderSizePixel = 0
+AntiHitButton.Text = "ANTI-HIT  •  OFF"
+AntiHitButton.TextColor3 = Color3.fromRGB(255,100,110)
+AntiHitButton.Font = Enum.Font.GothamBold
+AntiHitButton.TextSize = 12
+AntiHitButton.AutoButtonColor = false
+AntiHitButton.ZIndex = 60
+AntiHitButton.Parent = Panel
+
+local AntiHitCorner = Instance.new("UICorner")
+AntiHitCorner.CornerRadius = UDim.new(0,9)
+AntiHitCorner.Parent = AntiHitButton
+
+local AntiHitStroke = Instance.new("UIStroke")
+AntiHitStroke.Thickness = 1
+AntiHitStroke.Color = Color3.fromRGB(200,35,45)
+AntiHitStroke.Parent = AntiHitButton
 
 --==========================================================
--- STATUS
+-- ANTI-HIT VARIABLES
 --==========================================================
 
-local Status = Instance.new("TextLabel")
-Status.Position = UDim2.fromOffset(10,76)
-Status.Size = UDim2.new(1,-20,0,24)
-Status.BackgroundColor3 = Color3.fromRGB(80,0,0)
-Status.BorderSizePixel = 0
-Status.Text = "🛡 ON GO 🛡"
-Status.TextColor3 = Color3.fromRGB(255,255,255)
-Status.Font = Enum.Font.GothamBold
-Status.TextSize = 11
-Status.TextXAlignment = Enum.TextXAlignment.Left
-Status.ZIndex = 50
-Status.Parent = Panel
+local AntiHitEnabled = false
+local PromptConnection = nil
+local SavedHoldDurations = {}
+local ActiveConnections = {}
 
-local StatusCorner = Instance.new("UICorner")
-StatusCorner.CornerRadius = UDim.new(0,8)
-StatusCorner.Parent = Status
+local TeleportPositions = {
+	CFrame.new(4747.71,70.57,-335.25),
+	CFrame.new(3520.94,70.73,-343.74),
+	CFrame.new(2446.02,70.88,-351.18),
+	CFrame.new(1352.11,71.02,-358.75),
+	CFrame.new(544.49,71.13,-364.34)
+}
 
 --==========================================================
--- ULTRA TP
+-- ANTI-HIT FUNCTION
 --==========================================================
 
-local TPButton = Instance.new("TextButton")
-TPButton.Name = "ULTRA_TP"
-TPButton.Position = UDim2.fromOffset(10,110)
-TPButton.Size = UDim2.new(1,-20,0,45)
-TPButton.BackgroundColor3 = Color3.fromRGB(10,10,10)
-TPButton.BorderSizePixel = 0
-TPButton.RichText = true
-TPButton.Text =
-	'<font color="rgb(255,255,255)">[+] ULTRA TP • </font>'..
-	'<font color="rgb(0,255,100)">ON</font>'
-TPButton.Font = Enum.Font.GothamBlack
-TPButton.TextSize = 13
-TPButton.AutoButtonColor = false
-TPButton.ZIndex = 60
-TPButton.Parent = Panel
+local function TriggerAntiHit()
 
-local TP_Corner = Instance.new("UICorner")
-TP_Corner.CornerRadius = UDim.new(0,12)
-TP_Corner.Parent = TPButton
+	local Character = Player.Character
+	if not Character then return end
 
-local TP_Stroke = Instance.new("UIStroke")
-TP_Stroke.Thickness = 2
-TP_Stroke.Color = Color3.fromRGB(255,0,0)
-TP_Stroke.Parent = TPButton
+	local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+	local RootPart = Character:FindFirstChild("HumanoidRootPart")
+
+	if not Humanoid or not RootPart then
+		return
+	end
+
+	local OriginalCameraCFrame = Camera.CFrame
+	local OriginalCameraType = Camera.CameraType
+
+	Camera.CameraType = Enum.CameraType.Scriptable
+	Camera.CFrame = OriginalCameraCFrame
+
+	Humanoid.BreakJointsOnDeath = false
+
+	for _,Descendant in ipairs(Character:GetDescendants()) do
+		if Descendant:IsA("Motor6D") then
+			Descendant.Enabled = true
+		end
+	end
+
+	RootPart.AssemblyLinearVelocity = Vector3.zero
+	RootPart.AssemblyAngularVelocity = Vector3.zero
+
+	for _,TargetCFrame in ipairs(TeleportPositions) do
+
+		Humanoid.PlatformStand = true
+		Humanoid.Health = 100
+
+		RootPart.CFrame = TargetCFrame
+		RootPart.AssemblyLinearVelocity = Vector3.zero
+
+		Camera.CFrame = OriginalCameraCFrame
+
+		task.wait(0.02)
+	end
+
+	local StartTime = os.clock()
+
+	local Connection
+
+	Connection = RunService.Heartbeat:Connect(function()
+
+		if os.clock()-StartTime > 0.35 then
+			Connection:Disconnect()
+			return
+		end
+
+		Humanoid.Health = 100
+		Humanoid.PlatformStand = true
+
+		RootPart.CFrame = TeleportPositions[#TeleportPositions]
+
+		RootPart.AssemblyLinearVelocity = Vector3.zero
+		RootPart.AssemblyAngularVelocity = Vector3.zero
+
+		Camera.CFrame = OriginalCameraCFrame
+
+	end)
+
+	task.wait(0.35)
+
+	Humanoid.PlatformStand = false
+	Camera.CameraType = OriginalCameraType
+end
 
 --==========================================================
--- PERFORMANCE BUTTON
+-- PROMPT PATCH
 --==========================================================
 
-local PerformanceButton = Instance.new("TextButton")
-PerformanceButton.Name = "KOXTA_PERFORMANCE"
-PerformanceButton.Position = UDim2.fromOffset(10,165)
-PerformanceButton.Size = UDim2.new(1,-20,0,45)
-PerformanceButton.BackgroundColor3 = Color3.fromRGB(10,10,10)
-PerformanceButton.BorderSizePixel = 0
-PerformanceButton.RichText = true
-PerformanceButton.Text =
-	'<font color="rgb(255,255,255)">[+] MEJORAR RENDIMIENTO • </font>'..
-	'<font color="rgb(0,255,100)">ON</font>'
-PerformanceButton.Font = Enum.Font.GothamBlack
-PerformanceButton.TextSize = 12
-PerformanceButton.AutoButtonColor = false
-PerformanceButton.ZIndex = 60
-PerformanceButton.Parent = Panel
+local function PatchPrompt(Prompt)
 
-local PerformanceCorner = Instance.new("UICorner")
-PerformanceCorner.CornerRadius = UDim.new(0,12)
-PerformanceCorner.Parent = PerformanceButton
+	if not (
+		Prompt
+		and typeof(Prompt) == "Instance"
+		and Prompt:IsA("ProximityPrompt")
+	) then
+		return
+	end
 
-local PerformanceStroke = Instance.new("UIStroke")
-PerformanceStroke.Thickness = 2
-PerformanceStroke.Color = Color3.fromRGB(255,0,0)
-PerformanceStroke.Parent = PerformanceButton
+	if AntiHitEnabled then
+
+		if SavedHoldDurations[Prompt] == nil then
+			SavedHoldDurations[Prompt] = Prompt.HoldDuration
+		end
+
+		Prompt.HoldDuration = 0
+		Prompt.RequiresLineOfSight = false
+
+	elseif SavedHoldDurations[Prompt] ~= nil then
+
+		Prompt.HoldDuration = SavedHoldDurations[Prompt]
+		SavedHoldDurations[Prompt] = nil
+
+	end
+end
+
+local function SetPromptPatch(Enabled)
+
+	if Enabled then
+
+		for _,Item in ipairs(Workspace:GetDescendants()) do
+			PatchPrompt(Item)
+		end
+
+		table.insert(
+			ActiveConnections,
+			Workspace.DescendantAdded:Connect(PatchPrompt)
+		)
+
+		table.insert(
+			ActiveConnections,
+			PromptService.PromptShown:Connect(PatchPrompt)
+		)
+
+	else
+
+		for _,Connection in ipairs(ActiveConnections) do
+			if Connection then
+				Connection:Disconnect()
+			end
+		end
+
+		ActiveConnections = {}
+
+		for Prompt,Duration in pairs(SavedHoldDurations) do
+
+			if Prompt and Prompt.Parent then
+				Prompt.HoldDuration = Duration
+			end
+
+		end
+
+		SavedHoldDurations = {}
+	end
+end
 
 --==========================================================
--- RED PREMIUM ANIMATION
+-- TOGGLE STYLE
+--==========================================================
+
+local function UpdateAntiHitStyle()
+
+	if AntiHitEnabled then
+
+		AntiHitButton.Text = "ANTI-HIT  •  ON"
+
+		TweenService:Create(
+			AntiHitButton,
+			TweenInfo.new(0.25),
+			{
+				BackgroundColor3 = Color3.fromRGB(15,55,30),
+				TextColor3 = Color3.fromRGB(80,255,140)
+			}
+		):Play()
+
+		TweenService:Create(
+			AntiHitStroke,
+			TweenInfo.new(0.25),
+			{
+				Color = Color3.fromRGB(50,255,120)
+			}
+		):Play()
+
+	else
+
+		AntiHitButton.Text = "ANTI-HIT  •  OFF"
+
+		TweenService:Create(
+			AntiHitButton,
+			TweenInfo.new(0.25),
+			{
+				BackgroundColor3 = Color3.fromRGB(45,15,20),
+				TextColor3 = Color3.fromRGB(255,100,110)
+			}
+		):Play()
+
+		TweenService:Create(
+			AntiHitStroke,
+			TweenInfo.new(0.25),
+			{
+				Color = Color3.fromRGB(200,35,45)
+			}
+		):Play()
+
+	end
+end
+
+--==========================================================
+-- BUTTON
+--==========================================================
+
+AntiHitButton.MouseButton1Click:Connect(function()
+
+	AntiHitEnabled = not AntiHitEnabled
+
+	UpdateAntiHitStyle()
+	SetPromptPatch(AntiHitEnabled)
+
+	if AntiHitEnabled then
+
+		if not PromptConnection then
+
+			PromptConnection = PromptService.PromptTriggered:Connect(
+				function(FiredPrompt,FiredPlayer)
+
+					if FiredPlayer == Player then
+						TriggerAntiHit()
+					end
+
+				end
+			)
+
+		end
+
+	elseif PromptConnection then
+
+		PromptConnection:Disconnect()
+		PromptConnection = nil
+	end
+
+end)
+
+--==========================================================
+-- RED ANIMATION
 --==========================================================
 
 task.spawn(function()
@@ -394,47 +555,30 @@ task.spawn(function()
 		Time += 0.035
 
 		local Pulse =
-			(math.sin(Time * 2) + 1) / 2
+			(math.sin(Time*2)+1)/2
 
 		local Red =
-			220 + math.floor(Pulse * 35)
+			220+math.floor(Pulse*35)
 
 		local DarkRed =
-			70 + math.floor(Pulse * 50)
+			70+math.floor(Pulse*50)
 
 		local MainRed =
-			Color3.fromRGB(
-				Red,
-				5,
-				5
-			)
-
-		local SoftRed =
-			Color3.fromRGB(
-				255,
-				25,
-				25
-			)
+			Color3.fromRGB(Red,5,5)
 
 		PanelStroke.Color = MainRed
 		LogoStroke.Color = MainRed
 		FloatStroke.Color = MainRed
-		TP_Stroke.Color = MainRed
-		PerformanceStroke.Color = MainRed
-		Separator.BackgroundColor3 = SoftRed
-		Title.TextColor3 = SoftRed
+		MainImageStroke.Color = MainRed
+
+		Title.TextColor3 =
+			Color3.fromRGB(255,25,25)
 
 		InnerGlow.BackgroundColor3 =
-			Color3.fromRGB(
-				DarkRed,
-				0,
-				0
-			)
+			Color3.fromRGB(DarkRed,0,0)
 
 		task.wait(0.035)
-
 	end
-
 end)
 
 --==========================================================
@@ -453,8 +597,7 @@ task.spawn(function()
 				Enum.EasingDirection.InOut
 			),
 			{
-				Thickness = 4,
-				Transparency = 0.15
+				Thickness = 4
 			}
 		)
 
@@ -469,8 +612,7 @@ task.spawn(function()
 				Enum.EasingDirection.InOut
 			),
 			{
-				Thickness = 2,
-				Transparency = 0
+				Thickness = 2
 			}
 		)
 
@@ -478,240 +620,6 @@ task.spawn(function()
 		Down.Completed:Wait()
 
 	end
-
-end)
-
---==========================================================
--- ULTRA TP TOGGLE
---==========================================================
-
-TPButton.MouseButton1Click:Connect(function()
-
-	UltraTP = not UltraTP
-
-	if UltraTP then
-
-		TPButton.Text =
-			'<font color="rgb(255,255,255)">[+] ULTRA TP • </font>'..
-			'<font color="rgb(0,255,100)">ON</font>'
-
-		Status.Text = "🛡 ON GO 🛡"
-		Status.TextColor3 =
-			Color3.fromRGB(255,255,255)
-
-	else
-
-		TPButton.Text =
-			'<font color="rgb(255,255,255)">[-] ULTRA TP • </font>'..
-			'<font color="rgb(255,60,60)">OFF</font>'
-
-		Status.Text = "🤖 OFF 🤖"
-		Status.TextColor3 =
-			Color3.fromRGB(255,60,60)
-
-	end
-
-end)
-
---==========================================================
--- PERFORMANCE
---==========================================================
-
-local function Optimize(Object)
-
-	pcall(function()
-
-		if Object:IsA("ParticleEmitter")
-		or Object:IsA("Trail")
-		or Object:IsA("Beam") then
-
-			Object.Enabled = false
-
-		elseif Object:IsA("PointLight")
-		or Object:IsA("SpotLight")
-		or Object:IsA("SurfaceLight") then
-
-			Object.Shadows = false
-
-		elseif Object:IsA("BlurEffect")
-		or Object:IsA("DepthOfFieldEffect")
-		or Object:IsA("SunRaysEffect") then
-
-			Object.Enabled = false
-
-		end
-
-	end)
-
-end
-
-local function EnablePerformance()
-
-	PerformanceEnabled = true
-
-	for _,Object in ipairs(Workspace:GetDescendants()) do
-		Optimize(Object)
-	end
-
-	for _,Object in ipairs(Lighting:GetDescendants()) do
-		Optimize(Object)
-	end
-
-	PerformanceButton.Text =
-		'<font color="rgb(255,255,255)">[+] MEJORAR RENDIMIENTO • </font>'..
-		'<font color="rgb(0,255,100)">ON</font>'
-
-end
-
-local function DisablePerformance()
-
-	PerformanceEnabled = false
-
-	PerformanceButton.Text =
-		'<font color="rgb(255,255,255)">[-] MEJORAR RENDIMIENTO • </font>'..
-		'<font color="rgb(255,60,60)">OFF</font>'
-
-end
-
-Workspace.DescendantAdded:Connect(function(Object)
-
-	if PerformanceEnabled then
-
-		task.defer(function()
-
-			if Object and Object.Parent then
-				Optimize(Object)
-			end
-
-		end)
-
-	end
-
-end)
-
-Lighting.DescendantAdded:Connect(function(Object)
-
-	if PerformanceEnabled then
-
-		task.defer(function()
-
-			if Object and Object.Parent then
-				Optimize(Object)
-			end
-
-		end)
-
-	end
-
-end)
-
-PerformanceButton.MouseButton1Click:Connect(function()
-
-	if PerformanceEnabled then
-		DisablePerformance()
-	else
-		EnablePerformance()
-	end
-
-end)
-
-EnablePerformance()
-
---==========================================================
--- TELEPORT
---==========================================================
-
-local function DoTeleport(Character)
-
-	if not UltraTP then
-		return
-	end
-
-	if not Character or not Character.Parent then
-		return
-	end
-
-	for Index,Point in ipairs(TP_POINTS) do
-
-		if not UltraTP then
-
-			Status.Text = "🤖 TP OFF 🤖"
-			Status.TextColor3 =
-				Color3.fromRGB(255,60,60)
-
-			return
-
-		end
-
-		Status.Text =
-			"[TP] POINT "..Index.."/"..#TP_POINTS
-
-		Status.TextColor3 =
-			Color3.fromRGB(255,255,255)
-
-		pcall(function()
-
-			Character:PivotTo(
-				CFrame.new(Point)
-			)
-
-		end)
-
-		if Index < #TP_POINTS then
-			RunService.Heartbeat:Wait()
-		end
-
-	end
-
-	Status.Text = "🛡🛡🛡🛡"
-	Status.TextColor3 =
-		Color3.fromRGB(255,255,255)
-
-end
-
---==========================================================
--- PROMPT
---==========================================================
-
-ProximityPromptService.PromptTriggered:Connect(
-	function(Prompt,Who)
-
-		if Who ~= Player then
-			return
-		end
-
-		if not UltraTP then
-			return
-		end
-
-		if Busy then
-			return
-		end
-
-		local Character = Player.Character
-
-		if not Character then
-			return
-		end
-
-		Busy = true
-
-		DoTeleport(Character)
-
-		Busy = false
-
-	end
-)
-
---==========================================================
--- SHOW / HIDE
---==========================================================
-
-Float.MouseButton1Click:Connect(function()
-
-	PanelVisible = not PanelVisible
-	Panel.Visible = PanelVisible
-
 end)
 
 --==========================================================
@@ -724,10 +632,8 @@ local StartPosition
 
 Title.InputBegan:Connect(function(Input)
 
-	if Input.UserInputType ==
-		Enum.UserInputType.MouseButton1
-		or Input.UserInputType ==
-		Enum.UserInputType.Touch then
+	if Input.UserInputType == Enum.UserInputType.MouseButton1
+		or Input.UserInputType == Enum.UserInputType.Touch then
 
 		Dragging = true
 		DragStart = Input.Position
@@ -743,19 +649,16 @@ UserInputService.InputChanged:Connect(function(Input)
 		return
 	end
 
-	if Input.UserInputType ==
-		Enum.UserInputType.MouseMovement
-		or Input.UserInputType ==
-		Enum.UserInputType.Touch then
+	if Input.UserInputType == Enum.UserInputType.MouseMovement
+		or Input.UserInputType == Enum.UserInputType.Touch then
 
-		local Delta =
-			Input.Position - DragStart
+		local Delta = Input.Position-DragStart
 
 		Panel.Position = UDim2.new(
 			StartPosition.X.Scale,
-			StartPosition.X.Offset + Delta.X,
+			StartPosition.X.Offset+Delta.X,
 			StartPosition.Y.Scale,
-			StartPosition.Y.Offset + Delta.Y
+			StartPosition.Y.Offset+Delta.Y
 		)
 
 	end
@@ -764,10 +667,8 @@ end)
 
 UserInputService.InputEnded:Connect(function(Input)
 
-	if Input.UserInputType ==
-		Enum.UserInputType.MouseButton1
-		or Input.UserInputType ==
-		Enum.UserInputType.Touch then
+	if Input.UserInputType == Enum.UserInputType.MouseButton1
+		or Input.UserInputType == Enum.UserInputType.Touch then
 
 		Dragging = false
 
@@ -776,16 +677,14 @@ UserInputService.InputEnded:Connect(function(Input)
 end)
 
 --==========================================================
--- STARTUP ANIMATION
+-- STARTUP
 --==========================================================
 
 Panel.BackgroundTransparency = 1
 Logo.ImageTransparency = 1
 Title.TextTransparency = 1
-Discord.TextTransparency = 1
-Status.TextTransparency = 1
-TPButton.BackgroundTransparency = 1
-PerformanceButton.BackgroundTransparency = 1
+MainImage.ImageTransparency = 1
+AntiHitButton.TextTransparency = 1
 
 TweenService:Create(
 	Panel,
@@ -826,10 +725,10 @@ end)
 task.delay(0.3,function()
 
 	TweenService:Create(
-		Discord,
+		MainImage,
 		TweenInfo.new(0.45),
 		{
-			TextTransparency = 0
+			ImageTransparency = 0
 		}
 	):Play()
 
@@ -838,7 +737,7 @@ end)
 task.delay(0.4,function()
 
 	TweenService:Create(
-		Status,
+		AntiHitButton,
 		TweenInfo.new(0.45),
 		{
 			TextTransparency = 0
@@ -847,43 +746,12 @@ task.delay(0.4,function()
 
 end)
 
-task.delay(0.5,function()
-
-	TweenService:Create(
-		TPButton,
-		TweenInfo.new(0.45),
-		{
-			BackgroundTransparency = 0
-		}
-	):Play()
-
-end)
-
-task.delay(0.6,function()
-
-	TweenService:Create(
-		PerformanceButton,
-		TweenInfo.new(0.45),
-		{
-			BackgroundTransparency = 0
-		}
-	):Play()
-
-end)
-
---==========================================================
--- START
---==========================================================
-
 print("========================================")
-print("        👑 XR HUB BLACK 👑")
+print("        👑 XR HUB + NXT 👑")
 print("========================================")
+print("🖼️ IMAGES: ON")
+print("👑 TITLE: ON")
 print("🔴 RED PREMIUM: ON")
-print("🔴 RED PARTICLES: ON")
-print("🟡 GOLD MOVING LINE: ON")
-print("🔴 RED NEON BORDER: ON")
-print("⚡ ULTRA TP: ON")
-print("⚡ PERFORMANCE: ON")
-print("👑 ORIGINAL BUTTONS: ON")
-print("📍 TP POINTS: 5")
+print("🟡 GOLD LINE: ON")
+print("🛡️ ANTI-HIT: READY")
 print("========================================")
