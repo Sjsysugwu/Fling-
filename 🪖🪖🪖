@@ -1,0 +1,876 @@
+--[[
+    SHAHEД PRO v6
+    3D loading · music · flags backdrop · tabs GUI · engine · flight
+
+    Insert — GUI · H — start · V — explode
+]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
+local ContentProvider = game:GetService("ContentProvider")
+
+local LP = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local CFG = {
+    model = "SH136",
+    speed = 46,
+    boostMul = 1.5,
+    slowMul = 0.4,
+    sens = 0.0028,
+    maxTime = 18,
+    trail = true,
+    camDist = 12,
+    camHeight = 2.8,
+    size = 1,
+    tpOnExplode = true,
+    soundVolume = 1.15,
+    engineVolume = 0.85,
+    screenFlash = true,
+}
+
+local BOOM_IDS = { "rbxassetid://3802270141", "rbxassetid://2042692050", "rbxassetid://18762591278" }
+local ENGINE_ID = "rbxassetid://8907185231"
+local ENGINE_FALLBACK = { "rbxassetid://9114221287", "rbxassetid://166215648" }
+-- cinematic / ambient for loader (not meme song)
+local LOAD_MUSIC_IDS = {
+    "rbxassetid://1841647093", -- calm ambient-ish (may vary by moderation)
+    "rbxassetid://1837879082",
+    "rbxassetid://9048376035",
+}
+
+local FLYING = false
+local droneModel, folder
+local pos, yaw, pitch, dir
+local startTime = 0
+local STEP = "ShahedV6"
+local previewConn, engineSound
+local statusLbl, main, viewport
+local pages = {}
+
+local ACCENT = Color3.fromRGB(255, 145, 55)
+local BG = Color3.fromRGB(14, 15, 20)
+local CARD = Color3.fromRGB(24, 26, 34)
+local MUTED = Color3.fromRGB(130, 135, 150)
+
+-- stylized world flags (color bands only — no external images)
+local FLAGS = {
+    { "UA", { Color3.fromRGB(0, 91, 187), Color3.fromRGB(255, 213, 0) } },
+    { "RU", { Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 57, 166), Color3.fromRGB(213, 43, 30) } },
+    { "US", { Color3.fromRGB(60, 59, 110), Color3.fromRGB(178, 34, 52) } },
+    { "GB", { Color3.fromRGB(1, 33, 105), Color3.fromRGB(200, 16, 46) } },
+    { "DE", { Color3.fromRGB(0, 0, 0), Color3.fromRGB(221, 0, 0), Color3.fromRGB(255, 206, 0) } },
+    { "FR", { Color3.fromRGB(0, 85, 164), Color3.fromRGB(255, 255, 255), Color3.fromRGB(239, 65, 53) } },
+    { "IT", { Color3.fromRGB(0, 140, 69), Color3.fromRGB(244, 245, 240), Color3.fromRGB(205, 33, 42) } },
+    { "JP", { Color3.fromRGB(255, 255, 255), Color3.fromRGB(188, 0, 45) } },
+    { "BR", { Color3.fromRGB(0, 156, 59), Color3.fromRGB(255, 223, 0), Color3.fromRGB(0, 39, 118) } },
+    { "TR", { Color3.fromRGB(227, 10, 23), Color3.fromRGB(255, 255, 255) } },
+    { "PL", { Color3.fromRGB(255, 255, 255), Color3.fromRGB(220, 20, 60) } },
+    { "KZ", { Color3.fromRGB(0, 166, 224), Color3.fromRGB(255, 223, 0) } },
+    { "CN", { Color3.fromRGB(222, 41, 16), Color3.fromRGB(255, 222, 0) } },
+    { "IN", { Color3.fromRGB(255, 103, 31), Color3.fromRGB(255, 255, 255), Color3.fromRGB(4, 106, 56) } },
+    { "CA", { Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 0, 0) } },
+    { "ES", { Color3.fromRGB(170, 21, 27), Color3.fromRGB(241, 191, 0) } },
+    { "SE", { Color3.fromRGB(0, 82, 147), Color3.fromRGB(255, 203, 0) } },
+    { "NO", { Color3.fromRGB(186, 12, 47), Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 32, 91) } },
+    { "FI", { Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 47, 108) } },
+    { "KR", { Color3.fromRGB(255, 255, 255), Color3.fromRGB(205, 46, 58), Color3.fromRGB(0, 71, 160) } },
+}
+
+local function notify(t)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Shahed", Text = tostring(t), Duration = 2,
+        })
+    end)
+end
+local function corner(p, r) Instance.new("UICorner", p).CornerRadius = UDim.new(0, r or 10) end
+local function stroke(p, c, th, tr)
+    local s = Instance.new("UIStroke", p)
+    s.Color = c or ACCENT; s.Thickness = th or 1; s.Transparency = tr or 0.45
+end
+
+local function ensureFolder()
+    if folder and folder.Parent then return folder end
+    folder = Instance.new("Folder")
+    folder.Name = "ShahedCraft"
+    pcall(function() folder.Parent = Camera end)
+    if not folder.Parent then pcall(function() folder.Parent = workspace end) end
+    return folder
+end
+
+local function P(props)
+    local p = Instance.new("Part")
+    p.Anchored = true; p.CanCollide = false; p.CanQuery = false
+    p.CastShadow = true; p.Massless = true
+    p.Material = Enum.Material.SmoothPlastic
+    for k, v in pairs(props) do p[k] = v end
+    return p
+end
+
+local function trailOn(parent, col)
+    if not CFG.trail then return end
+    local a0 = Instance.new("Attachment", parent)
+    local a1 = Instance.new("Attachment", parent)
+    a0.Position = Vector3.new(0, 0, 0.15)
+    a1.Position = Vector3.new(0, 0, -0.2)
+    local t = Instance.new("Trail")
+    t.Attachment0, t.Attachment1 = a0, a1
+    t.Lifetime = 0.5
+    t.Color = ColorSequence.new(col, Color3.fromRGB(15, 5, 0))
+    t.Transparency = NumberSequence.new(0.1, 1)
+    t.Parent = parent
+end
+
+----------------------------------------------------------------
+local function buildSH136(at, s, dark)
+    s = s or CFG.size
+    local m = Instance.new("Model")
+    local bodyC = dark and Color3.fromRGB(42, 44, 38) or Color3.fromRGB(62, 66, 55)
+    local darkC = Color3.fromRGB(28, 30, 26)
+    local body = P({ Name = "Body", Size = Vector3.new(0.55*s, 0.42*s, 3.6*s), Color = bodyC, CFrame = at })
+    body.Parent = m
+    P({ Size = Vector3.new(0.42*s, 0.32*s, 0.9*s), Color = darkC, CFrame = at * CFrame.new(0, 0, -2.15*s) }).Parent = m
+    P({ Size = Vector3.new(2.4*s, 0.08*s, 1.7*s), Color = bodyC,
+        CFrame = at * CFrame.new(-1.25*s, 0, 0.2*s) * CFrame.Angles(0, math.rad(28), math.rad(-3)) }).Parent = m
+    P({ Size = Vector3.new(2.4*s, 0.08*s, 1.7*s), Color = bodyC,
+        CFrame = at * CFrame.new(1.25*s, 0, 0.2*s) * CFrame.Angles(0, math.rad(-28), math.rad(3)) }).Parent = m
+    for _, x in ipairs({-2.35, 2.35}) do
+        P({ Size = Vector3.new(0.07*s, 0.55*s, 0.45*s), Color = darkC, CFrame = at * CFrame.new(x*s, 0.28*s, 0.55*s) }).Parent = m
+        P({ Size = Vector3.new(0.07*s, 0.55*s, 0.45*s), Color = darkC, CFrame = at * CFrame.new(x*s, -0.28*s, 0.55*s) }).Parent = m
+    end
+    P({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.4*s, 0.48*s, 0.48*s), Color = darkC,
+        CFrame = at * CFrame.new(0, 0, 1.85*s) * CFrame.Angles(0, 0, math.rad(90)) }).Parent = m
+    local fire = P({ Shape = Enum.PartType.Ball, Size = Vector3.new(0.4*s, 0.4*s, 0.4*s),
+        Color = Color3.fromRGB(255, 115, 30), Material = Enum.Material.Neon, CFrame = at * CFrame.new(0, 0, 2.35*s) })
+    fire.Parent = m
+    local pl = Instance.new("PointLight", fire)
+    pl.Color = Color3.fromRGB(255, 110, 30); pl.Brightness = 2; pl.Range = 11
+    trailOn(fire, Color3.fromRGB(255, 120, 35))
+    m.PrimaryPart = body
+    return m
+end
+
+local function buildBOBER(at, s)
+    s = s or CFG.size
+    local m = Instance.new("Model")
+    local body = P({ Name = "Body", Size = Vector3.new(0.5*s, 0.36*s, 2.6*s), Color = Color3.fromRGB(75, 82, 90), CFrame = at })
+    body.Parent = m
+    P({ Size = Vector3.new(1.2*s, 0.06*s, 0.4*s), Color = Color3.fromRGB(55, 62, 72), CFrame = at * CFrame.new(0, 0.05*s, -1.3*s) }).Parent = m
+    P({ Size = Vector3.new(2.5*s, 0.08*s, 1.0*s), Color = Color3.fromRGB(55, 62, 72), CFrame = at * CFrame.new(0, 0, 0.2*s) }).Parent = m
+    P({ Size = Vector3.new(0.08*s, 0.55*s, 0.55*s), Color = Color3.fromRGB(55, 62, 72),
+        CFrame = at * CFrame.new(-0.3*s, 0.3*s, 1.15*s) * CFrame.Angles(0, 0, math.rad(28)) }).Parent = m
+    P({ Size = Vector3.new(0.08*s, 0.55*s, 0.55*s), Color = Color3.fromRGB(55, 62, 72),
+        CFrame = at * CFrame.new(0.3*s, 0.3*s, 1.15*s) * CFrame.Angles(0, 0, math.rad(-28)) }).Parent = m
+    P({ Size = Vector3.new(0.52*s, 0.05*s, 0.35*s), Color = Color3.fromRGB(30, 90, 180), Material = Enum.Material.Neon,
+        CFrame = at * CFrame.new(0, 0.2*s, -0.2*s) }).Parent = m
+    P({ Size = Vector3.new(0.52*s, 0.05*s, 0.35*s), Color = Color3.fromRGB(240, 200, 40), Material = Enum.Material.Neon,
+        CFrame = at * CFrame.new(0, 0.15*s, -0.2*s) }).Parent = m
+    local fire = P({ Shape = Enum.PartType.Ball, Size = Vector3.new(0.35*s, 0.35*s, 0.35*s),
+        Color = Color3.fromRGB(90, 180, 255), Material = Enum.Material.Neon, CFrame = at * CFrame.new(0, 0, 1.7*s) })
+    fire.Parent = m
+    trailOn(fire, Color3.fromRGB(100, 190, 255))
+    m.PrimaryPart = body
+    return m
+end
+
+local function buildUJ22(at, s)
+    s = s or CFG.size
+    local m = Instance.new("Model")
+    local body = P({ Name = "Body", Size = Vector3.new(0.48*s, 0.34*s, 3.4*s), Color = Color3.fromRGB(90, 95, 100), CFrame = at })
+    body.Parent = m
+    P({ Size = Vector3.new(3.6*s, 0.07*s, 0.9*s), Color = Color3.fromRGB(70, 75, 82), CFrame = at }).Parent = m
+    P({ Size = Vector3.new(0.08*s, 0.5*s, 0.6*s), Color = Color3.fromRGB(60, 65, 70), CFrame = at * CFrame.new(0, 0.32*s, 1.5*s) }).Parent = m
+    local fire = P({ Shape = Enum.PartType.Ball, Size = Vector3.new(0.32*s, 0.32*s, 0.32*s),
+        Color = Color3.fromRGB(255, 200, 80), Material = Enum.Material.Neon, CFrame = at * CFrame.new(0, 0, 2.15*s) })
+    fire.Parent = m
+    trailOn(fire, Color3.fromRGB(255, 200, 90))
+    m.PrimaryPart = body
+    return m
+end
+
+local function buildTrainer(at, s)
+    s = (s or CFG.size) * 0.8
+    local m = Instance.new("Model")
+    local body = P({ Name = "Body", Size = Vector3.new(0.45*s, 0.28*s, 2.2*s), Color = Color3.fromRGB(190, 195, 200), CFrame = at })
+    body.Parent = m
+    P({ Size = Vector3.new(1.8*s, 0.07*s, 0.9*s), Color = Color3.fromRGB(190, 195, 200), CFrame = at }).Parent = m
+    local fire = P({ Shape = Enum.PartType.Ball, Size = Vector3.new(0.3*s, 0.3*s, 0.3*s),
+        Color = Color3.fromRGB(255, 210, 90), Material = Enum.Material.Neon, CFrame = at * CFrame.new(0, 0, 1.25*s) })
+    fire.Parent = m
+    trailOn(fire, Color3.fromRGB(255, 210, 90))
+    m.PrimaryPart = body
+    return m
+end
+
+local MODELS = {
+    { id = "SH136", name = "Shahed-136", build = function(a,s) return buildSH136(a,s,false) end },
+    { id = "GERAN", name = "Geran-2", build = function(a,s) return buildSH136(a,s,true) end },
+    { id = "BOBER", name = "UJ-26 Bober", build = buildBOBER },
+    { id = "UJ22", name = "UJ-22", build = buildUJ22 },
+    { id = "TRAINER", name = "Trainer", build = buildTrainer },
+}
+
+local function getBuilder(id)
+    for _, m in ipairs(MODELS) do if m.id == id then return m.build end end
+    return MODELS[1].build
+end
+
+----------------------------------------------------------------
+local function stopEngine()
+    if engineSound then
+        local s = engineSound; engineSound = nil
+        pcall(function()
+            TweenService:Create(s, TweenInfo.new(0.25), { Volume = 0 }):Play()
+            task.delay(0.3, function() pcall(function() s:Stop(); s:Destroy() end) end)
+        end)
+    end
+end
+
+local function startEngine()
+    stopEngine()
+    local ids = { ENGINE_ID }
+    for _, f in ipairs(ENGINE_FALLBACK) do table.insert(ids, f) end
+    for _, id in ipairs(ids) do
+        local s = Instance.new("Sound")
+        s.Name = "ShahedEngine"
+        s.SoundId = id
+        s.Looped = true
+        s.Volume = 0
+        s.PlaybackSpeed = 0.9
+        s.Parent = SoundService
+        pcall(function() s:Play() end)
+        engineSound = s
+        TweenService:Create(s, TweenInfo.new(0.4), { Volume = CFG.engineVolume }):Play()
+        print("[Shahed] engine", id)
+        break
+    end
+end
+
+local function playBoom()
+    for i, id in ipairs(BOOM_IDS) do
+        pcall(function()
+            local s = Instance.new("Sound")
+            s.SoundId = id
+            s.Volume = CFG.soundVolume * (i == 1 and 1 or 0.6)
+            s.PlaybackSpeed = 0.9 + math.random() * 0.1
+            s.Parent = SoundService
+            s:Play()
+            game:GetService("Debris"):AddItem(s, 5)
+        end)
+    end
+end
+
+----------------------------------------------------------------
+local function cleanup()
+    FLYING = false
+    stopEngine()
+    pcall(function() RunService:UnbindFromRenderStep(STEP) end)
+    if droneModel then pcall(function() droneModel:Destroy() end) end
+    droneModel = nil
+    pcall(function()
+        UIS.MouseBehavior = Enum.MouseBehavior.Default
+        UIS.MouseIconEnabled = true
+        Camera.CameraType = Enum.CameraType.Custom
+        local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+        if hum then Camera.CameraSubject = hum end
+    end)
+    if statusLbl then statusLbl.Text = "Ready"; statusLbl.TextColor3 = MUTED end
+    if main then main.Visible = true end
+end
+
+local function explode(at)
+    local p = at or pos or Camera.CFrame.Position
+    stopEngine()
+    playBoom()
+    pcall(function()
+        local e = Instance.new("Explosion")
+        e.BlastRadius = 10; e.BlastPressure = 0; e.DestroyJointRadiusPercent = 0
+        e.Position = p; e.Parent = workspace
+    end)
+    if CFG.screenFlash then
+        pcall(function()
+            local g = Instance.new("ScreenGui"); g.IgnoreGuiInset = true; g.Parent = CoreGui
+            local f = Instance.new("Frame")
+            f.Size = UDim2.fromScale(1,1); f.BorderSizePixel = 0
+            f.BackgroundColor3 = Color3.fromRGB(255, 190, 90); f.BackgroundTransparency = 0.4; f.Parent = g
+            TweenService:Create(f, TweenInfo.new(0.4), { BackgroundTransparency = 1 }):Play()
+            task.delay(0.5, function() g:Destroy() end)
+        end)
+    end
+    if CFG.tpOnExplode then
+        local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+        if root then
+            pcall(function()
+                root.CFrame = CFrame.new(p + Vector3.new(0, 4, 0))
+                root.AssemblyLinearVelocity = Vector3.zero
+            end)
+        end
+    end
+    notify(CFG.tpOnExplode and "Взрыв + TP" or "Взрыв")
+    cleanup()
+end
+
+local function step(dt)
+    if not FLYING then return end
+    dt = math.clamp(dt or 0.016, 0, 0.05)
+    if os.clock() - startTime > CFG.maxTime then explode(pos) return end
+    local delta = UIS:GetMouseDelta()
+    yaw -= delta.X * CFG.sens
+    pitch = math.clamp(pitch - delta.Y * CFG.sens, -1.2, 1.2)
+    dir = Vector3.new(-math.sin(yaw)*math.cos(pitch), math.sin(pitch), -math.cos(yaw)*math.cos(pitch))
+    local spd = CFG.speed
+    if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then spd *= CFG.boostMul end
+    if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then spd *= CFG.slowMul end
+    if engineSound then
+        pcall(function()
+            engineSound.PlaybackSpeed = 0.8 + (spd / 100) * 0.5
+            engineSound.Volume = CFG.engineVolume
+        end)
+    end
+    local move = dir * spd * dt
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = { LP.Character, folder, droneModel }
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    local hit = workspace:Raycast(pos, move + dir * 1.4, params)
+    if hit then explode(hit.Position) return end
+    pos = pos + move
+    if droneModel then pcall(function() droneModel:PivotTo(CFrame.lookAt(pos, pos + dir)) end) end
+    Camera.CameraType = Enum.CameraType.Scriptable
+    Camera.CFrame = CFrame.lookAt(pos - dir * CFG.camDist + Vector3.new(0, CFG.camHeight, 0), pos + dir * 4)
+end
+
+local function launch()
+    if FLYING then return end
+    local look = Camera.CFrame.LookVector
+    pos = Camera.CFrame.Position + look * 6
+    yaw = math.atan2(-look.X, -look.Z)
+    pitch = math.asin(math.clamp(look.Y, -0.99, 0.99))
+    dir = look
+    startTime = os.clock()
+    FLYING = true
+    droneModel = getBuilder(CFG.model)(CFrame.lookAt(pos, pos + look), CFG.size)
+    droneModel.Parent = ensureFolder()
+    startEngine()
+    pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.LockCenter; UIS.MouseIconEnabled = false end)
+    RunService:BindToRenderStep(STEP, Enum.RenderPriority.Last.Value, step)
+    if statusLbl then statusLbl.Text = "FLIGHT"; statusLbl.TextColor3 = Color3.fromRGB(100, 255, 150) end
+    if main then main.Visible = false end
+    notify("Полёт")
+end
+
+----------------------------------------------------------------
+-- LOADING SCREEN: 3D + flags + music
+----------------------------------------------------------------
+local function runLoader(onDone)
+    local loadGui = Instance.new("ScreenGui")
+    loadGui.Name = "ShahedLoader"
+    loadGui.IgnoreGuiInset = true
+    loadGui.DisplayOrder = 1000
+    pcall(function() loadGui.Parent = CoreGui end)
+    if not loadGui.Parent then loadGui.Parent = LP:WaitForChild("PlayerGui") end
+
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.fromScale(1, 1)
+    bg.BackgroundColor3 = Color3.fromRGB(6, 8, 12)
+    bg.BorderSizePixel = 0
+    bg.Parent = loadGui
+
+    -- flag wall (grid of stylized flags)
+    local flagLayer = Instance.new("Frame")
+    flagLayer.Size = UDim2.fromScale(1, 1)
+    flagLayer.BackgroundTransparency = 1
+    flagLayer.Parent = bg
+
+    local cols, rows = 8, 5
+    local flagFrames = {}
+    for r = 0, rows - 1 do
+        for c = 0, cols - 1 do
+            local idx = (r * cols + c) % #FLAGS + 1
+            local data = FLAGS[idx]
+            local cell = Instance.new("Frame")
+            cell.Size = UDim2.new(1 / cols, -4, 1 / rows, -4)
+            cell.Position = UDim2.new(c / cols, 2, r / rows, 2)
+            cell.BackgroundTransparency = 0.35
+            cell.BorderSizePixel = 0
+            cell.ClipsDescendants = true
+            cell.Parent = flagLayer
+            corner(cell, 6)
+            local n = #data[2]
+            for i, col in ipairs(data[2]) do
+                local stripe = Instance.new("Frame")
+                stripe.Size = UDim2.new(1, 0, 1 / n, 0)
+                stripe.Position = UDim2.new(0, 0, (i - 1) / n, 0)
+                stripe.BackgroundColor3 = col
+                stripe.BorderSizePixel = 0
+                stripe.Parent = cell
+            end
+            local tag = Instance.new("TextLabel")
+            tag.Size = UDim2.fromScale(1, 1)
+            tag.BackgroundTransparency = 1
+            tag.Text = data[1]
+            tag.Font = Enum.Font.GothamBold
+            tag.TextSize = 11
+            tag.TextColor3 = Color3.new(1, 1, 1)
+            tag.TextStrokeTransparency = 0.5
+            tag.Parent = cell
+            table.insert(flagFrames, cell)
+        end
+    end
+
+    -- dark vignette
+    local vig = Instance.new("Frame")
+    vig.Size = UDim2.fromScale(1, 1)
+    vig.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    vig.BackgroundTransparency = 0.35
+    vig.BorderSizePixel = 0
+    vig.Parent = bg
+
+    -- center card
+    local card = Instance.new("Frame")
+    card.Size = UDim2.fromOffset(420, 320)
+    card.Position = UDim2.fromScale(0.5, 0.5)
+    card.AnchorPoint = Vector2.new(0.5, 0.5)
+    card.BackgroundColor3 = Color3.fromRGB(12, 14, 20)
+    card.BackgroundTransparency = 0.1
+    card.BorderSizePixel = 0
+    card.Parent = bg
+    corner(card, 16)
+    stroke(card, ACCENT, 1.5, 0.3)
+
+    local vp = Instance.new("ViewportFrame")
+    vp.Size = UDim2.new(1, -24, 0, 160)
+    vp.Position = UDim2.fromOffset(12, 16)
+    vp.BackgroundColor3 = Color3.fromRGB(8, 10, 14)
+    vp.BorderSizePixel = 0
+    vp.Ambient = Color3.fromRGB(100, 100, 110)
+    vp.LightColor = Color3.fromRGB(255, 180, 120)
+    vp.Parent = card
+    corner(vp, 12)
+
+    local world = Instance.new("WorldModel")
+    world.Parent = vp
+    local cam = Instance.new("Camera")
+    cam.Parent = vp
+    vp.CurrentCamera = cam
+    local model = buildSH136(CFrame.new(), 1.2)
+    model.Parent = world
+    local angle = 0
+    local rotConn = RunService.RenderStepped:Connect(function(dt)
+        if not model.Parent then return end
+        angle += dt * 1.1
+        pcall(function() model:PivotTo(CFrame.Angles(math.rad(15), angle, math.rad(5) * math.sin(angle)) ) end)
+        cam.CFrame = CFrame.lookAt(Vector3.new(5.2, 2.5, 6.2), Vector3.new(0, 0.15, 0))
+    end)
+
+    local logo = Instance.new("TextLabel")
+    logo.Size = UDim2.new(1, 0, 0, 36)
+    logo.Position = UDim2.fromOffset(0, 185)
+    logo.BackgroundTransparency = 1
+    logo.Text = "SHAHEД"
+    logo.Font = Enum.Font.GothamBlack
+    logo.TextSize = 28
+    logo.TextColor3 = ACCENT
+    logo.Parent = card
+
+    local sub = Instance.new("TextLabel")
+    sub.Size = UDim2.new(1, 0, 0, 18)
+    sub.Position = UDim2.fromOffset(0, 220)
+    sub.BackgroundTransparency = 1
+    sub.Text = "world flags · 3D · local drone"
+    sub.Font = Enum.Font.Gotham
+    sub.TextSize = 12
+    sub.TextColor3 = MUTED
+    sub.Parent = card
+
+    local barBg = Instance.new("Frame")
+    barBg.Size = UDim2.new(1, -40, 0, 8)
+    barBg.Position = UDim2.new(0, 20, 1, -40)
+    barBg.BackgroundColor3 = Color3.fromRGB(30, 34, 44)
+    barBg.BorderSizePixel = 0
+    barBg.Parent = card
+    corner(barBg, 4)
+    local bar = Instance.new("Frame")
+    bar.Size = UDim2.fromScale(0, 1)
+    bar.BackgroundColor3 = ACCENT
+    bar.BorderSizePixel = 0
+    bar.Parent = barBg
+    corner(bar, 4)
+    local pct = Instance.new("TextLabel")
+    pct.Size = UDim2.new(1, 0, 0, 16)
+    pct.Position = UDim2.new(0, 0, 1, -28)
+    pct.BackgroundTransparency = 1
+    pct.Text = "0%"
+    pct.Font = Enum.Font.GothamMedium
+    pct.TextSize = 11
+    pct.TextColor3 = Color3.fromRGB(200, 205, 215)
+    pct.Parent = card
+
+    -- pulse flags
+    task.spawn(function()
+        while loadGui.Parent do
+            for _, f in ipairs(flagFrames) do
+                if not f.Parent then break end
+                TweenService:Create(f, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    BackgroundTransparency = 0.2 + math.random() * 0.35,
+                }):Play()
+            end
+            task.wait(0.7)
+        end
+    end)
+
+    -- music
+    local music
+    for _, id in ipairs(LOAD_MUSIC_IDS) do
+        local s = Instance.new("Sound")
+        s.SoundId = id
+        s.Volume = 0
+        s.Looped = true
+        s.Parent = SoundService
+        pcall(function() s:Play() end)
+        music = s
+        TweenService:Create(s, TweenInfo.new(0.8), { Volume = 0.35 }):Play()
+        break
+    end
+
+    for i = 1, 40 do
+        local p = i / 40
+        bar.Size = UDim2.fromScale(p, 1)
+        pct.Text = math.floor(p * 100) .. "%"
+        task.wait(0.04)
+    end
+
+    if rotConn then rotConn:Disconnect() end
+    if music then
+        TweenService:Create(music, TweenInfo.new(0.5), { Volume = 0 }):Play()
+        task.delay(0.55, function() pcall(function() music:Stop(); music:Destroy() end) end)
+    end
+    TweenService:Create(bg, TweenInfo.new(0.45), { BackgroundTransparency = 1 }):Play()
+    TweenService:Create(card, TweenInfo.new(0.4), { BackgroundTransparency = 1 }):Play()
+    task.wait(0.5)
+    loadGui:Destroy()
+    if onDone then onDone() end
+end
+
+----------------------------------------------------------------
+-- MAIN GUI
+----------------------------------------------------------------
+local function buildMain()
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "ShahedV6"
+    gui.ResetOnSpawn = false
+    gui.DisplayOrder = 260
+    pcall(function() gui.Parent = CoreGui end)
+    if not gui.Parent then gui.Parent = LP:WaitForChild("PlayerGui") end
+
+    main = Instance.new("Frame")
+    main.Size = UDim2.fromOffset(380, 460)
+    main.Position = UDim2.new(0.5, -190, 0.5, -230)
+    main.BackgroundColor3 = BG
+    main.BorderSizePixel = 0
+    main.Active = true
+    main.Parent = gui
+    corner(main, 14)
+    stroke(main, ACCENT, 1.2, 0.4)
+
+    local header = Instance.new("TextButton")
+    header.Size = UDim2.new(1, 0, 0, 44)
+    header.BackgroundColor3 = Color3.fromRGB(20, 18, 16)
+    header.BorderSizePixel = 0
+    header.Text = ""
+    header.AutoButtonColor = false
+    header.Parent = main
+    corner(header, 14)
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(0.6, 0, 1, 0)
+    title.Position = UDim2.fromOffset(14, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "SHAHEД"
+    title.Font = Enum.Font.GothamBlack
+    title.TextSize = 18
+    title.TextColor3 = ACCENT
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = header
+
+    statusLbl = Instance.new("TextLabel")
+    statusLbl.Size = UDim2.new(0.35, -10, 1, 0)
+    statusLbl.Position = UDim2.new(0.65, 0, 0, 0)
+    statusLbl.BackgroundTransparency = 1
+    statusLbl.Text = "Ready"
+    statusLbl.Font = Enum.Font.GothamMedium
+    statusLbl.TextSize = 12
+    statusLbl.TextColor3 = MUTED
+    statusLbl.TextXAlignment = Enum.TextXAlignment.Right
+    statusLbl.Parent = header
+
+    do
+        local dragging, startPos, startInput
+        header.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                startInput = input.Position
+                startPos = main.Position
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then dragging = false end
+                end)
+            end
+        end)
+        UIS.InputChanged:Connect(function(input)
+            if not dragging then return end
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                local d = input.Position - startInput
+                main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+            end
+        end)
+    end
+
+    local tabBar = Instance.new("Frame")
+    tabBar.Size = UDim2.new(1, -20, 0, 32)
+    tabBar.Position = UDim2.fromOffset(10, 50)
+    tabBar.BackgroundTransparency = 1
+    tabBar.Parent = main
+    Instance.new("UIListLayout", tabBar).FillDirection = Enum.FillDirection.Horizontal
+    tabBar:FindFirstChildOfClass("UIListLayout").Padding = UDim.new(0, 6)
+
+    local body = Instance.new("Frame")
+    body.Size = UDim2.new(1, -20, 1, -140)
+    body.Position = UDim2.fromOffset(10, 88)
+    body.BackgroundTransparency = 1
+    body.ClipsDescendants = true
+    body.Parent = main
+
+    local function showPage(name)
+        for n, f in pairs(pages) do f.Visible = (n == name) end
+        for _, b in ipairs(tabBar:GetChildren()) do
+            if b:IsA("TextButton") then
+                local on = b.Name == name
+                b.BackgroundColor3 = on and ACCENT or CARD
+                b.TextColor3 = on and Color3.new(1,1,1) or MUTED
+            end
+        end
+    end
+
+    for _, info in ipairs({ {"models", "Модели"}, {"settings", "Настройки"}, {"help", "Help"} }) do
+        local b = Instance.new("TextButton")
+        b.Name = info[1]
+        b.Size = UDim2.fromOffset(110, 30)
+        b.BackgroundColor3 = CARD
+        b.Text = info[2]
+        b.Font = Enum.Font.GothamBold
+        b.TextSize = 12
+        b.TextColor3 = MUTED
+        b.Parent = tabBar
+        corner(b, 8)
+        b.MouseButton1Click:Connect(function() showPage(info[1]) end)
+    end
+
+    pages.models = Instance.new("ScrollingFrame")
+    pages.models.Size = UDim2.fromScale(1, 1)
+    pages.models.BackgroundTransparency = 1
+    pages.models.BorderSizePixel = 0
+    pages.models.ScrollBarThickness = 3
+    pages.models.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    pages.models.Visible = false
+    pages.models.Parent = body
+    Instance.new("UIListLayout", pages.models).Padding = UDim.new(0, 6)
+
+    local vpBox = Instance.new("Frame")
+    vpBox.Size = UDim2.new(1, 0, 0, 120)
+    vpBox.BackgroundColor3 = Color3.fromRGB(8, 9, 12)
+    vpBox.Parent = pages.models
+    corner(vpBox, 10)
+    viewport = Instance.new("ViewportFrame")
+    viewport.Size = UDim2.fromScale(1, 1)
+    viewport.BackgroundTransparency = 1
+    viewport.Ambient = Color3.fromRGB(100, 100, 110)
+    viewport.LightColor = Color3.fromRGB(255, 200, 150)
+    viewport.Parent = vpBox
+
+    local function refreshPreview()
+        if previewConn then previewConn:Disconnect() previewConn = nil end
+        viewport:ClearAllChildren()
+        local world = Instance.new("WorldModel"); world.Parent = viewport
+        local cam = Instance.new("Camera"); cam.Parent = viewport
+        viewport.CurrentCamera = cam
+        local m = getBuilder(CFG.model)(CFrame.new(), 1.05)
+        m.Parent = world
+        local a = 0
+        previewConn = RunService.RenderStepped:Connect(function(dt)
+            if not m.Parent then return end
+            a += dt * 0.75
+            pcall(function() m:PivotTo(CFrame.Angles(math.rad(12), a, 0)) end)
+            cam.CFrame = CFrame.lookAt(Vector3.new(5, 2.4, 6), Vector3.new(0, 0.1, 0))
+        end)
+    end
+
+    local function rebuildModelList()
+        for _, c in ipairs(pages.models:GetChildren()) do
+            if c:IsA("TextButton") then c:Destroy() end
+        end
+        for _, info in ipairs(MODELS) do
+            local b = Instance.new("TextButton")
+            b.Size = UDim2.new(1, 0, 0, 40)
+            b.BackgroundColor3 = CFG.model == info.id and Color3.fromRGB(45, 38, 28) or CARD
+            b.Text = "  " .. info.name
+            b.Font = Enum.Font.GothamBold
+            b.TextSize = 13
+            b.TextColor3 = Color3.new(1,1,1)
+            b.TextXAlignment = Enum.TextXAlignment.Left
+            b.Parent = pages.models
+            corner(b, 8)
+            if CFG.model == info.id then stroke(b, ACCENT, 1.2, 0.2) end
+            b.MouseButton1Click:Connect(function()
+                CFG.model = info.id
+                rebuildModelList()
+                refreshPreview()
+            end)
+        end
+    end
+    rebuildModelList()
+    refreshPreview()
+
+    pages.settings = Instance.new("ScrollingFrame")
+    pages.settings.Size = UDim2.fromScale(1, 1)
+    pages.settings.BackgroundTransparency = 1
+    pages.settings.BorderSizePixel = 0
+    pages.settings.ScrollBarThickness = 3
+    pages.settings.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    pages.settings.Visible = false
+    pages.settings.Parent = body
+    Instance.new("UIListLayout", pages.settings).Padding = UDim.new(0, 5)
+
+    local function addToggle(label, key)
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(1, 0, 0, 34)
+        b.BackgroundColor3 = CARD
+        b.Text = "  " .. label .. (CFG[key] and "   ON" or "   OFF")
+        b.Font = Enum.Font.GothamMedium
+        b.TextSize = 12
+        b.TextColor3 = CFG[key] and Color3.fromRGB(120, 220, 160) or MUTED
+        b.TextXAlignment = Enum.TextXAlignment.Left
+        b.Parent = pages.settings
+        corner(b, 8)
+        b.MouseButton1Click:Connect(function()
+            CFG[key] = not CFG[key]
+            b.Text = "  " .. label .. (CFG[key] and "   ON" or "   OFF")
+            b.TextColor3 = CFG[key] and Color3.fromRGB(120, 220, 160) or MUTED
+        end)
+    end
+    local function addSlider(label, key, min, max, int)
+        local row = Instance.new("Frame")
+        row.Size = UDim2.new(1, 0, 0, 42)
+        row.BackgroundColor3 = CARD
+        row.Parent = pages.settings
+        corner(row, 8)
+        local lab = Instance.new("TextLabel")
+        lab.Size = UDim2.new(1, -12, 0, 14)
+        lab.Position = UDim2.fromOffset(10, 4)
+        lab.BackgroundTransparency = 1
+        lab.Text = label .. "  " .. tostring(CFG[key])
+        lab.Font = Enum.Font.GothamMedium
+        lab.TextSize = 11
+        lab.TextColor3 = Color3.fromRGB(190, 195, 210)
+        lab.TextXAlignment = Enum.TextXAlignment.Left
+        lab.Parent = row
+        local bar = Instance.new("Frame")
+        bar.Size = UDim2.new(1, -20, 0, 8)
+        bar.Position = UDim2.fromOffset(10, 26)
+        bar.BackgroundColor3 = Color3.fromRGB(38, 42, 52)
+        bar.Parent = row
+        corner(bar, 4)
+        local fill = Instance.new("Frame")
+        fill.Size = UDim2.new((CFG[key]-min)/math.max(max-min,1), 0, 1, 0)
+        fill.BackgroundColor3 = ACCENT
+        fill.Parent = bar
+        corner(fill, 4)
+        local drag = false
+        bar.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = true end
+        end)
+        UIS.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end
+        end)
+        UIS.InputChanged:Connect(function(i)
+            if not drag or i.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+            local rel = math.clamp((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+            local val = min + rel * (max - min)
+            if int then val = math.floor(val + 0.5) else val = math.floor(val * 100 + 0.5) / 100 end
+            CFG[key] = val
+            fill.Size = UDim2.new(rel, 0, 1, 0)
+            lab.Text = label .. "  " .. tostring(val)
+        end)
+    end
+    addToggle("ТП при взрыве", "tpOnExplode")
+    addToggle("Вспышка", "screenFlash")
+    addToggle("След", "trail")
+    addSlider("Скорость", "speed", 20, 90, true)
+    addSlider("Громкость взрыва", "soundVolume", 0.2, 2, false)
+    addSlider("Громкость двигателя", "engineVolume", 0.1, 1.5, false)
+    addSlider("Мышь", "sens", 0.001, 0.008, false)
+    addSlider("Время полёта", "maxTime", 6, 35, true)
+    addSlider("Размер", "size", 0.7, 1.7, false)
+
+    pages.help = Instance.new("Frame")
+    pages.help.Size = UDim2.fromScale(1, 1)
+    pages.help.BackgroundColor3 = CARD
+    pages.help.Visible = false
+    pages.help.Parent = body
+    corner(pages.help, 10)
+    local helpT = Instance.new("TextLabel")
+    helpT.Size = UDim2.new(1, -16, 1, -16)
+    helpT.Position = UDim2.fromOffset(8, 8)
+    helpT.BackgroundTransparency = 1
+    helpT.Text = "Перетащи окно за шапку\n\nH — взлёт\nМышь — руль\nShift/Ctrl — скорость\nV — взрыв\nInsert — GUI\n\nТолько визуал + звук."
+    helpT.Font = Enum.Font.Gotham
+    helpT.TextSize = 13
+    helpT.TextColor3 = Color3.fromRGB(190, 195, 210)
+    helpT.TextXAlignment = Enum.TextXAlignment.Left
+    helpT.TextYAlignment = Enum.TextYAlignment.Top
+    helpT.Parent = pages.help
+
+    showPage("models")
+
+    local launchBtn = Instance.new("TextButton")
+    launchBtn.Size = UDim2.new(1, -20, 0, 44)
+    launchBtn.Position = UDim2.new(0, 10, 1, -54)
+    launchBtn.BackgroundColor3 = ACCENT
+    launchBtn.Text = "▶  ЗАПУСК"
+    launchBtn.Font = Enum.Font.GothamBlack
+    launchBtn.TextSize = 16
+    launchBtn.TextColor3 = Color3.new(1, 1, 1)
+    launchBtn.Parent = main
+    corner(launchBtn, 10)
+    launchBtn.MouseButton1Click:Connect(function()
+        if FLYING then explode(pos) else launch() end
+    end)
+
+    UIS.InputBegan:Connect(function(input)
+        local k = input.KeyCode
+        if k == Enum.KeyCode.H and not FLYING then launch()
+        elseif k == Enum.KeyCode.V and FLYING then explode(pos)
+        elseif k == Enum.KeyCode.Insert then
+            if not FLYING then main.Visible = not main.Visible end
+        end
+    end)
+
+    RunService.Heartbeat:Connect(function()
+        if FLYING then
+            launchBtn.Text = "💣  ВЗРЫВ"
+            launchBtn.BackgroundColor3 = Color3.fromRGB(170, 50, 50)
+        else
+            launchBtn.Text = "▶  ЗАПУСК"
+            launchBtn.BackgroundColor3 = ACCENT
+        end
+    end)
+end
+
+runLoader(function()
+    buildMain()
+    print("[Shahed v6] loader + flags + music")
+    notify("Shahed готов")
+end)
