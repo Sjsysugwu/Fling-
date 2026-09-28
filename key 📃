@@ -11,7 +11,7 @@ local M = game:GetService("MarketplaceService")
 
 local L = P.LocalPlayer
 
-local KEY_LINK = "https://link-unlock.com/bt7ztal7"
+local KEY_LINK = "https://discord.gg/taQSdHKg6"
 local TARGET_SCRIPT = "https://raw.githubusercontent.com/Sjsysugwu/Fling-/refs/heads/main/XR%20EGG%20HOB%F0%9F%93%83"
 
 --=========================================================
