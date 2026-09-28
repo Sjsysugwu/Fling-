@@ -1,6 +1,7 @@
 --=========================================================
 -- XR EGG HOB v.1.4
 -- PHONE / PC SELECT
+-- PLAYER PLOT BASEPLATE RETURN
 --=========================================================
 
 local Players = game:GetService("Players")
@@ -20,7 +21,7 @@ local HUB_IMAGE_ID = "rbxassetid://107402235876527"
 local TAP_SOUND_ID = "rbxassetid://71262389650741"
 
 local MIN_EGG_PRICE = 1000000
-local MIN_EGG_DISTANCE = 50
+local MIN_EGG_DISTANCE = 1000
 
 local TELEPORT_HEIGHT = 3
 local EGG_DISTANCE = 0
@@ -246,7 +247,6 @@ local Main = Instance.new("Frame")
 
 Main.Name = "Main"
 
--- سيتم تغييره بعد اختيار الجهاز
 Main.Size = UDim2.fromOffset(340, 445)
 
 Main.Position =
@@ -741,7 +741,6 @@ OpenButton.BackgroundTransparency = 1
 OpenButton.Image =
     OPEN_IMAGE_ID
 
--- الأصلية بدون تغيير لون
 OpenButton.ImageColor3 =
     Color3.fromRGB(255, 255, 255)
 
@@ -793,7 +792,6 @@ local function ApplyDeviceSize()
 
     if IsPhone then
 
-        -- 📱 PHONE
         Main.Size =
             UDim2.fromOffset(290, 380)
 
@@ -812,7 +810,6 @@ local function ApplyDeviceSize()
 
     else
 
-        -- 🖥️ PC
         Main.Size =
             UDim2.fromOffset(420, 540)
 
@@ -921,6 +918,116 @@ do
     if Root then
         HomeCFrame = Root.CFrame
     end
+
+end
+
+--=========================================================
+-- FIND PLAYER PLOT + BASEPLATE
+--=========================================================
+
+local function FindMyPlotBaseplate()
+
+    local PlayerName =
+        string.lower(Player.Name)
+
+    local DisplayName =
+        string.lower(Player.DisplayName)
+
+    local UserId =
+        tostring(Player.UserId)
+
+    for _, Object in ipairs(
+        Workspace:GetDescendants()
+    ) do
+
+        if Object:IsA("BasePart")
+        and string.lower(Object.Name) == "baseplate" then
+
+            local Current = Object.Parent
+
+            while Current
+            and Current ~= Workspace do
+
+                local CurrentName =
+                    string.lower(Current.Name)
+
+                --=================================================
+                -- CHECK PLOT NAME
+                --=================================================
+
+                if string.find(
+                    CurrentName,
+                    PlayerName,
+                    1,
+                    true
+                )
+                or string.find(
+                    CurrentName,
+                    DisplayName,
+                    1,
+                    true
+                )
+                or string.find(
+                    CurrentName,
+                    UserId,
+                    1,
+                    true
+                ) then
+
+                    return Object
+
+                end
+
+                --=================================================
+                -- CHECK PLOT ATTRIBUTES
+                --=================================================
+
+                for AttributeName, Value in pairs(
+                    Current:GetAttributes()
+                ) do
+
+                    local Text =
+                        tostring(Value)
+
+                    local LowerText =
+                        string.lower(Text)
+
+                    if string.find(
+                        LowerText,
+                        PlayerName,
+                        1,
+                        true
+                    )
+                    or string.find(
+                        LowerText,
+                        DisplayName,
+                        1,
+                        true
+                    )
+                    or Text == UserId then
+
+                        return Object
+
+                    end
+
+                end
+
+                Current =
+                    Current.Parent
+
+            end
+
+        end
+
+    end
+
+    return nil
+
+end
+
+local function GetMyBaseplate()
+
+    return FindMyPlotBaseplate()
 
 end
 
@@ -1576,23 +1683,52 @@ function ProcessEgg(Egg)
         Root.Anchored = false
     end
 
-    if HomeCFrame then
+    --=====================================================
+    -- RETURN TO PLAYER PLOT BASEPLATE
+    --=====================================================
+
+    local MyBaseplate =
+        GetMyBaseplate()
+
+    if MyBaseplate then
 
         Status.Text =
-            "TP BACK HOME..."
+            "🏠 TP TO YOUR PLOT BASEPLATE..."
 
         TeleportTo(
-            HomeCFrame.Position
+            MyBaseplate.Position
+            + Vector3.new(
+                0,
+                TELEPORT_HEIGHT,
+                0
+            )
         )
 
-        task.wait(0.1)
+        task.wait(0.15)
 
-        local NewRoot = GetRoot()
+        local NewRoot =
+            GetRoot()
 
         if NewRoot then
+
             NewRoot.CFrame =
-                HomeCFrame
+                CFrame.new(
+                    MyBaseplate.Position
+                    + Vector3.new(
+                        0,
+                        TELEPORT_HEIGHT,
+                        0
+                    )
+                )
+
         end
+
+    else
+
+        Status.Text =
+            "❌ YOUR PLOT BASEPLATE NOT FOUND"
+
+        task.wait(0.5)
 
     end
 
@@ -1943,4 +2079,4 @@ task.spawn(function()
 
     end
 
-end)
+end) 
