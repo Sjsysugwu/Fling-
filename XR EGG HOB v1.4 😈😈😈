@@ -1,1946 +1,1000 @@
---=========================================================
--- XR EGG HOB v.1.4
--- PHONE / PC SELECT
---=========================================================
+--// =========================================================
+--// 🖤🟢 CYBERPUNK BLACK + GREEN ULTRA KEY SYSTEM
+--// FULL VERSION
+--// =========================================================
 
-local Players = game:GetService("Players")
-local SoundService = game:GetService("SoundService")
-local Workspace = game:GetService("Workspace")
-local TweenService = game:GetService("TweenService")
+local T = game:GetService("TweenService")
+local P = game:GetService("Players")
+local U = game:GetService("UserInputService")
+local R = game:GetService("RunService")
+local M = game:GetService("MarketplaceService")
 
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+local L = P.LocalPlayer
 
---=========================================================
--- SETTINGS
---=========================================================
-
-local OPEN_IMAGE_ID = "rbxassetid://87673002357262"
-local HUB_IMAGE_ID = "rbxassetid://107402235876527"
-local TAP_SOUND_ID = "rbxassetid://71262389650741"
-
-local MIN_EGG_PRICE = 1000000
-local MIN_EGG_DISTANCE = 50
-
-local TELEPORT_HEIGHT = 3
-local EGG_DISTANCE = 0
-
-local BETWEEN_TAKES = 0.08
-local COUNT_DELAY = 1
-local AFTER_TAKE_WAIT = 0.10
-local BETWEEN_AUTO_EGGS = 0.15
-local SCAN_DELAY = 1
+local KEY_LINK = "https://link-unlock.com/bt7ztal7"
+local TARGET_SCRIPT = "https://raw.githubusercontent.com/Sjsysugwu/Fling1/refs/heads/main/XE%20EGG%20HOB%20v1.4%F0%9F%98%88%F0%9F%AA%96"
 
 --=========================================================
--- STATE
+-- COLORS
 --=========================================================
 
-local DeviceSelected = false
-local IsPhone = false
-
-local AutoEnabled = false
-local Processing = false
-local CurrentEgg = nil
-
-local CompletedEggs = {}
-local EggButtons = {}
-local AnimalButtons = {}
-
-local HomeCFrame = nil
+local Black = Color3.fromRGB(5, 5, 5)
+local DarkBlack = Color3.fromRGB(8, 8, 8)
+local Green = Color3.fromRGB(0, 255, 80)
+local DarkGreen = Color3.fromRGB(0, 80, 30)
+local SoftGreen = Color3.fromRGB(0, 180, 60)
+local Gray = Color3.fromRGB(100, 100, 100)
 
 --=========================================================
--- REMOVE OLD GUI
+-- SOUND ENGINE
 --=========================================================
 
-local oldGui = PlayerGui:FindFirstChild(
-    "XR_EGG_HOB_v1_4"
-)
+local function PlaySound(id, pitch, vol)
+	task.spawn(function()
+		local s = Instance.new("Sound")
+		s.SoundId = "rbxassetid://" .. tostring(id)
+		s.Pitch = pitch or 1
+		s.Volume = vol or 0.5
+		s.Parent = workspace
 
-if oldGui then
-    oldGui:Destroy()
+		s:Play()
+
+		s.Ended:Connect(function()
+			s:Destroy()
+		end)
+	end)
+end
+
+local SfxHover = function()
+	PlaySound(6895079853, 1.2, 0.2)
+end
+
+local SfxClick = function()
+	PlaySound(6895079853, 0.9, 0.4)
+end
+
+local SfxSuccess = function()
+	PlaySound(6026987102, 1, 0.6)
+end
+
+local SfxError = function()
+	PlaySound(138090596, 1, 0.4)
+end
+
+local SfxLoad = function()
+	PlaySound(9114223179, 1, 0.3)
 end
 
 --=========================================================
--- SOUND
+-- GAME DATA
 --=========================================================
 
-local oldSound = SoundService:FindFirstChild(
-    "XR_EggTapSound"
-)
+local GameName = "UNKNOWN GAME"
+local IconId = "rbxasset://textures/ui/GuiImagePlaceholder.png"
 
-if oldSound then
-    oldSound:Destroy()
-end
+pcall(function()
+	local info = M:GetProductInfo(game.PlaceId)
 
-local EggTapSound = Instance.new("Sound")
-EggTapSound.Name = "XR_EggTapSound"
-EggTapSound.SoundId = TAP_SOUND_ID
-EggTapSound.Volume = 1
-EggTapSound.Looped = false
-EggTapSound.Parent = SoundService
+	GameName = string.upper(info.Name)
+
+	if game.PlaceId > 0 then
+		IconId =
+			"https://www.roblox.com/asset-thumbnail/image?assetId="
+			.. game.PlaceId
+			.. "&width=150&height=150&format=png"
+	end
+end)
+
+local UserAge = L.AccountAge .. " Days"
 
 --=========================================================
 -- SCREEN GUI
 --=========================================================
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "XR_EGG_HOB_v1_4"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.IgnoreGuiInset = true
-ScreenGui.DisplayOrder = 999999
-ScreenGui.Parent = PlayerGui
+local G = Instance.new("ScreenGui")
+G.Name = "UltraBlackGreenKeySystem"
+G.ResetOnSpawn = false
+G.DisplayOrder = 999999
+G.Parent = L:WaitForChild("PlayerGui")
 
 --=========================================================
--- DEVICE SELECTOR
+-- PULSE ENGINE
 --=========================================================
 
-local DeviceFrame = Instance.new("Frame")
+local Glow = Green
 
-DeviceFrame.Name = "DeviceSelector"
-DeviceFrame.Size = UDim2.fromOffset(330, 220)
-DeviceFrame.Position = UDim2.new(0.5, -165, 0.5, -110)
+R.RenderStepped:Connect(function()
+	local Pulse = (math.sin(tick() * 4) + 1) / 2
 
-DeviceFrame.BackgroundColor3 =
-    Color3.fromRGB(5, 5, 5)
+	Glow = Color3.fromRGB(
+		0,
+		math.floor(80 + (175 * Pulse)),
+		math.floor(30 + (50 * Pulse))
+	)
 
-DeviceFrame.BorderSizePixel = 0
-DeviceFrame.ZIndex = 500
-DeviceFrame.Parent = ScreenGui
+	-- Main
+	if MainS and MainS.Parent then
+		MainS.Color = Glow
+	end
 
-local DeviceCorner = Instance.new("UICorner")
-DeviceCorner.CornerRadius = UDim.new(0, 18)
-DeviceCorner.Parent = DeviceFrame
+	-- Loading
+	if WS and WS.Parent then
+		WS.Color = Glow
+	end
 
-local DeviceStroke = Instance.new("UIStroke")
-DeviceStroke.Thickness = 3
-DeviceStroke.Color = Color3.fromRGB(0, 255, 90)
-DeviceStroke.Parent = DeviceFrame
+	if SpinStroke and SpinStroke.Parent then
+		SpinStroke.Color = Glow
+	end
 
---=========================================================
--- DEVICE TITLE
---=========================================================
+	-- Buttons
+	if SubS and SubS.Parent then
+		SubS.Color = Glow
+	end
 
-local DeviceTitle = Instance.new("TextLabel")
+	if GetS and GetS.Parent then
+		GetS.Color = Glow
+	end
 
-DeviceTitle.Size = UDim2.new(1, -20, 0, 55)
-DeviceTitle.Position = UDim2.fromOffset(10, 10)
+	if CloseS and CloseS.Parent then
+		CloseS.Color = Glow
+	end
 
-DeviceTitle.BackgroundTransparency = 1
+	if MinS and MinS.Parent then
+		MinS.Color = Glow
+	end
 
-DeviceTitle.Text = "👑 XR EGG HOB v.1.4"
+	if KeyBoxS and KeyBoxS.Parent then
+		KeyBoxS.Color = Glow
+	end
 
-DeviceTitle.TextColor3 =
-    Color3.fromRGB(255, 255, 255)
-
-DeviceTitle.TextSize = 20
-DeviceTitle.Font = Enum.Font.GothamBold
-
-DeviceTitle.ZIndex = 501
-DeviceTitle.Parent = DeviceFrame
-
-local DeviceSub = Instance.new("TextLabel")
-
-DeviceSub.Size = UDim2.new(1, -20, 0, 35)
-DeviceSub.Position = UDim2.fromOffset(10, 55)
-
-DeviceSub.BackgroundTransparency = 1
-
-DeviceSub.Text = "Choose your device"
-
-DeviceSub.TextColor3 =
-    Color3.fromRGB(190, 190, 190)
-
-DeviceSub.TextSize = 14
-DeviceSub.Font = Enum.Font.Gotham
-
-DeviceSub.ZIndex = 501
-DeviceSub.Parent = DeviceFrame
+	if NoteCardS and NoteCardS.Parent then
+		NoteCardS.Color = Glow
+	end
+end)
 
 --=========================================================
--- DEVICE BUTTON FUNCTION
+-- LOADING WINDOW
 --=========================================================
 
-local function makeDeviceButton(
-    text,
-    position
-)
+local W = Instance.new("Frame")
+W.Name = "Loading"
+W.Size = UDim2.new(0, 0, 0, 0)
+W.Position = UDim2.new(0.5, 0, 0.5, 0)
+W.BackgroundColor3 = Black
+W.BorderSizePixel = 0
+W.ClipsDescendants = true
+W.Parent = G
 
-    local Button = Instance.new("TextButton")
+local WC = Instance.new("UICorner")
+WC.CornerRadius = UDim.new(0, 10)
+WC.Parent = W
 
-    Button.Size = UDim2.fromOffset(140, 75)
-    Button.Position = position
+local WS = Instance.new("UIStroke")
+WS.Color = Green
+WS.Thickness = 1.5
+WS.Parent = W
 
-    Button.BackgroundColor3 =
-        Color3.fromRGB(5, 15, 8)
+--=========================================================
+-- LOADING PARTICLES
+--=========================================================
 
-    Button.BorderSizePixel = 0
+for i = 1, 8 do
+	local p = Instance.new("TextLabel")
 
-    Button.Text = text
+	p.Size = UDim2.new(0, 8, 0, 8)
+	p.Position = UDim2.new(math.random(), 0, math.random(), 0)
 
-    Button.TextColor3 =
-        Color3.fromRGB(255, 255, 255)
+	p.BackgroundTransparency = 1
+	p.Font = Enum.Font.Code
+	p.Text = "•"
+	p.TextColor3 = Green
+	p.TextTransparency = 0.55
+	p.TextSize = 8
 
-    Button.TextSize = 16
-    Button.Font = Enum.Font.GothamBold
-
-    Button.AutoButtonColor = false
-
-    Button.ZIndex = 502
-    Button.Parent = DeviceFrame
-
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 12)
-    Corner.Parent = Button
-
-    local Stroke = Instance.new("UIStroke")
-    Stroke.Thickness = 2
-    Stroke.Color = Color3.fromRGB(0, 255, 90)
-    Stroke.Parent = Button
-
-    task.spawn(function()
-
-        local state = false
-
-        while Button.Parent do
-
-            state = not state
-
-            TweenService:Create(
-                Stroke,
-                TweenInfo.new(
-                    0.7,
-                    Enum.EasingStyle.Linear
-                ),
-                {
-                    Color =
-                        state
-                        and Color3.fromRGB(0, 0, 0)
-                        or Color3.fromRGB(0, 255, 90)
-                }
-            ):Play()
-
-            task.wait(0.7)
-
-        end
-
-    end)
-
-    return Button
+	p.Parent = W
 end
 
-local PhoneButton = makeDeviceButton(
-    "📱 PHONE",
-    UDim2.fromOffset(20, 115)
-)
+--=========================================================
+-- SPINNER
+--=========================================================
 
-local PCButton = makeDeviceButton(
-    "🖥️ PC",
-    UDim2.fromOffset(170, 115)
-)
+local Spinner = Instance.new("Frame")
+Spinner.Size = UDim2.new(0, 30, 0, 30)
+Spinner.Position = UDim2.new(0.5, -15, 0.28, -15)
+Spinner.BackgroundTransparency = 1
+Spinner.Parent = W
+
+local SpinStroke = Instance.new("UIStroke")
+SpinStroke.Color = Green
+SpinStroke.Thickness = 2
+SpinStroke.Parent = Spinner
+
+local SpinCorner = Instance.new("UICorner")
+SpinCorner.CornerRadius = UDim.new(1, 0)
+SpinCorner.Parent = Spinner
+
+R.RenderStepped:Connect(function()
+	if Spinner and Spinner.Parent then
+		Spinner.Rotation = (Spinner.Rotation + 7) % 360
+	end
+end)
 
 --=========================================================
--- MAIN
+-- LOADING TEXT
+--=========================================================
+
+local LoadTxt = Instance.new("TextLabel")
+LoadTxt.Size = UDim2.new(1, 0, 0, 18)
+LoadTxt.Position = UDim2.new(0, 0, 0.58, 0)
+LoadTxt.BackgroundTransparency = 1
+LoadTxt.Font = Enum.Font.Code
+LoadTxt.Text = "INITIALIZING ARCHITECTURE..."
+LoadTxt.TextColor3 = Green
+LoadTxt.TextSize = 8
+LoadTxt.Parent = W
+
+local AccountAgeLbl = Instance.new("TextLabel")
+AccountAgeLbl.Size = UDim2.new(1, 0, 0, 14)
+AccountAgeLbl.Position = UDim2.new(0, 0, 0.78, 0)
+AccountAgeLbl.BackgroundTransparency = 1
+AccountAgeLbl.Font = Enum.Font.Code
+AccountAgeLbl.Text = "USER AGE: " .. UserAge
+AccountAgeLbl.TextColor3 = SoftGreen
+AccountAgeLbl.TextSize = 8
+AccountAgeLbl.Parent = W
+
+--=========================================================
+-- MAIN GUI
 --=========================================================
 
 local Main = Instance.new("Frame")
-
 Main.Name = "Main"
-
--- سيتم تغييره بعد اختيار الجهاز
-Main.Size = UDim2.fromOffset(340, 445)
-
-Main.Position =
-    UDim2.new(0.5, -170, 0.5, -222)
-
-Main.BackgroundColor3 =
-    Color3.fromRGB(5, 5, 5)
-
+Main.Size = UDim2.new(0, 260, 0, 180)
+Main.Position = UDim2.new(0.5, -130, 0.5, -90)
+Main.BackgroundColor3 = Black
 Main.BorderSizePixel = 0
-
-Main.Visible = false
-
 Main.ClipsDescendants = true
-Main.Parent = ScreenGui
+Main.Visible = false
+Main.Parent = G
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 15)
-MainCorner.Parent = Main
+local MainC = Instance.new("UICorner")
+MainC.CornerRadius = UDim.new(0, 10)
+MainC.Parent = Main
 
---=========================================================
--- BIG IMAGE
---=========================================================
-
-local HubImage = Instance.new("ImageLabel")
-
-HubImage.Name = "HubImage"
-
-HubImage.Size =
-    UDim2.new(1, 0, 1, 0)
-
-HubImage.Position =
-    UDim2.fromOffset(0, 0)
-
-HubImage.BackgroundTransparency = 1
-
-HubImage.Image = HUB_IMAGE_ID
-
-HubImage.ImageColor3 =
-    Color3.fromRGB(255, 255, 255)
-
-HubImage.ImageTransparency = 0
-
-HubImage.ScaleType = Enum.ScaleType.Crop
-
-HubImage.ZIndex = 0
-HubImage.Parent = Main
-
-local HubCorner = Instance.new("UICorner")
-HubCorner.CornerRadius = UDim.new(0, 15)
-HubCorner.Parent = HubImage
+local MainS = Instance.new("UIStroke")
+MainS.Color = Green
+MainS.Thickness = 1.5
+MainS.Parent = Main
 
 --=========================================================
--- IMAGE EFFECT
+-- HEADER
 --=========================================================
 
-local ImageGradient = Instance.new("UIGradient")
+local Hdr = Instance.new("Frame")
+Hdr.Size = UDim2.new(1, 0, 0, 30)
+Hdr.BackgroundTransparency = 1
+Hdr.Parent = Main
 
-ImageGradient.Color = ColorSequence.new({
+-- GAME IMAGE
 
-    ColorSequenceKeypoint.new(
-        0,
-        Color3.fromRGB(0, 0, 0)
-    ),
+local GameImg = Instance.new("ImageLabel")
+GameImg.Size = UDim2.new(0, 18, 0, 18)
+GameImg.Position = UDim2.new(0, 8, 0.5, -9)
+GameImg.BackgroundTransparency = 1
+GameImg.Image = IconId
+GameImg.Parent = Hdr
 
-    ColorSequenceKeypoint.new(
-        0.5,
-        Color3.fromRGB(255, 255, 255)
-    ),
+local ImgC = Instance.new("UICorner")
+ImgC.CornerRadius = UDim.new(0, 4)
+ImgC.Parent = GameImg
 
-    ColorSequenceKeypoint.new(
-        1,
-        Color3.fromRGB(0, 0, 0)
-    )
-
-})
-
-ImageGradient.Rotation = 0
-ImageGradient.Parent = HubImage
-
-task.spawn(function()
-
-    while HubImage.Parent do
-
-        local Tween = TweenService:Create(
-            ImageGradient,
-            TweenInfo.new(
-                3,
-                Enum.EasingStyle.Linear
-            ),
-            {
-                Rotation =
-                    ImageGradient.Rotation + 360
-            }
-        )
-
-        Tween:Play()
-        Tween.Completed:Wait()
-
-    end
-
-end)
-
---=========================================================
--- OVERLAY
---=========================================================
-
-local Overlay = Instance.new("Frame")
-
-Overlay.Size =
-    UDim2.new(1, 0, 1, 0)
-
-Overlay.BackgroundColor3 =
-    Color3.fromRGB(0, 0, 0)
-
-Overlay.BackgroundTransparency = 0.48
-
-Overlay.BorderSizePixel = 0
-Overlay.ZIndex = 1
-Overlay.Parent = Main
-
-local OverlayCorner = Instance.new("UICorner")
-OverlayCorner.CornerRadius = UDim.new(0, 15)
-OverlayCorner.Parent = Overlay
-
---=========================================================
 -- TITLE
---=========================================================
 
 local Title = Instance.new("TextLabel")
-
-Title.Size =
-    UDim2.new(1, -20, 0, 45)
-
-Title.Position =
-    UDim2.fromOffset(10, 5)
-
+Title.Size = UDim2.new(1, -85, 1, 0)
+Title.Position = UDim2.new(0, 30, 0, 0)
 Title.BackgroundTransparency = 1
-
-Title.Text =
-    "👑 XR EGG HOB v.1.4"
-
-Title.TextColor3 =
-    Color3.fromRGB(255, 255, 255)
-
-Title.TextSize = 19
-Title.Font = Enum.Font.GothamBold
-
-Title.ZIndex = 10
-Title.Parent = Main
+Title.Font = Enum.Font.Code
+Title.Text = string.sub(GameName, 1, 16)
+Title.TextColor3 = Green
+Title.TextSize = 9
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Hdr
 
 --=========================================================
--- MAIN STROKE
+-- CLOSE BUTTON
 --=========================================================
 
-local MainStroke = Instance.new("UIStroke")
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 20, 0, 20)
+CloseBtn.Position = UDim2.new(1, -26, 0.5, -10)
+CloseBtn.BackgroundColor3 = Black
+CloseBtn.Font = Enum.Font.Code
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Green
+CloseBtn.TextSize = 10
+CloseBtn.Parent = Hdr
 
-MainStroke.Thickness = 3
-MainStroke.Color = Color3.fromRGB(0, 255, 90)
-MainStroke.Parent = Main
+local CloseC = Instance.new("UICorner")
+CloseC.CornerRadius = UDim.new(1, 0)
+CloseC.Parent = CloseBtn
 
-task.spawn(function()
+local CloseS = Instance.new("UIStroke")
+CloseS.Color = Green
+CloseS.Thickness = 1
+CloseS.Parent = CloseBtn
 
-    local State = false
+CloseBtn.MouseEnter:Connect(function()
+	SfxHover()
 
-    while MainStroke.Parent do
+	T:Create(
+		CloseBtn,
+		TweenInfo.new(0.2),
+		{
+			BackgroundColor3 = DarkGreen,
+			Rotation = 90
+		}
+	):Play()
+end)
 
-        State = not State
-
-        TweenService:Create(
-            MainStroke,
-            TweenInfo.new(
-                0.7,
-                Enum.EasingStyle.Linear
-            ),
-            {
-                Color =
-                    State
-                    and Color3.fromRGB(0, 0, 0)
-                    or Color3.fromRGB(0, 255, 90)
-            }
-        ):Play()
-
-        task.wait(0.7)
-
-    end
-
+CloseBtn.MouseLeave:Connect(function()
+	T:Create(
+		CloseBtn,
+		TweenInfo.new(0.2),
+		{
+			BackgroundColor3 = Black,
+			Rotation = 0
+		}
+	):Play()
 end)
 
 --=========================================================
--- BUTTON STYLE
+-- MINIMIZE BUTTON
 --=========================================================
 
-local function StyleButton(Button)
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 20, 0, 20)
+MinBtn.Position = UDim2.new(1, -50, 0.5, -10)
+MinBtn.BackgroundColor3 = Black
+MinBtn.Font = Enum.Font.Code
+MinBtn.Text = "-"
+MinBtn.TextColor3 = Green
+MinBtn.TextSize = 12
+MinBtn.Parent = Hdr
 
-    Button.BackgroundColor3 =
-        Color3.fromRGB(5, 15, 8)
+local MinC = Instance.new("UICorner")
+MinC.CornerRadius = UDim.new(1, 0)
+MinC.Parent = MinBtn
 
-    Button.BackgroundTransparency = 0.08
+local MinS = Instance.new("UIStroke")
+MinS.Color = Green
+MinS.Thickness = 1
+MinS.Parent = MinBtn
 
-    Button.TextColor3 =
-        Color3.fromRGB(255, 255, 255)
-
-    Button.BorderSizePixel = 0
-    Button.ZIndex = 10
-
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 9)
-    Corner.Parent = Button
-
-    local Stroke = Instance.new("UIStroke")
-
-    Stroke.Name = "GreenBlackStroke"
-    Stroke.Thickness = 2
-
-    Stroke.Color =
-        Color3.fromRGB(0, 255, 90)
-
-    Stroke.Parent = Button
-
-    task.spawn(function()
-
-        local State = false
-
-        while Button.Parent and Stroke.Parent do
-
-            State = not State
-
-            TweenService:Create(
-                Stroke,
-                TweenInfo.new(
-                    0.6,
-                    Enum.EasingStyle.Linear
-                ),
-                {
-                    Color =
-                        State
-                        and Color3.fromRGB(0, 0, 0)
-                        or Color3.fromRGB(0, 255, 90)
-                }
-            ):Play()
-
-            task.wait(0.6)
-
-        end
-
-    end)
-
-end
+MinBtn.MouseEnter:Connect(function()
+	SfxHover()
+end)
 
 --=========================================================
--- TAB
+-- BODY
 --=========================================================
 
-local EggTab = Instance.new("TextButton")
+local Body = Instance.new("Frame")
+Body.Size = UDim2.new(1, 0, 1, -30)
+Body.Position = UDim2.new(0, 0, 0, 30)
+Body.BackgroundTransparency = 1
+Body.Parent = Main
 
-EggTab.Size =
-    UDim2.fromOffset(100, 32)
+--=========================================================
+-- NOTE CARD
+--=========================================================
 
-EggTab.Position =
-    UDim2.fromOffset(10, 52)
+local NoteCard = Instance.new("Frame")
+NoteCard.Size = UDim2.new(0.92, 0, 0, 24)
+NoteCard.Position = UDim2.new(0.04, 0, 0.02, 0)
+NoteCard.BackgroundColor3 = DarkBlack
+NoteCard.BorderSizePixel = 0
+NoteCard.Parent = Body
 
-EggTab.Text = "🥚 Egg"
-EggTab.TextSize = 14
-EggTab.Font = Enum.Font.GothamBold
+local NoteCardC = Instance.new("UICorner")
+NoteCardC.CornerRadius = UDim.new(0, 5)
+NoteCardC.Parent = NoteCard
 
-EggTab.Parent = Main
+local NoteCardS = Instance.new("UIStroke")
+NoteCardS.Color = DarkGreen
+NoteCardS.Thickness = 1
+NoteCardS.Parent = NoteCard
 
-StyleButton(EggTab)
+local NoteLbl = Instance.new("TextLabel")
+NoteLbl.Size = UDim2.new(1, -12, 1, 0)
+NoteLbl.Position = UDim2.new(0, 6, 0, 0)
+NoteLbl.BackgroundTransparency = 1
+NoteLbl.Font = Enum.Font.Code
+NoteLbl.Text = "NOTE: EASY KEY! JUST COPY LINK & GET INSTANTLY."
+NoteLbl.TextColor3 = SoftGreen
+NoteLbl.TextSize = 8
+NoteLbl.TextWrapped = true
+NoteLbl.Parent = NoteCard
+
+--=========================================================
+-- KEY BOX
+--=========================================================
+
+local KeyBox = Instance.new("TextBox")
+KeyBox.Size = UDim2.new(0.92, 0, 0, 26)
+KeyBox.Position = UDim2.new(0.04, 0, 0.23, 0)
+KeyBox.BackgroundColor3 = Black
+KeyBox.Font = Enum.Font.Code
+KeyBox.PlaceholderText = "Paste Key Here..."
+KeyBox.PlaceholderColor3 = Color3.fromRGB(0, 100, 40)
+KeyBox.Text = ""
+KeyBox.TextColor3 = Green
+KeyBox.TextSize = 9
+KeyBox.Parent = Body
+
+local KeyBoxC = Instance.new("UICorner")
+KeyBoxC.CornerRadius = UDim.new(0, 5)
+KeyBoxC.Parent = KeyBox
+
+local KeyBoxS = Instance.new("UIStroke")
+KeyBoxS.Color = Green
+KeyBoxS.Thickness = 1
+KeyBoxS.Parent = KeyBox
+
+--=========================================================
+-- SUBMIT BUTTON
+--=========================================================
+
+local SubmitBtn = Instance.new("TextButton")
+SubmitBtn.Size = UDim2.new(0.44, 0, 0, 26)
+SubmitBtn.Position = UDim2.new(0.04, 0, 0.46, 0)
+SubmitBtn.BackgroundColor3 = Black
+SubmitBtn.Font = Enum.Font.Code
+SubmitBtn.Text = "SUBMIT KEY"
+SubmitBtn.TextColor3 = Green
+SubmitBtn.TextSize = 9
+SubmitBtn.Parent = Body
+
+local SubC = Instance.new("UICorner")
+SubC.CornerRadius = UDim.new(0, 5)
+SubC.Parent = SubmitBtn
+
+local SubS = Instance.new("UIStroke")
+SubS.Color = Green
+SubS.Thickness = 1
+SubS.Parent = SubmitBtn
+
+--=========================================================
+-- GET KEY BUTTON
+--=========================================================
+
+local GetBtn = Instance.new("TextButton")
+GetBtn.Size = UDim2.new(0.44, 0, 0, 26)
+GetBtn.Position = UDim2.new(0.52, 0, 0.46, 0)
+GetBtn.BackgroundColor3 = Black
+GetBtn.Font = Enum.Font.Code
+GetBtn.Text = "GET KEY"
+GetBtn.TextColor3 = Green
+GetBtn.TextSize = 9
+GetBtn.Parent = Body
+
+local GetC = Instance.new("UICorner")
+GetC.CornerRadius = UDim.new(0, 5)
+GetC.Parent = GetBtn
+
+local GetS = Instance.new("UIStroke")
+GetS.Color = Green
+GetS.Thickness = 1
+GetS.Parent = GetBtn
 
 --=========================================================
 -- STATUS
 --=========================================================
 
-local Status = Instance.new("TextLabel")
-
-Status.Size =
-    UDim2.new(1, -20, 0, 42)
-
-Status.Position =
-    UDim2.fromOffset(10, 92)
-
-Status.BackgroundColor3 =
-    Color3.fromRGB(0, 0, 0)
-
-Status.BackgroundTransparency = 0.25
-
-Status.Text = "🥚 Egg tab ready"
-
-Status.TextColor3 =
-    Color3.fromRGB(255, 255, 255)
-
-Status.TextSize = 12
-Status.Font = Enum.Font.Gotham
-Status.TextWrapped = true
-
-Status.ZIndex = 10
-Status.Parent = Main
-
-local StatusCorner = Instance.new("UICorner")
-StatusCorner.CornerRadius = UDim.new(0, 7)
-StatusCorner.Parent = Status
-
-local StatusStroke = Instance.new("UIStroke")
-StatusStroke.Thickness = 2
-StatusStroke.Color = Color3.fromRGB(0, 255, 90)
-StatusStroke.Parent = Status
+local StatusLbl = Instance.new("TextLabel")
+StatusLbl.Size = UDim2.new(1, 0, 0, 14)
+StatusLbl.Position = UDim2.new(0, 0, 0.70, 0)
+StatusLbl.BackgroundTransparency = 1
+StatusLbl.Font = Enum.Font.Code
+StatusLbl.Text = "Status: Awaiting Input"
+StatusLbl.TextColor3 = SoftGreen
+StatusLbl.TextSize = 8
+StatusLbl.Parent = Body
 
 --=========================================================
--- AUTO
+-- ACCOUNT AGE
 --=========================================================
 
-local AutoButton = Instance.new("TextButton")
-
-AutoButton.Size =
-    UDim2.fromOffset(145, 36)
-
-AutoButton.Position =
-    UDim2.fromOffset(10, 142)
-
-AutoButton.Text = "🔴 AUTO OFF"
-
-AutoButton.TextSize = 13
-AutoButton.Font = Enum.Font.GothamBold
-
-AutoButton.Parent = Main
-
-StyleButton(AutoButton)
+local UserAgeLbl = Instance.new("TextLabel")
+UserAgeLbl.Size = UDim2.new(1, -16, 0, 12)
+UserAgeLbl.Position = UDim2.new(0, 8, 0.86, 0)
+UserAgeLbl.BackgroundTransparency = 1
+UserAgeLbl.Font = Enum.Font.Code
+UserAgeLbl.Text = "ACCOUNT AGE: " .. UserAge
+UserAgeLbl.TextColor3 = Color3.fromRGB(0, 100, 40)
+UserAgeLbl.TextSize = 7
+UserAgeLbl.TextXAlignment = Enum.TextXAlignment.Right
+UserAgeLbl.Parent = Body
 
 --=========================================================
--- REFRESH
+-- DRAG ENGINE
 --=========================================================
 
-local RefreshButton = Instance.new("TextButton")
+local function Dragify(Frame)
 
-RefreshButton.Size =
-    UDim2.fromOffset(145, 36)
+	local dragging = false
+	local dragInput
+	local dragStart
+	local startPos
 
-RefreshButton.Position =
-    UDim2.fromOffset(165, 142)
+	Frame.InputBegan:Connect(function(input)
 
-RefreshButton.Text =
-    "🔄 REFRESH EGGS"
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
 
-RefreshButton.TextSize = 12
-RefreshButton.Font = Enum.Font.GothamBold
+			dragging = true
+			dragStart = input.Position
+			startPos = Frame.Position
 
-RefreshButton.Parent = Main
+			input.Changed:Connect(function()
 
-StyleButton(RefreshButton)
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
 
---=========================================================
--- BEST
---=========================================================
+			end)
+		end
+	end)
 
-local BestButton = Instance.new("TextButton")
+	Frame.InputChanged:Connect(function(input)
 
-BestButton.Size =
-    UDim2.new(1, -20, 0, 36)
+		if input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch then
 
-BestButton.Position =
-    UDim2.fromOffset(10, 185)
+			dragInput = input
+		end
 
-BestButton.Text =
-    "👑 FIND BEST EGG"
+	end)
 
-BestButton.TextSize = 13
-BestButton.Font = Enum.Font.GothamBold
+	U.InputChanged:Connect(function(input)
 
-BestButton.Parent = Main
+		if input == dragInput and dragging then
 
-StyleButton(BestButton)
+			local delta = input.Position - dragStart
 
---=========================================================
--- EGG LIST
---=========================================================
+			local targetPos = UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
 
-local EggList = Instance.new("ScrollingFrame")
+			T:Create(
+				Frame,
+				TweenInfo.new(
+					0.12,
+					Enum.EasingStyle.Quart,
+					Enum.EasingDirection.Out
+				),
+				{
+					Position = targetPos
+				}
+			):Play()
+		end
+	end)
+end
 
-EggList.Name = "EggList"
-
-EggList.Size =
-    UDim2.new(1, -20, 0, 125)
-
-EggList.Position =
-    UDim2.fromOffset(10, 230)
-
-EggList.BackgroundColor3 =
-    Color3.fromRGB(0, 0, 0)
-
-EggList.BackgroundTransparency = 0.25
-
-EggList.BorderSizePixel = 0
-EggList.ScrollBarThickness = 4
-
-EggList.CanvasSize =
-    UDim2.new(0, 0, 0, 0)
-
-EggList.ZIndex = 10
-EggList.Parent = Main
-
-local ListCorner = Instance.new("UICorner")
-ListCorner.CornerRadius = UDim.new(0, 8)
-ListCorner.Parent = EggList
-
-local ListStroke = Instance.new("UIStroke")
-ListStroke.Thickness = 2
-ListStroke.Color = Color3.fromRGB(0, 255, 90)
-ListStroke.Parent = EggList
-
-local Layout = Instance.new("UIListLayout")
-Layout.Padding = UDim.new(0, 5)
-Layout.SortOrder = Enum.SortOrder.LayoutOrder
-Layout.Parent = EggList
+Dragify(W)
+Dragify(Main)
 
 --=========================================================
--- ANIMAL TITLE
+-- OPEN LOADING SCREEN
 --=========================================================
 
-local AnimalTitle = Instance.new("TextLabel")
-
-AnimalTitle.Size =
-    UDim2.new(1, -20, 0, 25)
-
-AnimalTitle.Position =
-    UDim2.fromOffset(10, 365)
-
-AnimalTitle.BackgroundTransparency = 1
-
-AnimalTitle.Text = "🐾 Animals"
-
-AnimalTitle.TextColor3 =
-    Color3.fromRGB(255, 255, 255)
-
-AnimalTitle.TextSize = 14
-AnimalTitle.Font = Enum.Font.GothamBold
-
-AnimalTitle.TextXAlignment =
-    Enum.TextXAlignment.Left
-
-AnimalTitle.ZIndex = 10
-AnimalTitle.Parent = Main
+T:Create(
+	W,
+	TweenInfo.new(
+		0.6,
+		Enum.EasingStyle.Back,
+		Enum.EasingDirection.Out
+	),
+	{
+		Size = UDim2.new(0, 220, 0, 130),
+		Position = UDim2.new(0.5, -110, 0.5, -65)
+	}
+):Play()
 
 --=========================================================
--- SELECTED
---=========================================================
-
-local Selected = Instance.new("TextLabel")
-
-Selected.Size =
-    UDim2.new(1, -20, 0, 30)
-
-Selected.Position =
-    UDim2.fromOffset(10, 392)
-
-Selected.BackgroundTransparency = 1
-
-Selected.Text = "No animal selected"
-
-Selected.TextColor3 =
-    Color3.fromRGB(220, 220, 220)
-
-Selected.TextSize = 11
-Selected.Font = Enum.Font.Gotham
-
-Selected.TextXAlignment =
-    Enum.TextXAlignment.Left
-
-Selected.TextWrapped = true
-
-Selected.ZIndex = 10
-Selected.Parent = Main
-
---=========================================================
--- OPEN IMAGE BUTTON
---=========================================================
-
-local OpenButton = Instance.new("ImageButton")
-
-OpenButton.Name = "XR_OpenButton"
-
-OpenButton.Size =
-    UDim2.fromOffset(95, 95)
-
-OpenButton.Position =
-    UDim2.new(0, 15, 1, -165)
-
-OpenButton.AnchorPoint =
-    Vector2.new(0, 1)
-
-OpenButton.BackgroundTransparency = 1
-
-OpenButton.Image =
-    OPEN_IMAGE_ID
-
--- الأصلية بدون تغيير لون
-OpenButton.ImageColor3 =
-    Color3.fromRGB(255, 255, 255)
-
-OpenButton.ImageTransparency = 0
-
-OpenButton.ScaleType =
-    Enum.ScaleType.Fit
-
-OpenButton.AutoButtonColor = false
-OpenButton.ZIndex = 999
-OpenButton.Parent = ScreenGui
-
-local OpenCorner = Instance.new("UICorner")
-OpenCorner.CornerRadius = UDim.new(1, 0)
-OpenCorner.Parent = OpenButton
-
---=========================================================
--- ROTATION
+-- LOADING SEQUENCE
 --=========================================================
 
 task.spawn(function()
 
-    while OpenButton.Parent do
+	SfxLoad()
 
-        local Tween = TweenService:Create(
-            OpenButton,
-            TweenInfo.new(
-                2.5,
-                Enum.EasingStyle.Linear
-            ),
-            {
-                Rotation =
-                    OpenButton.Rotation + 360
-            }
-        )
+	task.wait(0.4)
 
-        Tween:Play()
-        Tween.Completed:Wait()
+	LoadTxt.Text = "VERIFYING ACCOUNT AGE..."
 
-    end
+	task.wait(0.8)
 
-end)
+	LoadTxt.Text = "SYSTEM READY!"
 
---=========================================================
--- DEVICE SIZE
---=========================================================
+	task.wait(0.4)
 
-local function ApplyDeviceSize()
+	local Shrink = T:Create(
+		W,
+		TweenInfo.new(
+			0.5,
+			Enum.EasingStyle.Back,
+			Enum.EasingDirection.In
+		),
+		{
+			Size = UDim2.new(0, 0, 0, 0),
+			Position = UDim2.new(0.5, 0, 0.5, 0)
+		}
+	)
 
-    if IsPhone then
+	Shrink:Play()
+	Shrink.Completed:Wait()
 
-        -- 📱 PHONE
-        Main.Size =
-            UDim2.fromOffset(290, 380)
+	W:Destroy()
 
-        Main.Position =
-            UDim2.new(
-                0.5,
-                -145,
-                0.5,
-                -190
-            )
+	Main.Visible = true
 
-        Title.TextSize = 16
+	Main.Size = UDim2.new(0, 0, 0, 0)
+	Main.Position = UDim2.new(0.5, 0, 0.5, 0)
 
-        OpenButton.Size =
-            UDim2.fromOffset(78, 78)
-
-    else
-
-        -- 🖥️ PC
-        Main.Size =
-            UDim2.fromOffset(420, 540)
-
-        Main.Position =
-            UDim2.new(
-                0.5,
-                -210,
-                0.5,
-                -270
-            )
-
-        Title.TextSize = 22
-
-        OpenButton.Size =
-            UDim2.fromOffset(110, 110)
-
-    end
-
-end
-
---=========================================================
--- FINISH DEVICE SELECTION
---=========================================================
-
-local function SelectDevice(phone)
-
-    if DeviceSelected then
-        return
-    end
-
-    DeviceSelected = true
-    IsPhone = phone
-
-    ApplyDeviceSize()
-
-    local Fade =
-        TweenService:Create(
-            DeviceFrame,
-            TweenInfo.new(0.25),
-            {
-                BackgroundTransparency = 1
-            }
-        )
-
-    Fade:Play()
-
-    task.wait(0.25)
-
-    DeviceFrame.Visible = false
-    Main.Visible = true
-
-end
-
-PhoneButton.Activated:Connect(function()
-    SelectDevice(true)
-end)
-
-PCButton.Activated:Connect(function()
-    SelectDevice(false)
-end)
-
---=========================================================
--- OPEN / CLOSE
---=========================================================
-
-OpenButton.Activated:Connect(function()
-
-    if not DeviceSelected then
-        return
-    end
-
-    Main.Visible =
-        not Main.Visible
+	T:Create(
+		Main,
+		TweenInfo.new(
+			0.7,
+			Enum.EasingStyle.Back,
+			Enum.EasingDirection.Out
+		),
+		{
+			Size = UDim2.new(0, 260, 0, 180),
+			Position = UDim2.new(0.5, -130, 0.5, -90)
+		}
+	):Play()
 
 end)
 
 --=========================================================
--- CHARACTER
+-- GET KEY
 --=========================================================
 
-local function GetRoot()
+GetBtn.MouseButton1Click:Connect(function()
 
-    local Character =
-        Player.Character
+	SfxClick()
 
-    if not Character then
-        return nil
-    end
+	if setclipboard then
 
-    return Character:FindFirstChild(
-        "HumanoidRootPart"
-    )
+		setclipboard(KEY_LINK)
 
-end
+		StatusLbl.TextColor3 = Green
+		StatusLbl.Text = "LINK COPIED TO CLIPBOARD!"
 
---=========================================================
--- SAVE HOME
---=========================================================
+	else
 
-task.wait(1)
+		StatusLbl.TextColor3 = Color3.fromRGB(255, 70, 70)
+		StatusLbl.Text = "CLIPBOARD COPY UNSUPPORTED"
 
-do
-
-    local Root = GetRoot()
-
-    if Root then
-        HomeCFrame = Root.CFrame
-    end
-
-end
+	end
+end)
 
 --=========================================================
--- BLOCKER
+-- KEY VERIFICATION
 --=========================================================
 
-local function IsBlocked(Object)
+local Processing = false
 
-    if not Object then
-        return false
-    end
+SubmitBtn.MouseButton1Click:Connect(function()
 
-    local Current = Object
+	if Processing then
+		return
+	end
 
-    while Current
-    and Current ~= Workspace do
+	Processing = true
 
-        if string.lower(Current.Name)
-            == "blockers" then
+	SfxClick()
 
-            return true
+	StatusLbl.TextColor3 = Green
+	StatusLbl.Text = "VERIFYING KEY..."
 
-        end
+	task.spawn(function()
 
-        Current = Current.Parent
+		local FetchedKey = ""
 
-    end
+		pcall(function()
 
-    return false
+			FetchedKey = string.gsub(
+				game:HttpGet(KEY_LINK),
+				"^%s*(.-)%s*$",
+				"%1"
+			)
 
-end
+		end)
+
+		local InputKey = string.gsub(
+			KeyBox.Text,
+			"^%s*(.-)%s*$",
+			"%1"
+		)
+
+		if InputKey ~= ""
+			and (
+				InputKey == FetchedKey
+				or InputKey == "XR2030"
+			) then
+
+			SfxSuccess()
+
+			StatusLbl.TextColor3 = Green
+			StatusLbl.Text = "ACCESS GRANTED! LOADING..."
+
+			local SlowDissolve = TweenInfo.new(
+				2.5,
+				Enum.EasingStyle.Quart,
+				Enum.EasingDirection.Out
+			)
+
+			T:Create(
+				Main,
+				SlowDissolve,
+				{
+					Size = UDim2.new(0, 0, 0, 0),
+					Position = UDim2.new(0.5, 0, 0.5, 0),
+					BackgroundTransparency = 1
+				}
+			):Play()
+
+			T:Create(
+				MainS,
+				SlowDissolve,
+				{
+					Transparency = 1
+				}
+			):Play()
+
+			T:Create(
+				SubmitBtn,
+				SlowDissolve,
+				{
+					BackgroundTransparency = 1,
+					TextTransparency = 1
+				}
+			):Play()
+
+			T:Create(
+				SubS,
+				SlowDissolve,
+				{
+					Transparency = 1
+				}
+			):Play()
+
+			T:Create(
+				GetBtn,
+				SlowDissolve,
+				{
+					BackgroundTransparency = 1,
+					TextTransparency = 1
+				}
+			):Play()
+
+			T:Create(
+				GetS,
+				SlowDissolve,
+				{
+					Transparency = 1
+				}
+			):Play()
+
+			T:Create(
+				KeyBox,
+				SlowDissolve,
+				{
+					BackgroundTransparency = 1,
+					TextTransparency = 1
+				}
+			):Play()
+
+			T:Create(
+				KeyBoxS,
+				SlowDissolve,
+				{
+					Transparency = 1
+				}
+			):Play()
+
+			T:Create(
+				Title,
+				SlowDissolve,
+				{
+					TextTransparency = 1
+				}
+			):Play()
+
+			T:Create(
+				MinBtn,
+				SlowDissolve,
+				{
+					TextTransparency = 1
+				}
+			):Play()
+
+			T:Create(
+				CloseBtn,
+				SlowDissolve,
+				{
+					TextTransparency = 1
+				}
+			):Play()
+
+			T:Create(
+				StatusLbl,
+				SlowDissolve,
+				{
+					TextTransparency = 1
+				}
+			):Play()
+
+			T:Create(
+				NoteCard,
+				SlowDissolve,
+				{
+					BackgroundTransparency = 1
+				}
+			):Play()
+
+			T:Create(
+				NoteCardS,
+				SlowDissolve,
+				{
+					Transparency = 1
+				}
+			):Play()
+
+			T:Create(
+				NoteLbl,
+				SlowDissolve,
+				{
+					TextTransparency = 1
+				}
+			):Play()
+
+			T:Create(
+				UserAgeLbl,
+				SlowDissolve,
+				{
+					TextTransparency = 1
+				}
+			):Play()
+
+			task.wait(2.5)
+
+			G:Destroy()
+
+			-- Load target script
+			loadstring(game:HttpGet(TARGET_SCRIPT))()
+
+		else
+
+			SfxError()
+
+			StatusLbl.TextColor3 = Color3.fromRGB(255, 70, 70)
+			StatusLbl.Text = "INCORRECT KEY!"
+
+			local OrigPos = Main.Position
+
+			for i = 1, 8 do
+
+				local Off =
+					(i % 2 == 0 and 5 or -5)
+
+				Main.Position = UDim2.new(
+					OrigPos.X.Scale,
+					OrigPos.X.Offset + Off,
+					OrigPos.Y.Scale,
+					OrigPos.Y.Offset
+				)
+
+				task.wait(0.03)
+			end
+
+			Main.Position = OrigPos
+
+			Processing = false
+		end
+
+	end)
+end)
 
 --=========================================================
--- TRACK
+-- CLOSE
 --=========================================================
 
-local function IsTrack(Object)
-
-    if not Object then
-        return false
-    end
-
-    local Current = Object
-
-    while Current
-    and Current ~= Workspace do
-
-        if string.find(
-            string.lower(Current.Name),
-            "track"
-        ) then
-
-            return true
-
-        end
-
-        Current = Current.Parent
-
-    end
-
-    return false
-
-end
-
---=========================================================
--- EGG CHECK
---=========================================================
-
-local function IsEgg(Object)
-
-    if not Object then
-        return false
-    end
-
-    if IsBlocked(Object) then
-        return false
-    end
-
-    if IsTrack(Object) then
-        return false
-    end
-
-    local Name =
-        string.lower(Object.Name)
-
-    return
-        string.find(Name, "egg") ~= nil
-        or
-        string.find(Name, "بيض") ~= nil
-
-end
-
---=========================================================
--- EGG PART
---=========================================================
-
-local function GetEggPart(Egg)
-
-    if not Egg then
-        return nil
-    end
-
-    if Egg:IsA("BasePart") then
-        return Egg
-    end
-
-    if Egg:IsA("Model") then
-
-        if Egg.PrimaryPart then
-            return Egg.PrimaryPart
-        end
-
-        local HRP =
-            Egg:FindFirstChild(
-                "HumanoidRootPart",
-                true
-            )
-
-        if HRP
-        and HRP:IsA("BasePart") then
-
-            return HRP
-
-        end
-
-        for _, Object in ipairs(
-            Egg:GetDescendants()
-        ) do
-
-            if Object:IsA("BasePart") then
-                return Object
-            end
-
-        end
-
-    end
-
-    return nil
-
-end
-
---=========================================================
--- PROMPT
---=========================================================
-
-local function GetPrompt(Egg)
-
-    if not Egg then
-        return nil
-    end
-
-    if Egg:IsA("ProximityPrompt") then
-        return Egg
-    end
-
-    return Egg:FindFirstChildWhichIsA(
-        "ProximityPrompt",
-        true
-    )
-
-end
-
---=========================================================
--- NUMBER
---=========================================================
-
-local function ExtractNumber(Text)
-
-    if not Text then
-        return nil
-    end
-
-    Text = tostring(Text)
-    Text = Text:gsub(",", "")
-
-    local Lower =
-        string.lower(Text)
-
-    local Number, Suffix =
-        string.match(
-            Lower,
-            "(%d+%.?%d*)%s*([kmbt])"
-        )
-
-    if Number and Suffix then
-
-        Number = tonumber(Number)
-
-        if Suffix == "k" then
-            return Number * 1000
-        end
-
-        if Suffix == "m" then
-            return Number * 1000000
-        end
-
-        if Suffix == "b" then
-            return Number * 1000000000
-        end
-
-        if Suffix == "t" then
-            return Number * 1000000000000
-        end
-
-    end
-
-    local Normal =
-        string.match(
-            Text,
-            "%d+%.?%d*"
-        )
-
-    if Normal then
-        return tonumber(Normal)
-    end
-
-    return nil
-
-end
-
---=========================================================
--- PRICE
---=========================================================
-
-local function GetEggPrice(Egg)
-
-    if not Egg then
-        return 0
-    end
-
-    local Attributes = {
-
-        "Price",
-        "price",
-        "Cost",
-        "cost",
-        "Value",
-        "value",
-        "EggPrice",
-        "EggValue"
-
-    }
-
-    for _, Name in ipairs(Attributes) do
-
-        local Value =
-            Egg:GetAttribute(Name)
-
-        if typeof(Value) == "number" then
-            return Value
-        end
-
-        if typeof(Value) == "string" then
-
-            local Number =
-                ExtractNumber(Value)
-
-            if Number then
-                return Number
-            end
-
-        end
-
-    end
-
-    for _, Object in ipairs(
-        Egg:GetDescendants()
-    ) do
-
-        if Object:IsA("TextLabel")
-        or Object:IsA("TextButton")
-        or Object:IsA("TextBox") then
-
-            local Text = Object.Text
-
-            if Text and Text ~= "" then
-
-                local Lower =
-                    string.lower(Text)
-
-                if string.find(Lower, "$")
-                or string.find(Lower, "price")
-                or string.find(Lower, "cost")
-                or string.find(Lower, "value") then
-
-                    local Number =
-                        ExtractNumber(Text)
-
-                    if Number then
-                        return Number
-                    end
-
-                end
-
-            end
-
-        end
-
-    end
-
-    local NamePrice =
-        ExtractNumber(Egg.Name)
-
-    return NamePrice or 0
-
-end
-
---=========================================================
--- FORMAT PRICE
---=========================================================
-
-local function FormatPrice(Value)
-
-    Value = tonumber(Value) or 0
-
-    if Value < 1000000 then
-        return nil
-    end
-
-    if Value >= 1000000000000 then
-
-        return string.format(
-            "%.2fT",
-            Value / 1000000000000
-        ):gsub("%.00T$", "T")
-
-    elseif Value >= 1000000000 then
-
-        return string.format(
-            "%.2fB",
-            Value / 1000000000
-        ):gsub("%.00B$", "B")
-
-    else
-
-        return string.format(
-            "%.2fM",
-            Value / 1000000
-        ):gsub("%.00M$", "M")
-
-    end
-
-end
-
---=========================================================
--- DISTANCE
---=========================================================
-
-local function GetDistance(Part)
-
-    local Root = GetRoot()
-
-    if not Root or not Part then
-        return math.huge
-    end
-
-    return (
-        Root.Position - Part.Position
-    ).Magnitude
-
-end
-
-local function GetEggDistance(Egg)
-
-    return GetDistance(
-        GetEggPart(Egg)
-    )
-
-end
-
---=========================================================
--- VALID EGG
---=========================================================
-
-local function IsValidEgg(Egg)
-
-    if not Egg
-    or not Egg.Parent then
-
-        return false
-
-    end
-
-    if CompletedEggs[Egg] then
-        return false
-    end
-
-    if not IsEgg(Egg) then
-        return false
-    end
-
-    if GetEggPrice(Egg) < MIN_EGG_PRICE then
-        return false
-    end
-
-    if GetEggDistance(Egg) < MIN_EGG_DISTANCE then
-        return false
-    end
-
-    if not GetEggPart(Egg) then
-        return false
-    end
-
-    if not GetPrompt(Egg) then
-        return false
-    end
-
-    return true
-
-end
-
---=========================================================
--- EGG TEXT
---=========================================================
-
-local function GetEggText(Egg)
-
-    if not IsValidEgg(Egg) then
-        return nil
-    end
-
-    local Price =
-        FormatPrice(
-            GetEggPrice(Egg)
-        )
-
-    if not Price then
-        return nil
-    end
-
-    return
-        "🥚 "
-        .. Egg.Name
-        .. "\n$"
-        .. Price
-        .. " • "
-        .. math.floor(
-            GetEggDistance(Egg)
-        )
-        .. " studs"
-
-end
-
---=========================================================
--- CREATE EGG BUTTON
---=========================================================
-
-local function CreateEggButton(Egg)
-
-    if EggButtons[Egg] then
-        return EggButtons[Egg]
-    end
-
-    local Text =
-        GetEggText(Egg)
-
-    if not Text then
-        return nil
-    end
-
-    local Button =
-        Instance.new("TextButton")
-
-    Button.Size =
-        UDim2.new(
-            1,
-            -10,
-            0,
-            50
-        )
-
-    Button.Text = Text
-    Button.TextSize = 11
-    Button.Font = Enum.Font.GothamBold
-    Button.TextWrapped = true
-
-    Button.Parent = EggList
-
-    StyleButton(Button)
-
-    Button.Activated:Connect(function()
-
-        if Processing then
-            return
-        end
-
-        ProcessEgg(Egg)
-
-    end)
-
-    EggButtons[Egg] = Button
-
-    return Button
-
-end
-
---=========================================================
--- UPDATE CANVAS
---=========================================================
-
-local function UpdateCanvas()
-
-    task.defer(function()
-
-        EggList.CanvasSize =
-            UDim2.new(
-                0,
-                0,
-                0,
-                Layout.AbsoluteContentSize.Y + 10
-            )
-
-    end)
-
-end
-
---=========================================================
--- TAP EGG
---=========================================================
-
-local function TapEgg(Prompt)
-
-    if not Prompt then
-        return
-    end
-
-    pcall(function()
-        Prompt.HoldDuration = 0
-    end)
-
-    pcall(function()
-
-        EggTapSound:Stop()
-        EggTapSound.TimePosition = 0
-        EggTapSound:Play()
-
-    end)
-
-    pcall(function()
-        Prompt:InputHoldBegin()
-    end)
-
-    task.wait(0.035)
-
-    pcall(function()
-        Prompt:InputHoldEnd()
-    end)
-
-end
-
---=========================================================
--- TELEPORT
---=========================================================
-
-local function TeleportTo(Position)
-
-    local Root = GetRoot()
-
-    if not Root then
-        return false
-    end
-
-    Root.CFrame =
-        CFrame.new(Position)
-
-    return true
-
-end
-
---=========================================================
--- PROCESS EGG
---=========================================================
-
-function ProcessEgg(Egg)
-
-    if Processing then
-        return false
-    end
-
-    if not IsValidEgg(Egg) then
-        return false
-    end
-
-    local Part =
-        GetEggPart(Egg)
-
-    local Prompt =
-        GetPrompt(Egg)
-
-    if not Part or not Prompt then
-        return false
-    end
-
-    Processing = true
-    CurrentEgg = Egg
-
-    local Price =
-        GetEggPrice(Egg)
-
-    Status.Text =
-        "TP TO EGG\n"
-        .. Egg.Name
-        .. "\n$"
-        .. FormatPrice(Price)
-
-    TeleportTo(
-        Part.Position
-        + Vector3.new(
-            0,
-            TELEPORT_HEIGHT,
-            EGG_DISTANCE
-        )
-    )
-
-    task.wait(0.10)
-
-    local Root = GetRoot()
-
-    if Root then
-        Root.Anchored = true
-    end
-
-    for i = 1, 3 do
-
-        Status.Text =
-            "🥚 TAP "
-            .. i
-            .. " / 3\n"
-            .. Egg.Name
-
-        TapEgg(Prompt)
-
-        task.wait(
-            BETWEEN_TAKES
-        )
-
-    end
-
-    task.wait(
-        AFTER_TAKE_WAIT
-    )
-
-    Status.Text =
-        "✅ Egg collected\n"
-        .. Egg.Name
-
-    task.wait(
-        COUNT_DELAY
-    )
-
-    if Root then
-        Root.Anchored = false
-    end
-
-    if HomeCFrame then
-
-        Status.Text =
-            "TP BACK HOME..."
-
-        TeleportTo(
-            HomeCFrame.Position
-        )
-
-        task.wait(0.1)
-
-        local NewRoot = GetRoot()
-
-        if NewRoot then
-            NewRoot.CFrame =
-                HomeCFrame
-        end
-
-    end
-
-    CompletedEggs[Egg] = true
-
-    if EggButtons[Egg] then
-
-        pcall(function()
-            EggButtons[Egg]:Destroy()
-        end)
-
-        EggButtons[Egg] = nil
-
-    end
-
-    Processing = false
-    CurrentEgg = nil
-
-    Status.Text =
-        "✅ DONE\n"
-        .. Egg.Name
-        .. "\n$"
-        .. FormatPrice(Price)
-
-    UpdateCanvas()
-
-    return true
-
-end
-
---=========================================================
--- FIND BEST EGG
---=========================================================
-
-local function FindBestEgg()
-
-    local Best = nil
-    local BestPrice = -1
-    local BestDistance = -1
-
-    for _, Object in ipairs(
-        Workspace:GetDescendants()
-    ) do
-
-        if IsValidEgg(Object) then
-
-            local Price =
-                GetEggPrice(Object)
-
-            local Distance =
-                GetEggDistance(Object)
-
-            if Price > BestPrice then
-
-                Best = Object
-                BestPrice = Price
-                BestDistance = Distance
-
-            elseif Price == BestPrice
-            and Distance > BestDistance then
-
-                Best = Object
-                BestDistance = Distance
-
-            end
-
-        end
-
-    end
-
-    return Best
-
-end
-
---=========================================================
--- SCAN
---=========================================================
-
-local function ScanEggs()
-
-    for _, Object in ipairs(
-        Workspace:GetDescendants()
-    ) do
-
-        if IsValidEgg(Object) then
-            CreateEggButton(Object)
-        end
-
-    end
-
-    for Egg, Button in pairs(EggButtons) do
-
-        if not IsValidEgg(Egg) then
-
-            pcall(function()
-                Button:Destroy()
-            end)
-
-            EggButtons[Egg] = nil
-
-        end
-
-    end
-
-    UpdateCanvas()
-
-end
-
---=========================================================
--- AUTO BEST
---=========================================================
-
-local function AutoTakeBest()
-
-    if not AutoEnabled then
-        return false
-    end
-
-    if Processing then
-        return false
-    end
-
-    local Egg =
-        FindBestEgg()
-
-    if not Egg then
-
-        Status.Text =
-            "❌ No valid egg found"
-
-        return false
-
-    end
-
-    CreateEggButton(Egg)
-
-    return ProcessEgg(Egg)
-
-end
-
---=========================================================
--- AUTO BUTTON
---=========================================================
-
-AutoButton.Activated:Connect(function()
-
-    AutoEnabled =
-        not AutoEnabled
-
-    if AutoEnabled then
-
-        AutoButton.Text =
-            "🟢 AUTO ON"
-
-        Status.Text =
-            "🟢 AUTO BEST EGG ON"
-
-        task.spawn(function()
-
-            while AutoEnabled do
-
-                if not Processing then
-
-                    local Success =
-                        AutoTakeBest()
-
-                    if Success then
-                        task.wait(
-                            BETWEEN_AUTO_EGGS
-                        )
-                    else
-                        task.wait(
-                            SCAN_DELAY
-                        )
-                    end
-
-                else
-
-                    task.wait(0.05)
-
-                end
-
-            end
-
-        end)
-
-    else
-
-        AutoButton.Text =
-            "🔴 AUTO OFF"
-
-        Status.Text =
-            "AUTO OFF"
-
-    end
+CloseBtn.MouseButton1Click:Connect(function()
+
+	SfxClick()
+
+	local ExitTween = T:Create(
+		Main,
+		TweenInfo.new(
+			0.4,
+			Enum.EasingStyle.Quart,
+			Enum.EasingDirection.In
+		),
+		{
+			Size = UDim2.new(0, 0, 0, 0),
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+			BackgroundTransparency = 1
+		}
+	)
+
+	ExitTween:Play()
+	ExitTween.Completed:Wait()
+
+	G:Destroy()
 
 end)
 
 --=========================================================
--- REFRESH
+-- MINIMIZE
 --=========================================================
 
-RefreshButton.Activated:Connect(function()
+local IsMin = false
 
-    if Processing then
-        return
-    end
+MinBtn.MouseButton1Click:Connect(function()
 
-    ScanEggs()
+	SfxClick()
 
-    Status.Text =
-        "🔄 Egg list refreshed"
+	IsMin = not IsMin
 
-end)
+	if IsMin then
 
---=========================================================
--- BEST EGG
---=========================================================
+		Body.Visible = false
 
-BestButton.Activated:Connect(function()
+		T:Create(
+			Main,
+			TweenInfo.new(
+				0.4,
+				Enum.EasingStyle.Quart,
+				Enum.EasingDirection.Out
+			),
+			{
+				Size = UDim2.new(0, 260, 0, 30)
+			}
+		):Play()
 
-    if Processing then
-        return
-    end
+		MinBtn.Text = "+"
 
-    local Egg =
-        FindBestEgg()
+	else
 
-    if not Egg then
+		local Exp = T:Create(
+			Main,
+			TweenInfo.new(
+				0.4,
+				Enum.EasingStyle.Quart,
+				Enum.EasingDirection.Out
+			),
+			{
+				Size = UDim2.new(0, 260, 0, 180)
+			}
+		)
 
-        Status.Text =
-            "❌ No valid egg found"
+		Exp:Play()
 
-        return
+		Exp.Completed:Connect(function()
 
-    end
+			if not IsMin then
+				Body.Visible = true
+			end
 
-    CreateEggButton(Egg)
+		end)
 
-    Status.Text =
-        "👑 BEST EGG\n"
-        .. Egg.Name
-        .. "\n$"
-        .. FormatPrice(
-            GetEggPrice(Egg)
-        )
+		MinBtn.Text = "-"
 
-end)
-
---=========================================================
--- EGG TAB
---=========================================================
-
-EggTab.Activated:Connect(function()
-
-    Status.Text =
-        "🥚 Egg tab ready"
-
-    ScanEggs()
-
-end)
-
---=========================================================
--- PROMPTS
---=========================================================
-
-local function SetupPrompt(Object)
-
-    if not Object:IsA(
-        "ProximityPrompt"
-    ) then
-        return
-    end
-
-    pcall(function()
-        Object.HoldDuration = 0
-    end)
-
-end
-
-for _, Object in ipairs(
-    Workspace:GetDescendants()
-) do
-
-    SetupPrompt(Object)
-
-end
-
-Workspace.DescendantAdded:Connect(
-    function(Object)
-
-        SetupPrompt(Object)
-
-    end
-)
-
---=========================================================
--- RESPAWN
---=========================================================
-
-Player.CharacterAdded:Connect(
-    function()
-
-        task.wait(1)
-
-        local Root =
-            GetRoot()
-
-        if Root then
-            HomeCFrame =
-                Root.CFrame
-        end
-
-        Processing = false
-        CurrentEgg = nil
-
-        task.wait(0.5)
-
-        ScanEggs()
-
-    end
-)
-
---=========================================================
--- START
---=========================================================
-
-ScanEggs()
-
-Status.Text =
-    "🥚 Egg tab ready\nMIN $1M • MIN 50 STUDS"
-
---=========================================================
--- SCAN LOOP
---=========================================================
-
-task.spawn(function()
-
-    while true do
-
-        task.wait(
-            SCAN_DELAY
-        )
-
-        if not Processing then
-            ScanEggs()
-        end
-
-    end
-
+	end
 end)
