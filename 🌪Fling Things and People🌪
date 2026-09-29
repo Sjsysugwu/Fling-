@@ -73,13 +73,10 @@ local explodedBlacklist = {}
 local globalItemCount = 0
 
 --=========================================================
--- by XR - TORNADO TARGET + REAL FIXED HEART
+-- by XR - TORNADO TARGET
 -- TARGET: ME / RANDOM / PLAYERS
 -- MAX RANGE: 500 STUD
--- TORNADO STAYS ON AFTER DEATH
--- HEART: REAL ♥ SHAPE / FIXED BLOCKS
--- HEART FOLLOWS SELECTED TARGET
--- PLAYER NAME TARGET STAYS SELECTED
+-- ON STAYS ON AFTER DEATH
 --=========================================================
 
 local Players = game:GetService("Players")
@@ -96,9 +93,6 @@ local LocalPlayer = Players.LocalPlayer
 local selectedTargetMode = "Me"
 local targetPlayer = LocalPlayer
 
--- هدف Random يتم تثبيته حتى لا يتغير كل فريم
-local randomTargetPlayer = nil
-
 local MAX_DISTANCE = 500
 
 --==================================================
@@ -107,15 +101,11 @@ local MAX_DISTANCE = 500
 
 local isActive = false
 local isCompressing = false
-local isHeartActive = false
 local isMinimized = false
 
 local activeProps = {}
-local heartProps = {}
 local explodedBlacklist = {}
-
 local globalItemCount = 0
-local heartItemCount = 0
 
 --==================================================
 -- GUI
@@ -127,14 +117,14 @@ screenGui.ResetOnSpawn = false
 screenGui.IgnoreGuiInset = true
 
 if syn and syn.protect_gui then
-	syn.protect_gui(screenGui)
-	screenGui.Parent = game:GetService("CoreGui")
+syn.protect_gui(screenGui)
+screenGui.Parent = game:GetService("CoreGui")
 
 elseif gethui then
-	screenGui.Parent = gethui()
+screenGui.Parent = gethui()
 
 else
-	screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 
 --==================================================
@@ -152,7 +142,7 @@ mainFrame.Active = true
 mainFrame.Parent = screenGui
 
 Instance.new("UICorner", mainFrame).CornerRadius =
-	UDim.new(0, 10)
+UDim.new(0, 10)
 
 --==================================================
 -- BACKGROUND
@@ -170,7 +160,7 @@ backgroundImage.ZIndex = 0
 backgroundImage.Parent = mainFrame
 
 Instance.new("UICorner", backgroundImage).CornerRadius =
-	UDim.new(0, 10)
+UDim.new(0, 10)
 
 --==================================================
 -- BORDER
@@ -194,7 +184,7 @@ titleBar.ZIndex = 5
 titleBar.Parent = mainFrame
 
 Instance.new("UICorner", titleBar).CornerRadius =
-	UDim.new(0, 10)
+UDim.new(0, 10)
 
 local titleStroke = Instance.new("UIStroke")
 titleStroke.Thickness = 2
@@ -204,7 +194,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -65, 1, 0)
 titleLabel.Position = UDim2.new(0, 8, 0, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "🌪 by XR ♥"
+titleLabel.Text = "🌪 by XR 🌪"
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.TextSize = 11
@@ -229,7 +219,7 @@ minBtn.ZIndex = 6
 minBtn.Parent = titleBar
 
 Instance.new("UICorner", minBtn).CornerRadius =
-	UDim.new(0, 5)
+UDim.new(0, 5)
 
 --==================================================
 -- CLOSE
@@ -248,7 +238,7 @@ closeBtn.ZIndex = 6
 closeBtn.Parent = titleBar
 
 Instance.new("UICorner", closeBtn).CornerRadius =
-	UDim.new(0, 5)
+UDim.new(0, 5)
 
 --==================================================
 -- CONTENT
@@ -282,7 +272,7 @@ targetDropdownBtn.ZIndex = 10
 targetDropdownBtn.Parent = contentFrame
 
 Instance.new("UICorner", targetDropdownBtn).CornerRadius =
-	UDim.new(0, 6)
+UDim.new(0, 6)
 
 local targetStroke = Instance.new("UIStroke")
 targetStroke.Thickness = 1.5
@@ -307,7 +297,7 @@ dropdownList.ZIndex = 20
 dropdownList.Parent = contentFrame
 
 Instance.new("UICorner", dropdownList).CornerRadius =
-	UDim.new(0, 6)
+UDim.new(0, 6)
 
 local dropdownLayout = Instance.new("UIListLayout")
 dropdownLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -320,98 +310,91 @@ dropdownLayout.Parent = dropdownList
 
 local function updateDropdownList()
 
-	for _, child in ipairs(dropdownList:GetChildren()) do
-		if child:IsA("TextButton") then
-			child:Destroy()
-		end
-	end
+for _, child in ipairs(dropdownList:GetChildren()) do
+if child:IsA("TextButton") then
+child:Destroy()
+end
+end
 
-	local options = {
-		"Me",
-		"Random Map"
-	}
+local options = {
+"Me",
+"Random Map"
+}
 
-	for _, p in ipairs(Players:GetPlayers()) do
-		if p ~= LocalPlayer then
-			table.insert(options, p.DisplayName)
-		end
-	end
+for _, p in ipairs(Players:GetPlayers()) do
 
-	for _, opt in ipairs(options) do
+if p ~= LocalPlayer then
+table.insert(options, p.DisplayName)
+end
 
-		local optBtn = Instance.new("TextButton")
+end
 
-		optBtn.Size = UDim2.new(1, -8, 0, 25)
-		optBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-		optBtn.BackgroundTransparency = 0.10
-		optBtn.BorderSizePixel = 0
-		optBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		optBtn.Font = Enum.Font.SourceSansBold
-		optBtn.TextSize = 11
-		optBtn.TextTruncate = Enum.TextTruncate.None
-		optBtn.TextWrapped = false
-		optBtn.TextXAlignment = Enum.TextXAlignment.Center
-		optBtn.Text = opt
-		optBtn.ZIndex = 21
-		optBtn.Parent = dropdownList
+for _, opt in ipairs(options) do
 
-		Instance.new("UICorner", optBtn).CornerRadius =
-			UDim.new(0, 4)
+local optBtn = Instance.new("TextButton")
 
-		optBtn.Activated:Connect(function()
+optBtn.Size = UDim2.new(1, -8, 0, 25)
+optBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+optBtn.BackgroundTransparency = 0.10
+optBtn.BorderSizePixel = 0
+optBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+optBtn.Font = Enum.Font.SourceSansBold
+optBtn.TextSize = 11
 
-			if opt == "Me" then
+-- يخلي الاسم كامل بدون قص
+optBtn.TextTruncate = Enum.TextTruncate.None
+optBtn.TextWrapped = false
+optBtn.TextXAlignment = Enum.TextXAlignment.Center
 
-				selectedTargetMode = "Me"
-				targetPlayer = LocalPlayer
-				randomTargetPlayer = nil
+optBtn.Text = opt
+optBtn.ZIndex = 21
+optBtn.Parent = dropdownList
 
-				targetDropdownBtn.Text = "Target: Me"
+Instance.new("UICorner", optBtn).CornerRadius =
+UDim.new(0, 4)
 
-			elseif opt == "Random Map" then
+optBtn.Activated:Connect(function()
 
-				selectedTargetMode = "Random"
-				targetPlayer = nil
+if opt == "Me" then
 
-				randomTargetPlayer = nil
+selectedTargetMode = "Me"        
+targetPlayer = LocalPlayer        
 
-				for _, p in ipairs(Players:GetPlayers()) do
-					if p ~= LocalPlayer and p.Character then
-						if p.Character:FindFirstChild("HumanoidRootPart") then
-							randomTargetPlayer = p
-							break
-						end
-					end
-				end
+targetDropdownBtn.Text =        
+	"Target: Me"
 
-				targetDropdownBtn.Text = "Target: Random"
+elseif opt == "Random Map" then
 
-			else
+selectedTargetMode = "Random"        
+targetPlayer = nil        
 
-				selectedTargetMode = "Player"
-				randomTargetPlayer = nil
+targetDropdownBtn.Text =        
+	"Target: Random"
 
-				for _, p in ipairs(Players:GetPlayers()) do
+else
 
-					if p.DisplayName == opt then
-						targetPlayer = p
-						break
-					end
+selectedTargetMode = "Player"        
 
-				end
+for _, p in ipairs(Players:GetPlayers()) do        
 
-				if targetPlayer then
-					targetDropdownBtn.Text =
-						"Target: " .. targetPlayer.DisplayName
-				end
+	if p.DisplayName == opt then        
 
-			end
+		targetPlayer = p        
+		break        
+	end        
+end        
 
-			dropdownList.Visible = false
+targetDropdownBtn.Text =        
+	"Target: " .. opt
 
-		end)
+end
 
-	end
+dropdownList.Visible = false
+
+end)
+
+end
+
 end
 
 updateDropdownList()
@@ -422,31 +405,27 @@ updateDropdownList()
 
 Players.PlayerAdded:Connect(function()
 
-	task.wait(0.2)
-	updateDropdownList()
+task.wait(0.2)
+
+updateDropdownList()
 
 end)
 
 Players.PlayerRemoving:Connect(function(player)
 
-	if player == targetPlayer then
+if player == targetPlayer then
 
-		selectedTargetMode = "Me"
-		targetPlayer = LocalPlayer
-		randomTargetPlayer = nil
+selectedTargetMode = "Me"
+targetPlayer = LocalPlayer
 
-		targetDropdownBtn.Text = "Target: Me"
+targetDropdownBtn.Text =
+"Target: Me"
 
-	end
+end
 
-	if player == randomTargetPlayer then
+task.wait(0.1)
 
-		randomTargetPlayer = nil
-
-	end
-
-	task.wait(0.1)
-	updateDropdownList()
+updateDropdownList()
 
 end)
 
@@ -456,12 +435,12 @@ end)
 
 targetDropdownBtn.Activated:Connect(function()
 
-	dropdownList.Visible =
-		not dropdownList.Visible
+dropdownList.Visible =
+not dropdownList.Visible
 
-	if dropdownList.Visible then
-		updateDropdownList()
-	end
+if dropdownList.Visible then
+updateDropdownList()
+end
 
 end)
 
@@ -471,50 +450,60 @@ end)
 
 local function getTargetRoot()
 
-	if selectedTargetMode == "Me" then
+if selectedTargetMode == "Me" then
 
-		local char = LocalPlayer.Character
+local char = LocalPlayer.Character
 
-		if char then
-			return char:FindFirstChild("HumanoidRootPart")
-		end
+if char then
+return char:FindFirstChild("HumanoidRootPart")
+end
 
-	elseif selectedTargetMode == "Player" then
+elseif selectedTargetMode == "Player" then
 
-		if targetPlayer and targetPlayer.Parent then
+if targetPlayer
+and targetPlayer.Parent then
 
-			local char = targetPlayer.Character
+local char = targetPlayer.Character
 
-			if char then
-				return char:FindFirstChild("HumanoidRootPart")
-			end
+if char then
+return char:FindFirstChild("HumanoidRootPart")
+end
 
-		end
+end
 
-	elseif selectedTargetMode == "Random" then
+elseif selectedTargetMode == "Random" then
 
-		if randomTargetPlayer
-			and randomTargetPlayer.Parent then
+local possible = {}
 
-			local char =
-				randomTargetPlayer.Character
+for _, p in ipairs(Players:GetPlayers()) do
 
-			if char then
+if p ~= LocalPlayer
+and p.Character then
 
-				local root =
-					char:FindFirstChild("HumanoidRootPart")
+local root =        
+	p.Character:FindFirstChild(        
+		"HumanoidRootPart"        
+	)        
 
-				if root then
-					return root
-				end
+if root then        
+	table.insert(possible, root)        
+end
 
-			end
+end
 
-		end
+end
 
-	end
+if #possible > 0 then
 
-	return nil
+return possible[
+math.random(1, #possible)
+]
+
+end
+
+end
+
+return nil
 
 end
 
@@ -524,16 +513,16 @@ end
 
 local function isWithinRange(part)
 
-	local root = getTargetRoot()
+local root = getTargetRoot()
 
-	if not root or not part then
-		return false
-	end
+if not root or not part then
+return false
+end
 
-	local distance =
-		(part.Position - root.Position).Magnitude
+local distance =
+(part.Position - root.Position).Magnitude
 
-	return distance <= MAX_DISTANCE
+return distance <= MAX_DISTANCE
 
 end
 
@@ -543,7 +532,7 @@ end
 
 local btn = Instance.new("TextButton")
 btn.Name = "TornadoButton"
-btn.Size = UDim2.new(0.43, 0, 0, 35)
+btn.Size = UDim2.new(0.90, 0, 0, 35)
 btn.Position = UDim2.new(0.05, 0, 0.48, 0)
 btn.BackgroundTransparency = 1
 btn.BorderSizePixel = 0
@@ -555,27 +544,7 @@ btn.ZIndex = 3
 btn.Parent = contentFrame
 
 Instance.new("UICorner", btn).CornerRadius =
-	UDim.new(0, 8)
-
---==================================================
--- HEART BUTTON
---==================================================
-
-local heartBtn = Instance.new("TextButton")
-heartBtn.Name = "HeartButton"
-heartBtn.Size = UDim2.new(0.43, 0, 0, 35)
-heartBtn.Position = UDim2.new(0.52, 0, 0.48, 0)
-heartBtn.BackgroundTransparency = 1
-heartBtn.BorderSizePixel = 0
-heartBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-heartBtn.Font = Enum.Font.SourceSansBold
-heartBtn.Text = "♥ OFF ♥"
-heartBtn.TextScaled = true
-heartBtn.ZIndex = 3
-heartBtn.Parent = contentFrame
-
-Instance.new("UICorner", heartBtn).CornerRadius =
-	UDim.new(0, 8)
+UDim.new(0, 8)
 
 --==================================================
 -- BLAST BUTTON
@@ -595,7 +564,7 @@ blastBtn.ZIndex = 3
 blastBtn.Parent = contentFrame
 
 Instance.new("UICorner", blastBtn).CornerRadius =
-	UDim.new(0, 8)
+UDim.new(0, 8)
 
 --==================================================
 -- RGB BORDER
@@ -605,31 +574,31 @@ local colorTime = 0
 
 RunService.RenderStepped:Connect(function(dt)
 
-	colorTime += dt
+colorTime += dt
 
-	local wave =
-		(math.sin(colorTime * 2) + 1) / 2
+local wave =
+(math.sin(colorTime * 2) + 1) / 2
 
-	mainStroke.Color =
-		Color3.new(
-			wave,
-			0,
-			1 - wave
-		)
+mainStroke.Color =
+Color3.new(
+wave,
+0,
+1 - wave
+)
 
-	titleStroke.Color =
-		Color3.new(
-			1 - wave,
-			0,
-			wave
-		)
+titleStroke.Color =
+Color3.new(
+1 - wave,
+0,
+wave
+)
 
-	targetStroke.Color =
-		Color3.new(
-			0,
-			0.5 + wave * 0.5,
-			1
-		)
+targetStroke.Color =
+Color3.new(
+0,
+0.5 + wave * 0.5,
+1
+)
 
 end)
 
@@ -643,49 +612,59 @@ local startPos
 
 titleBar.InputBegan:Connect(function(input)
 
-	if input.UserInputType == Enum.UserInputType.Touch
-		or input.UserInputType == Enum.UserInputType.MouseButton1 then
+if input.UserInputType ==
+Enum.UserInputType.Touch
 
-		dragging = true
-		dragStart = input.Position
-		startPos = mainFrame.Position
+or input.UserInputType ==
+Enum.UserInputType.MouseButton1 then
 
-	end
+dragging = true
+
+dragStart = input.Position
+startPos = mainFrame.Position
+
+end
 
 end)
 
 UserInputService.InputChanged:Connect(function(input)
 
-	if dragging
-		and (
-			input.UserInputType == Enum.UserInputType.Touch
-			or input.UserInputType == Enum.UserInputType.MouseMovement
-		) then
+if dragging
+and (
+input.UserInputType ==
+Enum.UserInputType.Touch
 
-		local delta =
-			input.Position - dragStart
+or input.UserInputType ==
+Enum.UserInputType.MouseMovement
+) then
 
-		mainFrame.Position =
-			UDim2.new(
-				startPos.X.Scale,
-				startPos.X.Offset + delta.X,
+local delta =
+input.Position - dragStart
 
-				startPos.Y.Scale,
-				startPos.Y.Offset + delta.Y
-			)
+mainFrame.Position =
+UDim2.new(
+startPos.X.Scale,
+startPos.X.Offset + delta.X,
 
-	end
+startPos.Y.Scale,
+startPos.Y.Offset + delta.Y
+)
+
+end
 
 end)
 
 UserInputService.InputEnded:Connect(function(input)
 
-	if input.UserInputType == Enum.UserInputType.Touch
-		or input.UserInputType == Enum.UserInputType.MouseButton1 then
+if input.UserInputType ==
+Enum.UserInputType.Touch
 
-		dragging = false
+or input.UserInputType ==
+Enum.UserInputType.MouseButton1 then
 
-	end
+dragging = false
+
+end
 
 end)
 
@@ -695,37 +674,38 @@ end)
 
 minBtn.Activated:Connect(function()
 
-	isMinimized = not isMinimized
+isMinimized =
+not isMinimized
 
-	if isMinimized then
+if isMinimized then
 
-		contentFrame.Visible = false
+contentFrame.Visible = false
 
-		mainFrame.Size =
-			UDim2.new(
-				0,
-				220,
-				0,
-				32
-			)
+mainFrame.Size =
+UDim2.new(
+0,
+220,
+0,
+32
+)
 
-		minBtn.Text = "+"
+minBtn.Text = "+"
 
-	else
+else
 
-		contentFrame.Visible = true
+contentFrame.Visible = true
 
-		mainFrame.Size =
-			UDim2.new(
-				0,
-				220,
-				0,
-				190
-			)
+mainFrame.Size =
+UDim2.new(
+0,
+220,
+0,
+190
+)
 
-		minBtn.Text = "-"
+minBtn.Text = "-"
 
-	end
+end
 
 end)
 
@@ -735,135 +715,90 @@ end)
 
 local function isValidProp(part)
 
-	if not part
-		or not part:IsA("BasePart")
-		or part.Anchored then
+if not part
+or not part:IsA("BasePart")
+or part.Anchored then
 
-		return false
-	end
+return false
 
-	if explodedBlacklist[part] then
-		return false
-	end
+end
 
-	if not isWithinRange(part) then
-		return false
-	end
+if explodedBlacklist[part] then
+return false
+end
 
-	local ancestor =
-		part:FindFirstAncestorOfClass("Model")
+if not isWithinRange(part) then
+return false
+end
 
-	if ancestor
-		and ancestor:FindFirstChildOfClass("Humanoid") then
+local ancestor =
+part:FindFirstAncestorOfClass("Model")
 
-		return false
-	end
+if ancestor
+and ancestor:FindFirstChildOfClass("Humanoid") then
 
-	if part.Parent
-		and part.Parent:FindFirstChildOfClass("Humanoid") then
+return false
 
-		return false
-	end
+end
 
-	return true
+if part.Parent
+and part.Parent:FindFirstChildOfClass("Humanoid") then
+
+return false
+
+end
+
+return true
 
 end
 
 --==================================================
--- REMOVE TORNADO PHYSICS
+-- REMOVE PHYSICS
 --==================================================
 
 local function removePropPhysics(part)
 
-	if activeProps[part] then
+if activeProps[part] then
 
-		local data =
-			activeProps[part]
+local data =
+activeProps[part]
 
-		if data.AP then
-			data.AP:Destroy()
-		end
+if data.AP then
+data.AP:Destroy()
+end
 
-		if data.AO then
-			data.AO:Destroy()
-		end
+if data.AO then
+data.AO:Destroy()
+end
 
-		if data.Att then
-			data.Att:Destroy()
-		end
+if data.Att then
+data.Att:Destroy()
+end
 
-		activeProps[part] = nil
+activeProps[part] = nil
 
-	end
+end
 
 end
 
 --==================================================
--- REMOVE HEART PHYSICS
---==================================================
-
-local function removeHeartPhysics(part)
-
-	if heartProps[part] then
-
-		local data =
-			heartProps[part]
-
-		if data.AP then
-			data.AP:Destroy()
-		end
-
-		if data.AO then
-			data.AO:Destroy()
-		end
-
-		if data.Att then
-			data.Att:Destroy()
-		end
-
-		heartProps[part] = nil
-
-	end
-
-end
-
---==================================================
--- STOP HEART
---==================================================
-
-local function stopHeart()
-
-	isHeartActive = false
-	heartItemCount = 0
-
-	heartBtn.Text = "♥ OFF ♥"
-
-	for part, _ in pairs(heartProps) do
-		removeHeartPhysics(part)
-	end
-
-	heartProps = {}
-
-end
-
---==================================================
--- STOP TORNADO
+-- STOP
 --==================================================
 
 local function stopTornado()
 
-	isActive = false
-	isCompressing = false
-	globalItemCount = 0
+isActive = false
+isCompressing = false
+globalItemCount = 0
 
-	btn.Text = "🌪 OFF 🌪"
+btn.Text = "🌪 OFF 🌪"
 
-	for part, _ in pairs(activeProps) do
-		removePropPhysics(part)
-	end
+for part, _ in pairs(activeProps) do
+removePropPhysics(part)
+end
 
-	activeProps = {}
-	explodedBlacklist = {}
+activeProps = {}
+explodedBlacklist = {}
 
 end
 
@@ -873,174 +808,90 @@ end
 
 closeBtn.Activated:Connect(function()
 
-	stopTornado()
-	stopHeart()
+stopTornado()
 
-	screenGui:Destroy()
+screenGui:Destroy()
 
 end)
 
 --==================================================
--- ATTACH TORNADO PHYSICS
+-- ATTACH PHYSICS
 --==================================================
 
 local function attachPhysicsToProp(part)
 
-	if activeProps[part] then
-		return
-	end
-
-	if not isValidProp(part) then
-		return
-	end
-
-	if heartProps[part] then
-		removeHeartPhysics(part)
-	end
-
-	pcall(function()
-		part:SetNetworkOwner(LocalPlayer)
-	end)
-
-	local att =
-		Instance.new("Attachment")
-
-	att.Name =
-		"TornadoGrabbedAtt"
-
-	att.Parent = part
-
-	local ao =
-		Instance.new("AlignOrientation")
-
-	ao.Mode =
-		Enum.OrientationAlignmentMode.OneAttachment
-
-	ao.Attachment0 = att
-	ao.MaxTorque = math.huge
-	ao.Responsiveness = 100
-
-	-- لا يخلي البلوك يلف
-	ao.CFrame = part.CFrame
-
-	ao.Parent = part
-
-	local ap =
-		Instance.new("AlignPosition")
-
-	ap.Mode =
-		Enum.PositionAlignmentMode.OneAttachment
-
-	ap.Attachment0 = att
-	ap.MaxForce = math.huge
-	ap.MaxVelocity = 1200
-	ap.Responsiveness = 90
-	ap.Parent = part
-
-	globalItemCount += 1
-
-	local section =
-		((globalItemCount - 1) % 3) + 1
-
-	local subSlot =
-		math.floor(
-			(globalItemCount - 1) / 3
-		) % 10
-
-	activeProps[part] = {
-
-		Part = part,
-		Att = att,
-		AO = ao,
-		AP = ap,
-
-		Section = section,
-		SubSlot = subSlot,
-
-		AngleOffset =
-			globalItemCount * 0.5
-
-	}
-
+if activeProps[part] then
+return
 end
 
---==================================================
--- ATTACH HEART PHYSICS
---==================================================
+if not isValidProp(part) then
+return
+end
 
-local function attachHeartToProp(part)
+pcall(function()
+part:SetNetworkOwner(LocalPlayer)
+end)
 
-	if heartProps[part] then
-		return
-	end
+local att =
+Instance.new("Attachment")
 
-	if not isValidProp(part) then
-		return
-	end
+att.Name =
+"TornadoGrabbedAtt"
 
-	-- إذا التورنادو ماسكه، لا يدخل القلب
-	if activeProps[part] then
-		return
-	end
+att.Parent = part
 
-	pcall(function()
-		part:SetNetworkOwner(LocalPlayer)
-	end)
+local ao =
+Instance.new("AlignOrientation")
 
-	local att =
-		Instance.new("Attachment")
+ao.Mode =
+Enum.OrientationAlignmentMode.OneAttachment
 
-	att.Name =
-		"HeartGrabbedAtt"
+ao.Attachment0 = att
+ao.MaxTorque = math.huge
+ao.Responsiveness = 100
+ao.CFrame = part.CFrame
+ao.Parent = part
 
-	att.Parent = part
+local ap =
+Instance.new("AlignPosition")
 
-	local ao =
-		Instance.new("AlignOrientation")
+ap.Mode =
+Enum.PositionAlignmentMode.OneAttachment
 
-	ao.Mode =
-		Enum.OrientationAlignmentMode.OneAttachment
+ap.Attachment0 = att
+ap.MaxForce = math.huge
+ap.MaxVelocity = 1200
+ap.Responsiveness = 90
+ap.Parent = part
 
-	ao.Attachment0 = att
-	ao.MaxTorque = math.huge
-	ao.Responsiveness = 100
+globalItemCount += 1
 
-	-- نحفظ اتجاه البلوك الأصلي
-	local fixedOrientation =
-		part.CFrame - part.Position
+local section =
+((globalItemCount - 1) % 3) + 1
 
-	ao.CFrame =
-		fixedOrientation
+local subSlot =
+math.floor(
+(globalItemCount - 1) / 3
+) % 10
 
-	ao.Parent = part
+activeProps[part] = {
 
-	local ap =
-		Instance.new("AlignPosition")
+Part = part,
 
-	ap.Mode =
-		Enum.PositionAlignmentMode.OneAttachment
+Att = att,
 
-	ap.Attachment0 = att
-	ap.MaxForce = math.huge
-	ap.MaxVelocity = 2000
-	ap.Responsiveness = 150
+AO = ao,
 
-	ap.Parent = part
+AP = ap,
 
-	heartItemCount += 1
+Section = section,
 
-	heartProps[part] = {
+SubSlot = subSlot,
 
-		Part = part,
-		Att = att,
-		AO = ao,
-		AP = ap,
+AngleOffset =
+globalItemCount * 0.5
 
-		HeartIndex = heartItemCount,
-
-		FixedOrientation = fixedOrientation
-
-	}
+}
 
 end
 
@@ -1050,104 +901,46 @@ end
 
 Workspace.ChildAdded:Connect(function(child)
 
-	if not isActive and not isHeartActive then
-		return
-	end
+if not isActive then
+return
+end
 
-	if child.Name ~= "GrabParts" then
-		return
-	end
+if child.Name ~= "GrabParts" then
+return
+end
 
-	task.spawn(function()
+task.spawn(function()
 
-		local success, grabbedPart =
-			pcall(function()
+local success, grabbedPart =
+pcall(function()
 
-				local grabPart =
-					child:WaitForChild(
-						"GrabPart",
-						1.5
-					)
+local grabPart =
+child:WaitForChild(
+"GrabPart",
+1.5
+)
 
-				local weld =
-					grabPart:WaitForChild(
-						"WeldConstraint",
-						1.5
-					)
+local weld =        
+	grabPart:WaitForChild(        
+		"WeldConstraint",        
+		1.5        
+	)        
 
-				return weld.Part1
-
-			end)
-
-		if success and grabbedPart then
-
-			if isActive then
-				attachPhysicsToProp(grabbedPart)
-			end
-
-			if isHeartActive then
-				attachHeartToProp(grabbedPart)
-			end
-
-		end
-
-	end)
+return weld.Part1
 
 end)
 
---==================================================
--- REAL HEART SHAPE ♥
--- ثابت فوق رأس الـTARGET
---==================================================
+if success and grabbedPart then
 
-local function getHeartPosition(index, total, rootPos)
-
-	total = math.max(total, 1)
-
-	if total == 1 then
-
-		return rootPos +
-			Vector3.new(
-				0,
-				105,
-				0
-			)
-
-	end
-
-	-- نقاط القلب موزعة على منحنى حقيقي
-	local t =
-		((index - 1) / total) *
-		(math.pi * 2)
-
-	-- معادلة القلب
-	local x =
-		16 *
-		(math.sin(t) ^ 3)
-
-	local y =
-		13 * math.cos(t)
-		- 5 * math.cos(2 * t)
-		- 2 * math.cos(3 * t)
-		- math.cos(4 * t)
-
-	-- حجم القلب
-	local scale = 4.2
-
-	x *= scale
-	y *= scale
-
-	-- القلب فوق رأس اللاعب
-	local height = 105
-
-	return rootPos +
-		Vector3.new(
-			x,
-			y + height,
-			0
-		)
+attachPhysicsToProp(
+grabbedPart
+)
 
 end
+
+end)
+
+end)
 
 --==================================================
 -- COMPRESS + BLAST
@@ -1155,208 +948,104 @@ end
 
 local function triggerCompressAndBlast()
 
-	if isCompressing then
-		return
-	end
+if not isActive
+or isCompressing then
 
-	isCompressing = true
+return
 
-	local root =
-		getTargetRoot()
+end
 
-	if not root then
+isCompressing = true
 
-		isCompressing = false
-		return
+local root =
+getTargetRoot()
 
-	end
+if not root then
 
-	local compressPoint =
-		root.Position +
-		Vector3.new(
-			0,
-			110,
-			0
-		)
+isCompressing = false
+return
 
-	--==================================================
-	-- TORNADO COMPRESS
-	--==================================================
+end
 
-	if isActive then
+local compressPoint =
+root.Position
 
-		for part, data in pairs(activeProps) do
+Vector3.new(0, 110, 0)
 
-			if part
-				and part:IsDescendantOf(workspace)
-				and isWithinRange(part) then
+for part, data in pairs(activeProps) do
 
-				data.AP.Position =
-					compressPoint
+if part
+and part:IsDescendantOf(workspace)
+and isWithinRange(part) then
 
-			end
+data.AP.Position =
+compressPoint
 
-		end
+end
 
-	end
+end
 
-	--==================================================
-	-- HEART COMPRESS
-	--==================================================
+task.wait(1)
 
-	if isHeartActive then
+local exp =
+Instance.new("Explosion")
 
-		for part, data in pairs(heartProps) do
+exp.Position = compressPoint
+exp.BlastRadius = 150
+exp.BlastPressure = 0
+exp.Parent = workspace
 
-			if part
-				and part:IsDescendantOf(workspace)
-				and isWithinRange(part) then
+local propsToBlast = {}
 
-				data.AP.Position =
-					compressPoint
+for part, _ in pairs(activeProps) do
+table.insert(propsToBlast, part)
+end
 
-			end
+for _, part in ipairs(propsToBlast) do
 
-		end
+if part
+and part:IsDescendantOf(workspace)
+and isWithinRange(part) then
 
-	end
+removePropPhysics(part)
 
-	task.wait(0.8)
+explodedBlacklist[part] = true
 
-	--==================================================
-	-- EXPLOSION
-	--==================================================
+task.delay(2.5, function()
 
-	local exp =
-		Instance.new("Explosion")
+explodedBlacklist[part] = nil
 
-	exp.Position = compressPoint
-	exp.BlastRadius = 150
-	exp.BlastPressure = 0
-	exp.DestroyJointRadiusPercent = 0
-	exp.Parent = workspace
+end)
 
-	--==================================================
-	-- COLLECT TORNADO PROPS
-	--==================================================
+pcall(function()
+part:SetNetworkOwner(LocalPlayer)
+end)
 
-	local propsToBlast = {}
+local randomDirection =
+Vector3.new(
+math.random(-100, 100),
+math.random(30, 120),
+math.random(-100, 100)
+).Unit
 
-	for part, _ in pairs(activeProps) do
+local blastSpeed =
+math.random(1200, 2500)
 
-		table.insert(
-			propsToBlast,
-			{
-				Part = part,
-				Type = "Tornado"
-			}
-		)
+part.AssemblyLinearVelocity =
+randomDirection * blastSpeed
 
-	end
+part.AssemblyAngularVelocity =
+Vector3.new(
+math.random(-200, 200),
+math.random(-200, 200),
+math.random(-200, 200)
+)
 
-	--==================================================
-	-- COLLECT HEART PROPS
-	--==================================================
+end
 
-	for part, _ in pairs(heartProps) do
+end
 
-		table.insert(
-			propsToBlast,
-			{
-				Part = part,
-				Type = "Heart"
-			}
-		)
-
-	end
-
-	--==================================================
-	-- BLAST EVERYTHING
-	--==================================================
-
-	for _, info in ipairs(propsToBlast) do
-
-		local part =
-			info.Part
-
-		if part
-			and part:IsDescendantOf(workspace)
-			and not part.Anchored then
-
-			if info.Type == "Tornado" then
-				removePropPhysics(part)
-			else
-				removeHeartPhysics(part)
-			end
-
-			explodedBlacklist[part] = true
-
-			task.delay(
-				2.5,
-				function()
-
-					explodedBlacklist[part] = nil
-
-				end
-			)
-
-			pcall(function()
-				part:SetNetworkOwner(LocalPlayer)
-			end)
-
-			local randomDirection =
-				Vector3.new(
-					math.random(-100, 100),
-					math.random(50, 150),
-					math.random(-100, 100)
-				)
-
-			if randomDirection.Magnitude < 0.1 then
-
-				randomDirection =
-					Vector3.new(
-						0,
-						1,
-						0
-					)
-
-			end
-
-			randomDirection =
-				randomDirection.Unit
-
-			local blastSpeed =
-				math.random(
-					1200,
-					2500
-				)
-
-			part.AssemblyLinearVelocity =
-				randomDirection *
-				blastSpeed
-
-			part.AssemblyAngularVelocity =
-				Vector3.new(
-					math.random(-200, 200),
-					math.random(-200, 200),
-					math.random(-200, 200)
-				)
-
-		end
-
-	end
-
-	--==================================================
-	-- RESET COUNTS
-	--==================================================
-
-	globalItemCount = 0
-	heartItemCount = 0
-
-	activeProps = {}
-	heartProps = {}
-
-	isCompressing = false
+isCompressing = false
 
 end
 
@@ -1366,74 +1055,34 @@ end
 
 local function startTornado()
 
-	local root =
-		getTargetRoot()
+local root =
+getTargetRoot()
 
-	if not root then
-		return
-	end
+if not root then
+return
+end
 
-	isActive = true
-	globalItemCount = 0
+isActive = true
+globalItemCount = 0
 
-	btn.Text = "🌪 ON 🌪"
+btn.Text = "🌪 ON 🌪"
 
 end
 
 local function toggleTornado()
 
-	if isActive then
-		stopTornado()
-	else
-		startTornado()
-	end
+if isActive then
+stopTornado()
+else
+startTornado()
+end
 
 end
 
---==================================================
--- START HEART
---==================================================
-
-local function startHeart()
-
-	local root =
-		getTargetRoot()
-
-	if not root then
-		return
-	end
-
-	isHeartActive = true
-	heartItemCount = 0
-
-	heartBtn.Text = "♥ ON ♥"
-
-end
-
-local function toggleHeart()
-
-	if isHeartActive then
-		stopHeart()
-	else
-		startHeart()
-	end
-
-end
-
---==================================================
--- BUTTON CONNECTIONS
---==================================================
-
-btn.Activated:Connect(
-	toggleTornado
-)
-
-heartBtn.Activated:Connect(
-	toggleHeart
-)
+btn.Activated:Connect(toggleTornado)
 
 blastBtn.Activated:Connect(
-	triggerCompressAndBlast
+triggerCompressAndBlast
 )
 
 --==================================================
@@ -1441,32 +1090,28 @@ blastBtn.Activated:Connect(
 --==================================================
 
 UserInputService.InputBegan:Connect(function(
-	input,
-	gpe
+input,
+gpe
 )
 
-	if gpe then
-		return
-	end
+if gpe then
+return
+end
 
-	if input.KeyCode == Enum.KeyCode.R then
+if input.KeyCode == Enum.KeyCode.R then
 
-		toggleTornado()
+toggleTornado()
 
-	elseif input.KeyCode == Enum.KeyCode.T then
+elseif input.KeyCode == Enum.KeyCode.T then
 
-		triggerCompressAndBlast()
+triggerCompressAndBlast()
 
-	elseif input.KeyCode == Enum.KeyCode.H then
+elseif input.KeyCode == Enum.KeyCode.M then
 
-		toggleHeart()
+mainFrame.Visible =
+not mainFrame.Visible
 
-	elseif input.KeyCode == Enum.KeyCode.M then
-
-		mainFrame.Visible =
-			not mainFrame.Visible
-
-	end
+end
 
 end)
 
@@ -1476,244 +1121,154 @@ end)
 
 RunService.Stepped:Connect(function()
 
-	if not isActive
-		or isCompressing then
+if not isActive
+or isCompressing then
 
-		return
-	end
+return
 
-	local root =
-		getTargetRoot()
+end
 
-	if not root then
-		return
-	end
+local root =
+getTargetRoot()
 
-	local rootPos =
-		root.Position
+if not root then
+return
+end
 
-	local timeSeconds =
-		workspace.DistributedGameTime
+local rootPos =
+root.Position
 
-	for part, data in pairs(activeProps) do
+local timeSeconds =
+workspace.DistributedGameTime
 
-		if not part
-			or not part:IsDescendantOf(workspace)
-			or part.Anchored then
+for part, data in pairs(activeProps) do
 
-			removePropPhysics(part)
+if not part
+or not part:IsDescendantOf(workspace)
+or part.Anchored then
 
-		elseif not isWithinRange(part) then
+removePropPhysics(part)
 
-			removePropPhysics(part)
+elseif not isWithinRange(part) then
 
-		else
+removePropPhysics(part)
 
-			local angle =
-				(timeSeconds * 3.5)
-				+ data.AngleOffset
+else
 
-			local baseHeight
-			local sectionLength
-			local startRadius
-			local endRadius
+local angle =
+(timeSeconds * 3.5)
++ data.AngleOffset
 
-			if data.Section == 1 then
+local baseHeight
+local sectionLength
+local startRadius
+local endRadius
 
-				baseHeight = 10
-				sectionLength = 50
-				startRadius = 15
-				endRadius = 35
+if data.Section == 1 then
 
-			elseif data.Section == 2 then
+baseHeight = 10        
+sectionLength = 50        
+startRadius = 15        
+endRadius = 35
 
-				baseHeight = 60
-				sectionLength = 75
-				startRadius = 35
-				endRadius = 75
+elseif data.Section == 2 then
 
-			else
+baseHeight = 60        
+sectionLength = 75        
+startRadius = 35        
+endRadius = 75
 
-				baseHeight = 135
-				sectionLength = 100
-				startRadius = 75
-				endRadius = 130
+else
 
-			end
+baseHeight = 135        
+sectionLength = 100        
+startRadius = 75        
+endRadius = 130
 
-			local slotProgress =
-				(data.SubSlot + 0.5) / 10
+end
 
-			local height =
-				baseHeight +
-				(
-					slotProgress *
-					sectionLength
-				)
+local slotProgress =
+(data.SubSlot + 0.5) / 10
 
-			local radius =
-				startRadius +
-				(
-					slotProgress *
-					(
-						endRadius -
-						startRadius
-					)
-				)
+local height =
+baseHeight
++ (
+slotProgress
+* sectionLength
+)
 
-			local targetPos =
-				rootPos +
-				Vector3.new(
-					math.cos(angle) * radius,
-					height,
-					math.sin(angle) * radius
-				)
+local radius =
+startRadius
++ (
+slotProgress
+* (
+endRadius
+- startRadius
+)
+)
 
-			data.AP.Position =
-				targetPos
+local targetPos =
+rootPos
++ Vector3.new(
+math.cos(angle) * radius,
+height,
+math.sin(angle) * radius
+)
 
-			-- اتجاه ثابت
-			data.AO.CFrame =
-				data.AO.CFrame
+data.AP.Position =
+targetPos
 
-		end
+data.AO.CFrame =
+CFrame.new(
+part.Position,
+targetPos
+)
 
-	end
+end
 
-end)
-
---==================================================
--- FIXED HEART MOVEMENT ♥
--- لا دوران
--- لا Orbit
--- فوق TARGET فقط
---==================================================
-
-RunService.Heartbeat:Connect(function()
-
-	if not isHeartActive
-		or isCompressing then
-
-		return
-	end
-
-	local root =
-		getTargetRoot()
-
-	if not root then
-		return
-	end
-
-	local rootPos =
-		root.Position
-
-	local total =
-		math.max(
-			heartItemCount,
-			1
-		)
-
-	for part, data in pairs(heartProps) do
-
-		if not part
-			or not part:IsDescendantOf(workspace)
-			or part.Anchored then
-
-			removeHeartPhysics(part)
-
-		elseif not isWithinRange(part) then
-
-			removeHeartPhysics(part)
-
-		else
-
-			-- ♥ يتحرك مع اللاعب المختار فقط
-			local targetPos =
-				getHeartPosition(
-					data.HeartIndex,
-					total,
-					rootPos
-				)
-
-			data.AP.Position =
-				targetPos
-
-			-- البلوك نفسه لا يدور
-			if data.FixedOrientation then
-				data.AO.CFrame =
-					data.FixedOrientation
-			end
-
-		end
-
-	end
+end
 
 end)
 
 --==================================================
 -- CHARACTER RESPAWN
+-- IMPORTANT:
+-- DO NOT STOP TORNADO WHEN PLAYER DIES
 --==================================================
 
 LocalPlayer.CharacterAdded:Connect(function()
 
-	if selectedTargetMode == "Me" then
+-- لا نستخدم stopTornado() هنا
+-- إذا كان ON يبقى ON
 
-		targetPlayer =
-			LocalPlayer
+selectedTargetMode = "Me"
+targetPlayer = LocalPlayer
 
-		targetDropdownBtn.Text =
-			"Target: Me"
+targetDropdownBtn.Text =
+"Target: Me"
 
-	elseif selectedTargetMode == "Player" then
+updateDropdownList()
 
-		if targetPlayer
-			and targetPlayer.Parent then
+-- ننتظر الشخصية الجديدة
+local character = LocalPlayer.Character
 
-			targetDropdownBtn.Text =
-				"Target: " ..
-				targetPlayer.DisplayName
+if character then
 
-		else
+character:WaitForChild(
+"HumanoidRootPart",
+10
+)
 
-			selectedTargetMode =
-				"Me"
+end
 
-			targetPlayer =
-				LocalPlayer
+-- إذا كان شغال قبل الموت
+-- يبقى ON
+if isActive then
 
-			targetDropdownBtn.Text =
-				"Target: Me"
+btn.Text =
+"🌪 ON 🌪"
 
-		end
-
-	elseif selectedTargetMode == "Random" then
-
-		targetDropdownBtn.Text =
-			"Target: Random"
-
-	end
-
-	updateDropdownList()
-
-	local character =
-		LocalPlayer.Character
-
-	if character then
-
-		character:WaitForChild(
-			"HumanoidRootPart",
-			10
-		)
-
-	end
-
-	if isActive then
-		btn.Text = "🌪 ON 🌪"
-	end
-
-	if isHeartActive then
-		heartBtn.Text = "♥ ON ♥"
-	end
+end
 
 end)
 
