@@ -725,7 +725,7 @@ SubmitBtn.MouseButton1Click:Connect(function()
 		if InputKey ~= ""
 			and (
 				InputKey == FetchedKey
-				or InputKey == "XR2030"
+				or InputKey == "XR999"
 			) then
 
 			SfxSuccess()
