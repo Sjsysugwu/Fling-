@@ -72,1207 +72,1745 @@ local activeProps = {}
 local explodedBlacklist = {}
 local globalItemCount = 0
 
---=========================================================
--- by XR - TORNADO TARGET
--- TARGET: ME / RANDOM / PLAYERS
--- MAX RANGE: 500 STUD
--- ON STAYS ON AFTER DEATH
---=========================================================
+
+-- =========================================================
+-- 🌪️ XR TORNADO HUB
+-- by A_A + XR
+-- FULL VERSION
+-- TARGET + PLAYER PROFILE + AVATAR + RANDOM MAP
+-- TORNADO / ME / ORBIT / BLAST
+-- =========================================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
---==================================================
--- TARGET SYSTEM
---==================================================
+local GUI_NAME = "XR_Tornado_GUI"
+local IMAGE_ID = "rbxassetid://131039661990217"
+
+-- =========================================================
+-- GRAB EVENTS
+-- =========================================================
+
+local GrabEvents = ReplicatedStorage:FindFirstChild("GrabEvents")
+local SetNetworkOwner = GrabEvents and GrabEvents:FindFirstChild("SetNetworkOwner")
+
+-- =========================================================
+-- REMOVE OLD GUI
+-- =========================================================
+
+local oldGui = PlayerGui:FindFirstChild(GUI_NAME)
+
+if oldGui then
+	oldGui:Destroy()
+end
+
+-- =========================================================
+-- STATES
+-- =========================================================
+
+local isActive = false
+local isMeActive = false
+local isOrbitActive = false
+local isCompressing = false
 
 local selectedTargetMode = "Me"
 local targetPlayer = LocalPlayer
 
-local MAX_DISTANCE = 500
-
---==================================================
--- VARIABLES
---==================================================
-
-local isActive = false
-local isCompressing = false
-local isMinimized = false
+local minimized = false
 
 local activeProps = {}
-local explodedBlacklist = {}
 local globalItemCount = 0
 
---==================================================
--- GUI
---==================================================
+local randomTargetPos = Vector3.new(0, 300, 0)
+local randomTimer = 0
 
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TarekScripterTornadoGUI"
-screenGui.ResetOnSpawn = false
-screenGui.IgnoreGuiInset = true
+-- =========================================================
+-- SCREEN GUI
+-- =========================================================
 
-if syn and syn.protect_gui then
-syn.protect_gui(screenGui)
-screenGui.Parent = game:GetService("CoreGui")
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = GUI_NAME
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.DisplayOrder = 999999
+ScreenGui.Parent = PlayerGui
 
-elseif gethui then
-screenGui.Parent = gethui()
+-- =========================================================
+-- MAIN
+-- =========================================================
 
-else
-screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-end
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.new(0, 220, 0, 245)
+Main.Position = UDim2.new(0.5, -110, 0.35, 0)
+Main.BackgroundColor3 = Color3.fromRGB(8, 7, 12)
+Main.BorderSizePixel = 0
+Main.ClipsDescendants = false
+Main.Active = true
+Main.Parent = ScreenGui
 
---==================================================
--- MAIN FRAME
---==================================================
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = Main
 
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 220, 0, 190)
-mainFrame.Position = UDim2.new(0.65, 0, 0.35, 0)
-mainFrame.BackgroundTransparency = 1
-mainFrame.BorderSizePixel = 0
-mainFrame.ClipsDescendants = true
-mainFrame.Active = true
-mainFrame.Parent = screenGui
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Thickness = 2
+MainStroke.Color = Color3.fromRGB(255, 45, 70)
+MainStroke.Parent = Main
 
-Instance.new("UICorner", mainFrame).CornerRadius =
-UDim.new(0, 10)
-
---==================================================
+-- =========================================================
 -- BACKGROUND
---==================================================
+-- =========================================================
 
-local backgroundImage = Instance.new("ImageLabel")
-backgroundImage.Name = "BackgroundImage"
-backgroundImage.Size = UDim2.new(1, 0, 1, 0)
-backgroundImage.Position = UDim2.new(0, 0, 0, 0)
-backgroundImage.BackgroundTransparency = 1
-backgroundImage.Image = "rbxassetid://131039661990217"
-backgroundImage.ImageTransparency = 0
-backgroundImage.ScaleType = Enum.ScaleType.Stretch
-backgroundImage.ZIndex = 0
-backgroundImage.Parent = mainFrame
+local Background = Instance.new("ImageLabel")
+Background.Name = "Background"
+Background.Size = UDim2.new(1, 0, 1, 0)
+Background.BackgroundTransparency = 1
+Background.Image = IMAGE_ID
+Background.ImageTransparency = 0.72
+Background.ScaleType = Enum.ScaleType.Crop
+Background.ZIndex = 0
+Background.Parent = Main
 
-Instance.new("UICorner", backgroundImage).CornerRadius =
-UDim.new(0, 10)
+local BackgroundCorner = Instance.new("UICorner")
+BackgroundCorner.CornerRadius = UDim.new(0, 12)
+BackgroundCorner.Parent = Background
 
---==================================================
--- BORDER
---==================================================
+-- =========================================================
+-- TITLE
+-- =========================================================
 
-local mainStroke = Instance.new("UIStroke")
-mainStroke.Thickness = 3
-mainStroke.Parent = mainFrame
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Size = UDim2.new(1, -70, 0, 25)
+Title.Position = UDim2.new(0, 8, 0, 5)
+Title.BackgroundTransparency = 1
+Title.Text = "🌪️ by XR 🌪️"
+Title.TextColor3 = Color3.fromRGB(255, 220, 40)
+Title.TextSize = 16
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.ZIndex = 10
+Title.Parent = Main
 
---==================================================
--- TITLE BAR
---==================================================
-
-local titleBar = Instance.new("Frame")
-titleBar.Name = "TitleBar"
-titleBar.Size = UDim2.new(1, 0, 0, 32)
-titleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-titleBar.BackgroundTransparency = 0.35
-titleBar.BorderSizePixel = 0
-titleBar.ZIndex = 5
-titleBar.Parent = mainFrame
-
-Instance.new("UICorner", titleBar).CornerRadius =
-UDim.new(0, 10)
-
-local titleStroke = Instance.new("UIStroke")
-titleStroke.Thickness = 2
-titleStroke.Parent = titleBar
-
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -65, 1, 0)
-titleLabel.Position = UDim2.new(0, 8, 0, 0)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "🌪 by XR 🌪"
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.Font = Enum.Font.SourceSansBold
-titleLabel.TextSize = 11
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.ZIndex = 6
-titleLabel.Parent = titleBar
-
---==================================================
--- MINIMIZE
---==================================================
-
-local minBtn = Instance.new("TextButton")
-minBtn.Size = UDim2.new(0, 23, 0, 23)
-minBtn.Position = UDim2.new(1, -50, 0, 4)
-minBtn.BackgroundColor3 = Color3.fromRGB(0, 110, 255)
-minBtn.BackgroundTransparency = 0.45
-minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-minBtn.Font = Enum.Font.SourceSansBold
-minBtn.Text = "-"
-minBtn.TextSize = 14
-minBtn.ZIndex = 6
-minBtn.Parent = titleBar
-
-Instance.new("UICorner", minBtn).CornerRadius =
-UDim.new(0, 5)
-
---==================================================
+-- =========================================================
 -- CLOSE
---==================================================
+-- =========================================================
 
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 23, 0, 23)
-closeBtn.Position = UDim2.new(1, -26, 0, 4)
-closeBtn.BackgroundColor3 = Color3.fromRGB(220, 0, 0)
-closeBtn.BackgroundTransparency = 0.45
-closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeBtn.Font = Enum.Font.SourceSansBold
-closeBtn.Text = "X"
-closeBtn.TextSize = 12
-closeBtn.ZIndex = 6
-closeBtn.Parent = titleBar
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 25, 0, 25)
+CloseButton.Position = UDim2.new(1, -30, 0, 5)
+CloseButton.BackgroundColor3 = Color3.fromRGB(170, 25, 45)
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.new(1, 1, 1)
+CloseButton.TextSize = 14
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.ZIndex = 20
+CloseButton.Parent = Main
 
-Instance.new("UICorner", closeBtn).CornerRadius =
-UDim.new(0, 5)
+Instance.new("UICorner", CloseButton).CornerRadius =
+	UDim.new(0, 7)
 
---==================================================
--- CONTENT
---==================================================
+-- =========================================================
+-- MINIMIZE
+-- =========================================================
 
-local contentFrame = Instance.new("Frame")
-contentFrame.Name = "ContentFrame"
-contentFrame.Size = UDim2.new(1, 0, 1, -32)
-contentFrame.Position = UDim2.new(0, 0, 0, 32)
-contentFrame.BackgroundTransparency = 1
-contentFrame.ZIndex = 2
-contentFrame.Parent = mainFrame
+local MinButton = Instance.new("TextButton")
+MinButton.Name = "MinimizeButton"
+MinButton.Size = UDim2.new(0, 25, 0, 25)
+MinButton.Position = UDim2.new(1, -60, 0, 5)
+MinButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+MinButton.Text = "-"
+MinButton.TextColor3 = Color3.new(1, 1, 1)
+MinButton.TextSize = 18
+MinButton.Font = Enum.Font.GothamBold
+MinButton.ZIndex = 20
+MinButton.Parent = Main
 
---==================================================
--- TARGET BUTTON
---==================================================
+Instance.new("UICorner", MinButton).CornerRadius =
+	UDim.new(0, 7)
 
-local targetDropdownBtn = Instance.new("TextButton")
-targetDropdownBtn.Name = "TargetDropdown"
-targetDropdownBtn.Size = UDim2.new(0.90, 0, 0, 27)
-targetDropdownBtn.Position = UDim2.new(0.05, 0, 0.03, 0)
-targetDropdownBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-targetDropdownBtn.BackgroundTransparency = 0.20
-targetDropdownBtn.BorderSizePixel = 0
-targetDropdownBtn.Text = "Target: Me"
-targetDropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-targetDropdownBtn.Font = Enum.Font.SourceSansBold
-targetDropdownBtn.TextSize = 11
-targetDropdownBtn.TextTruncate = Enum.TextTruncate.AtEnd
-targetDropdownBtn.ZIndex = 10
-targetDropdownBtn.Parent = contentFrame
+-- =========================================================
+-- TARGET
+-- =========================================================
 
-Instance.new("UICorner", targetDropdownBtn).CornerRadius =
-UDim.new(0, 6)
+local TargetButton = Instance.new("TextButton")
+TargetButton.Name = "TargetButton"
+TargetButton.Size = UDim2.new(1, -16, 0, 27)
+TargetButton.Position = UDim2.new(0, 8, 0, 35)
+TargetButton.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
+TargetButton.Text = "Target: Me ▼"
+TargetButton.TextColor3 = Color3.new(1, 1, 1)
+TargetButton.TextSize = 12
+TargetButton.Font = Enum.Font.GothamBold
+TargetButton.ZIndex = 20
+TargetButton.Parent = Main
 
-local targetStroke = Instance.new("UIStroke")
-targetStroke.Thickness = 1.5
-targetStroke.Parent = targetDropdownBtn
+Instance.new("UICorner", TargetButton).CornerRadius =
+	UDim.new(0, 7)
 
---==================================================
+local TargetStroke = Instance.new("UIStroke")
+TargetStroke.Thickness = 1
+TargetStroke.Color = Color3.fromRGB(255, 45, 70)
+TargetStroke.Parent = TargetButton
+
+-- =========================================================
+-- PROFILE CARD
+-- =========================================================
+
+local ProfileCard = Instance.new("Frame")
+ProfileCard.Name = "ProfileCard"
+ProfileCard.Size = UDim2.new(0, 190, 0, 58)
+ProfileCard.Position = UDim2.new(0, 5, 0, 64)
+ProfileCard.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+ProfileCard.BackgroundTransparency = 0.12
+ProfileCard.BorderSizePixel = 0
+ProfileCard.Visible = true
+ProfileCard.ZIndex = 25
+ProfileCard.Parent = Main
+
+Instance.new("UICorner", ProfileCard).CornerRadius =
+	UDim.new(0, 8)
+
+local ProfileStroke = Instance.new("UIStroke")
+ProfileStroke.Thickness = 1.5
+ProfileStroke.Color = Color3.fromRGB(255, 220, 40)
+ProfileStroke.Parent = ProfileCard
+
+-- =========================================================
+-- AVATAR
+-- =========================================================
+
+local Avatar = Instance.new("ImageLabel")
+Avatar.Name = "Avatar"
+Avatar.Size = UDim2.new(0, 46, 0, 46)
+Avatar.Position = UDim2.new(0, 6, 0, 6)
+Avatar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+Avatar.BorderSizePixel = 0
+Avatar.ZIndex = 26
+Avatar.Parent = ProfileCard
+
+Instance.new("UICorner", Avatar).CornerRadius =
+	UDim.new(1, 0)
+
+-- =========================================================
+-- DISPLAY NAME
+-- =========================================================
+
+local DisplayNameLabel = Instance.new("TextLabel")
+DisplayNameLabel.Name = "DisplayName"
+DisplayNameLabel.Size = UDim2.new(1, -62, 0, 22)
+DisplayNameLabel.Position = UDim2.new(0, 58, 0, 7)
+DisplayNameLabel.BackgroundTransparency = 1
+DisplayNameLabel.TextColor3 = Color3.fromRGB(255, 220, 40)
+DisplayNameLabel.TextSize = 13
+DisplayNameLabel.Font = Enum.Font.GothamBold
+DisplayNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+DisplayNameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+DisplayNameLabel.ZIndex = 26
+DisplayNameLabel.Parent = ProfileCard
+
+-- =========================================================
+-- USERNAME
+-- =========================================================
+
+local UsernameLabel = Instance.new("TextLabel")
+UsernameLabel.Name = "Username"
+UsernameLabel.Size = UDim2.new(1, -62, 0, 20)
+UsernameLabel.Position = UDim2.new(0, 58, 0, 30)
+UsernameLabel.BackgroundTransparency = 1
+UsernameLabel.TextColor3 = Color3.fromRGB(210, 210, 220)
+UsernameLabel.TextSize = 11
+UsernameLabel.Font = Enum.Font.Gotham
+UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+UsernameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+UsernameLabel.ZIndex = 26
+UsernameLabel.Parent = ProfileCard
+
+-- =========================================================
 -- DROPDOWN
---==================================================
+-- =========================================================
 
-local dropdownList = Instance.new("ScrollingFrame")
-dropdownList.Name = "DropdownList"
-dropdownList.Size = UDim2.new(0.90, 0, 0, 105)
-dropdownList.Position = UDim2.new(0.05, 0, 0.20, 0)
-dropdownList.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-dropdownList.BackgroundTransparency = 0.05
-dropdownList.BorderSizePixel = 0
-dropdownList.ScrollBarThickness = 3
-dropdownList.CanvasSize = UDim2.new(0, 0, 0, 0)
-dropdownList.AutomaticCanvasSize = Enum.AutomaticSize.Y
-dropdownList.Visible = false
-dropdownList.ZIndex = 20
-dropdownList.Parent = contentFrame
+local Dropdown = Instance.new("ScrollingFrame")
+Dropdown.Name = "TargetDropdown"
+Dropdown.Size = UDim2.new(1, -16, 0, 125)
+Dropdown.Position = UDim2.new(0, 8, 0, 64)
+Dropdown.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+Dropdown.BorderSizePixel = 0
+Dropdown.ScrollBarThickness = 3
+Dropdown.Visible = false
+Dropdown.ZIndex = 100
+Dropdown.CanvasSize = UDim2.new(0, 0, 0, 0)
+Dropdown.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Dropdown.Parent = Main
 
-Instance.new("UICorner", dropdownList).CornerRadius =
-UDim.new(0, 6)
+Instance.new("UICorner", Dropdown).CornerRadius =
+	UDim.new(0, 8)
 
-local dropdownLayout = Instance.new("UIListLayout")
-dropdownLayout.SortOrder = Enum.SortOrder.LayoutOrder
-dropdownLayout.Padding = UDim.new(0, 3)
-dropdownLayout.Parent = dropdownList
+local DropdownStroke = Instance.new("UIStroke")
+DropdownStroke.Thickness = 1.5
+DropdownStroke.Color = Color3.fromRGB(255, 45, 70)
+DropdownStroke.Parent = Dropdown
 
---==================================================
--- UPDATE PLAYER LIST
---==================================================
+local DropdownLayout = Instance.new("UIListLayout")
+DropdownLayout.Padding = UDim.new(0, 4)
+DropdownLayout.SortOrder = Enum.SortOrder.LayoutOrder
+DropdownLayout.Parent = Dropdown
 
-local function updateDropdownList()
+-- =========================================================
+-- GET AVATAR
+-- =========================================================
 
-for _, child in ipairs(dropdownList:GetChildren()) do
-if child:IsA("TextButton") then
-child:Destroy()
-end
-end
+local function getAvatar(userId)
 
-local options = {
-"Me",
-}
+	local success, image = pcall(function()
 
-for _, p in ipairs(Players:GetPlayers()) do
+		return Players:GetUserThumbnailAsync(
+			userId,
+			Enum.ThumbnailType.HeadShot,
+			Enum.ThumbnailSize.Size150x150
+		)
 
-if p ~= LocalPlayer then
-table.insert(options, p.DisplayName)
-end
+	end)
 
-end
+	if success and image then
+		return image
+	end
 
-for _, opt in ipairs(options) do
-
-local optBtn = Instance.new("TextButton")
-
-optBtn.Size = UDim2.new(1, -8, 0, 25)
-optBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-optBtn.BackgroundTransparency = 0.10
-optBtn.BorderSizePixel = 0
-optBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-optBtn.Font = Enum.Font.SourceSansBold
-optBtn.TextSize = 11
-
--- يخلي الاسم كامل بدون قص
-optBtn.TextTruncate = Enum.TextTruncate.None
-optBtn.TextWrapped = false
-optBtn.TextXAlignment = Enum.TextXAlignment.Center
-
-optBtn.Text = opt
-optBtn.ZIndex = 21
-optBtn.Parent = dropdownList
-
-Instance.new("UICorner", optBtn).CornerRadius =
-UDim.new(0, 4)
-
-optBtn.Activated:Connect(function()
-
-if opt == "Me" then
-
-selectedTargetMode = "Me"        
-targetPlayer = LocalPlayer        
-
-targetDropdownBtn.Text =        
-	"Target: Me"
-
-elseif opt == "Random Map" then
-
-selectedTargetMode = "Random"        
-targetPlayer = nil        
-
-targetDropdownBtn.Text =        
-	"Target: Random"
-
-else
-
-selectedTargetMode = "Player"        
-
-for _, p in ipairs(Players:GetPlayers()) do        
-
-	if p.DisplayName == opt then        
-
-		targetPlayer = p        
-		break        
-	end        
-end        
-
-targetDropdownBtn.Text =        
-	"Target: " .. opt
+	return ""
 
 end
 
-dropdownList.Visible = false
+-- =========================================================
+-- SHOW PROFILE
+-- =========================================================
+
+local function showProfile(player)
+
+	if not player then
+
+		ProfileCard.Visible = false
+		return
+
+	end
+
+	ProfileCard.Visible = true
+
+	DisplayNameLabel.Text =
+		player.DisplayName
+
+	UsernameLabel.Text =
+		"@" .. player.Name
+
+	task.spawn(function()
+
+		local image =
+			getAvatar(player.UserId)
+
+		if targetPlayer == player then
+			Avatar.Image = image
+		end
+
+	end)
+
+end
+
+-- =========================================================
+-- UPDATE TARGET
+-- =========================================================
+
+local function updateTargetText()
+
+	if selectedTargetMode == "Me" then
+
+		targetPlayer =
+			LocalPlayer
+
+		TargetButton.Text =
+			"Target: Me ▼"
+
+		showProfile(LocalPlayer)
+
+	elseif selectedTargetMode == "Random Map" then
+
+		TargetButton.Text =
+			"Target: Random Map ▼"
+
+		ProfileCard.Visible = false
+
+	elseif selectedTargetMode == "Player"
+		and targetPlayer then
+
+		TargetButton.Text =
+			"Target: "
+			.. targetPlayer.DisplayName
+			.. " ▼"
+
+		showProfile(targetPlayer)
+
+	end
+
+end
+
+-- =========================================================
+-- CREATE PLAYER BUTTON
+-- =========================================================
+
+local function createPlayerButton(player, order)
+
+	local Button =
+		Instance.new("TextButton")
+
+	Button.Name =
+		"Player_" .. player.UserId
+
+	Button.Size =
+		UDim2.new(1, -8, 0, 34)
+
+	Button.BackgroundColor3 =
+		Color3.fromRGB(22, 22, 30)
+
+	Button.Text = ""
+
+	Button.BorderSizePixel = 0
+	Button.LayoutOrder = order
+	Button.ZIndex = 101
+	Button.Parent = Dropdown
+
+	Instance.new("UICorner", Button).CornerRadius =
+		UDim.new(0, 6)
+
+	local SmallAvatar =
+		Instance.new("ImageLabel")
+
+	SmallAvatar.Size =
+		UDim2.new(0, 28, 0, 28)
+
+	SmallAvatar.Position =
+		UDim2.new(0, 4, 0, 3)
+
+	SmallAvatar.BackgroundTransparency = 1
+	SmallAvatar.ZIndex = 102
+	SmallAvatar.Parent = Button
+
+	Instance.new("UICorner", SmallAvatar).CornerRadius =
+		UDim.new(1, 0)
+
+	local NameLabel =
+		Instance.new("TextLabel")
+
+	NameLabel.Size =
+		UDim2.new(1, -40, 0, 17)
+
+	NameLabel.Position =
+		UDim2.new(0, 38, 0, 2)
+
+	NameLabel.BackgroundTransparency = 1
+
+	NameLabel.Text =
+		player.DisplayName
+
+	NameLabel.TextColor3 =
+		Color3.new(1, 1, 1)
+
+	NameLabel.TextSize = 11
+	NameLabel.Font = Enum.Font.GothamBold
+
+	NameLabel.TextXAlignment =
+		Enum.TextXAlignment.Left
+
+	NameLabel.TextTruncate =
+		Enum.TextTruncate.AtEnd
+
+	NameLabel.ZIndex = 102
+	NameLabel.Parent = Button
+
+	local UserLabel =
+		Instance.new("TextLabel")
+
+	UserLabel.Size =
+		UDim2.new(1, -40, 0, 13)
+
+	UserLabel.Position =
+		UDim2.new(0, 38, 0, 18)
+
+	UserLabel.BackgroundTransparency = 1
+
+	UserLabel.Text =
+		"@" .. player.Name
+
+	UserLabel.TextColor3 =
+		Color3.fromRGB(160, 160, 170)
+
+	UserLabel.TextSize = 8
+	UserLabel.Font = Enum.Font.Gotham
+
+	UserLabel.TextXAlignment =
+		Enum.TextXAlignment.Left
+
+	UserLabel.ZIndex = 102
+	UserLabel.Parent = Button
+
+	task.spawn(function()
+
+		local image =
+			getAvatar(player.UserId)
+
+		if player.Parent
+			and SmallAvatar.Parent then
+
+			SmallAvatar.Image = image
+
+		end
+
+	end)
+
+	Button.MouseButton1Click:Connect(function()
+
+		if player.Parent then
+
+			targetPlayer =
+				player
+
+			selectedTargetMode =
+				"Player"
+
+			updateTargetText()
+
+			Dropdown.Visible = false
+
+		end
+
+	end)
+
+end
+
+-- =========================================================
+-- REFRESH TARGETS
+-- =========================================================
+
+local function refreshTargets()
+
+	for _, child in ipairs(Dropdown:GetChildren()) do
+
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+
+	end
+
+	local playerList = {}
+
+	for _, player in ipairs(Players:GetPlayers()) do
+
+		if player ~= LocalPlayer then
+			table.insert(playerList, player)
+		end
+
+	end
+
+	table.sort(
+		playerList,
+		function(a, b)
+
+			return string.lower(a.DisplayName)
+				< string.lower(b.DisplayName)
+
+		end
+	)
+
+	for index, player in ipairs(playerList) do
+
+		createPlayerButton(
+			player,
+			index
+		)
+
+	end
+
+	Dropdown.CanvasSize =
+		UDim2.new(
+			0,
+			0,
+			0,
+			(#playerList * 38) + 6
+		)
+
+end
+
+-- =========================================================
+-- TARGET BUTTON
+-- =========================================================
+
+TargetButton.MouseButton1Click:Connect(function()
+
+	Dropdown.Visible =
+		not Dropdown.Visible
+
+	if Dropdown.Visible then
+		refreshTargets()
+	end
 
 end)
 
-end
+-- =========================================================
+-- RANDOM MAP
+-- =========================================================
+
+local RandomButton =
+	Instance.new("TextButton")
+
+RandomButton.Name =
+	"RandomMapButton"
+
+RandomButton.Size =
+	UDim2.new(1, -16, 0, 28)
+
+RandomButton.Position =
+	UDim2.new(0, 8, 0, 127)
+
+RandomButton.BackgroundColor3 =
+	Color3.fromRGB(35, 35, 45)
+
+RandomButton.Text =
+	"🎲 RANDOM MAP"
+
+RandomButton.TextColor3 =
+	Color3.new(1, 1, 1)
+
+RandomButton.TextSize = 9
+RandomButton.Font = Enum.Font.GothamBold
+RandomButton.ZIndex = 20
+RandomButton.Parent = Main
+
+Instance.new("UICorner", RandomButton).CornerRadius =
+	UDim.new(0, 7)
+
+RandomButton.MouseButton1Click:Connect(function()
+
+	selectedTargetMode =
+		"Random Map"
+
+	targetPlayer = nil
+
+	updateTargetText()
+
+	Dropdown.Visible = false
+
+end)
+
+-- =========================================================
+-- ACTION BUTTONS
+-- =========================================================
+
+local TornadoButton =
+	Instance.new("TextButton")
+
+TornadoButton.Name =
+	"TornadoButton"
+
+TornadoButton.Size =
+	UDim2.new(0.48, -5, 0, 31)
+
+TornadoButton.Position =
+	UDim2.new(0, 8, 0, 161)
+
+TornadoButton.BackgroundColor3 =
+	Color3.fromRGB(35, 25, 35)
+
+TornadoButton.Text =
+	"🌪️ TORNADO: OFF"
+
+TornadoButton.TextColor3 =
+	Color3.new(1, 1, 1)
+
+TornadoButton.TextSize = 9
+TornadoButton.Font = Enum.Font.GothamBold
+TornadoButton.ZIndex = 20
+TornadoButton.Parent = Main
+
+Instance.new("UICorner", TornadoButton).CornerRadius =
+	UDim.new(0, 7)
+
+local BlastButton =
+	Instance.new("TextButton")
+
+BlastButton.Name =
+	"BlastButton"
+
+BlastButton.Size =
+	UDim2.new(0.48, -5, 0, 31)
+
+BlastButton.Position =
+	UDim2.new(0.52, 0, 0, 161)
+
+BlastButton.BackgroundColor3 =
+	Color3.fromRGB(100, 25, 30)
+
+BlastButton.Text =
+	"💥 BLAST"
+
+BlastButton.TextColor3 =
+	Color3.new(1, 1, 1)
+
+BlastButton.TextSize = 10
+BlastButton.Font = Enum.Font.GothamBold
+BlastButton.ZIndex = 20
+BlastButton.Parent = Main
+
+Instance.new("UICorner", BlastButton).CornerRadius =
+	UDim.new(0, 7)
+
+-- =========================================================
+-- ME BUTTON
+-- =========================================================
+
+local MeButton =
+	Instance.new("TextButton")
+
+MeButton.Name =
+	"MeButton"
+
+MeButton.Size =
+	UDim2.new(0.31, -4, 0, 27)
+
+MeButton.Position =
+	UDim2.new(0, 8, 0, 197)
+
+MeButton.BackgroundColor3 =
+	Color3.fromRGB(55, 45, 20)
+
+MeButton.Text =
+	"👤 ME"
+
+MeButton.TextColor3 =
+	Color3.new(1, 1, 1)
+
+MeButton.TextSize = 9
+MeButton.Font = Enum.Font.GothamBold
+MeButton.ZIndex = 20
+MeButton.Parent = Main
+
+Instance.new("UICorner", MeButton).CornerRadius =
+	UDim.new(0, 7)
+
+local MeStroke =
+	Instance.new("UIStroke")
+
+MeStroke.Thickness = 1
+MeStroke.Color =
+	Color3.fromRGB(255, 220, 40)
+
+MeStroke.Parent = MeButton
+
+-- =========================================================
+-- ORBIT BUTTON
+-- =========================================================
+
+local OrbitButton =
+	Instance.new("TextButton")
+
+OrbitButton.Name =
+	"OrbitButton"
+
+OrbitButton.Size =
+	UDim2.new(0.31, -4, 0, 27)
+
+OrbitButton.Position =
+	UDim2.new(0.345, 0, 0, 197)
+
+OrbitButton.BackgroundColor3 =
+	Color3.fromRGB(35, 55, 75)
+
+OrbitButton.Text =
+	"🌀 ORBIT"
+
+OrbitButton.TextColor3 =
+	Color3.new(1, 1, 1)
+
+OrbitButton.TextSize = 9
+OrbitButton.Font = Enum.Font.GothamBold
+OrbitButton.ZIndex = 20
+OrbitButton.Parent = Main
+
+Instance.new("UICorner", OrbitButton).CornerRadius =
+	UDim.new(0, 7)
+
+-- =========================================================
+-- TARGET ROOT
+-- =========================================================
+
+local function getTargetRoot()
+
+	if selectedTargetMode == "Random Map" then
+		return nil
+	end
+
+	local player =
+		targetPlayer or LocalPlayer
+
+	if player and player.Character then
+
+		return player.Character:
+			FindFirstChild("HumanoidRootPart")
+
+	end
+
+	return nil
 
 end
 
-updateDropdownList()
+local function getTargetPosition()
 
---==================================================
--- PLAYER JOIN / LEAVE
---==================================================
+	if selectedTargetMode ==
+		"Random Map" then
+
+		return randomTargetPos
+
+	end
+
+	local root =
+		getTargetRoot()
+
+	if root then
+		return root.Position
+	end
+
+	return Vector3.zero
+
+end
+
+-- =========================================================
+-- VALID PROP
+-- =========================================================
+
+local function isValidProp(part)
+
+	if not part
+		or not part:IsA("BasePart")
+		or not part:IsDescendantOf(Workspace)
+		or part.Anchored then
+
+		return false
+
+	end
+
+	local model =
+		part:FindFirstAncestorOfClass("Model")
+
+	if model
+		and model:FindFirstChildOfClass("Humanoid") then
+
+		return false
+
+	end
+
+	return true
+
+end
+
+-- =========================================================
+-- RANGE
+-- =========================================================
+
+local function isWithinRange(part)
+
+	if not part
+		or not part:IsDescendantOf(Workspace) then
+
+		return false
+
+	end
+
+	return
+		(part.Position - getTargetPosition()).Magnitude
+		<= 1000
+
+end
+
+-- =========================================================
+-- ATTACH PHYSICS
+-- =========================================================
+
+local function attachPhysicsToProp(part)
+
+	if not isValidProp(part) then
+		return
+	end
+
+	if activeProps[part] then
+		return
+	end
+
+	pcall(function()
+
+		if SetNetworkOwner then
+
+			SetNetworkOwner:FireServer(
+				part,
+				true
+			)
+
+		end
+
+	end)
+
+	local attachment =
+		Instance.new("Attachment")
+
+	attachment.Name =
+		"XR_TornadoAttachment"
+
+	attachment.Parent =
+		part
+
+	local AO =
+		Instance.new("AlignOrientation")
+
+	AO.Name =
+		"XR_TornadoOrientation"
+
+	AO.Mode =
+		Enum.OrientationAlignmentMode.OneAttachment
+
+	AO.Attachment0 =
+		attachment
+
+	AO.MaxTorque =
+		math.huge
+
+	AO.MaxAngularVelocity =
+		math.huge
+
+	AO.Responsiveness =
+		200
+
+	AO.Parent =
+		part
+
+	local AP =
+		Instance.new("AlignPosition")
+
+	AP.Name =
+		"XR_TornadoPosition"
+
+	AP.Mode =
+		Enum.PositionAlignmentMode.OneAttachment
+
+	AP.Attachment0 =
+		attachment
+
+	AP.MaxForce =
+		math.huge
+
+	AP.MaxVelocity =
+		math.huge
+
+	AP.Responsiveness =
+		200
+
+	AP.RigidityEnabled =
+		false
+
+	AP.Parent =
+		part
+
+	globalItemCount += 1
+
+	activeProps[part] = {
+
+		AP = AP,
+		AO = AO,
+		Attachment = attachment,
+
+		Section =
+			((globalItemCount - 1) % 3) + 1,
+
+		SubSlot =
+			((globalItemCount - 1) % 10),
+
+		AngleOffset =
+			(globalItemCount * 0.75)
+			% (math.pi * 2)
+
+	}
+
+end
+
+-- =========================================================
+-- GRAB DETECTOR
+-- =========================================================
+
+Workspace.ChildAdded:Connect(function(child)
+
+	if child.Name ~= "GrabParts" then
+		return
+	end
+
+	task.spawn(function()
+
+		local grabPart =
+			child:WaitForChild(
+				"GrabPart",
+				2
+			)
+
+		if not grabPart then
+			return
+		end
+
+		local weld =
+			grabPart:FindFirstChildOfClass(
+				"WeldConstraint"
+			)
+
+		if not weld then
+
+			weld =
+				grabPart:WaitForChild(
+					"WeldConstraint",
+					2
+				)
+
+		end
+
+		if not weld then
+			return
+		end
+
+		local part =
+			weld.Part1
+
+		if isValidProp(part) then
+			attachPhysicsToProp(part)
+		end
+
+	end)
+
+end)
+
+-- =========================================================
+-- TORNADO
+-- =========================================================
+
+local function toggleTornado()
+
+	if isActive then
+
+		isActive = false
+
+		TornadoButton.Text =
+			"🌪️ TORNADO: OFF"
+
+	else
+
+		isActive = true
+		isMeActive = false
+		isOrbitActive = false
+
+		TornadoButton.Text =
+			"🌪️ TORNADO: ON"
+
+	end
+
+end
+
+TornadoButton.Activated:Connect(
+	toggleTornado
+)
+
+-- =========================================================
+-- ME
+-- =========================================================
+
+local function toggleMe()
+
+	isMeActive =
+		not isMeActive
+
+	if isMeActive then
+
+		isActive = false
+		isOrbitActive = false
+
+		selectedTargetMode =
+			"Me"
+
+		targetPlayer =
+			LocalPlayer
+
+		updateTargetText()
+
+		MeButton.Text =
+			"👤 ME: ON"
+
+	else
+
+		MeButton.Text =
+			"👤 ME"
+
+	end
+
+end
+
+MeButton.Activated:Connect(
+	toggleMe
+)
+
+-- =========================================================
+-- ORBIT
+-- =========================================================
+
+local function toggleOrbit()
+
+	isOrbitActive =
+		not isOrbitActive
+
+	if isOrbitActive then
+
+		isActive = false
+		isMeActive = false
+
+		OrbitButton.Text =
+			"🌀 ORBIT: ON"
+
+	else
+
+		OrbitButton.Text =
+			"🌀 ORBIT"
+
+	end
+
+end
+
+OrbitButton.Activated:Connect(
+	toggleOrbit
+)
+
+-- =========================================================
+-- BLAST
+-- =========================================================
+
+local function triggerCompressAndBlast()
+
+	if not isActive
+		or isCompressing then
+
+		return
+
+	end
+
+	local root =
+		getTargetRoot()
+
+	if not root then
+		return
+	end
+
+	isCompressing = true
+
+	local savedPositions = {}
+
+	for part, data in pairs(activeProps) do
+
+		if part
+			and part:IsDescendantOf(Workspace)
+			and data.AP
+			and isWithinRange(part) then
+
+			savedPositions[part] =
+				data.AP.Position
+
+		end
+
+	end
+
+	local centerPoint =
+		root.Position
+
+	for part, data in pairs(activeProps) do
+
+		if part
+			and part:IsDescendantOf(Workspace)
+			and data.AP
+			and savedPositions[part] then
+
+			data.AP.Position =
+				centerPoint
+
+		end
+
+	end
+
+	task.wait(1)
+
+	local explosion =
+		Instance.new("Explosion")
+
+	explosion.Position =
+		centerPoint
+
+	explosion.BlastRadius =
+		150
+
+	explosion.BlastPressure =
+		0
+
+	explosion.DestroyJointRadiusPercent =
+		0
+
+	explosion.Parent =
+		Workspace
+
+	for part, data in pairs(activeProps) do
+
+		if part
+			and part:IsDescendantOf(Workspace)
+			and data.AP
+			and savedPositions[part] then
+
+			data.AP.Position =
+				savedPositions[part]
+
+		end
+
+	end
+
+	isCompressing = false
+
+end
+
+BlastButton.Activated:Connect(
+	triggerCompressAndBlast
+)
+
+-- =========================================================
+-- PLAYER EVENTS
+-- =========================================================
 
 Players.PlayerAdded:Connect(function()
 
-task.wait(0.2)
+	task.wait(0.2)
 
-updateDropdownList()
+	if Dropdown.Visible then
+		refreshTargets()
+	end
 
 end)
 
 Players.PlayerRemoving:Connect(function(player)
 
-if player == targetPlayer then
+	if targetPlayer == player then
 
-selectedTargetMode = "Me"
-targetPlayer = LocalPlayer
+		targetPlayer =
+			LocalPlayer
 
-targetDropdownBtn.Text =
-"Target: Me"
+		selectedTargetMode =
+			"Me"
 
-end
+		updateTargetText()
 
-task.wait(0.1)
+	end
 
-updateDropdownList()
+	if Dropdown.Visible then
 
-end)
+		task.wait(0.1)
+		refreshTargets()
 
---==================================================
--- OPEN DROPDOWN
---==================================================
-
-targetDropdownBtn.Activated:Connect(function()
-
-dropdownList.Visible =
-not dropdownList.Visible
-
-if dropdownList.Visible then
-updateDropdownList()
-end
+	end
 
 end)
 
---==================================================
--- GET TARGET ROOT
---==================================================
+-- =========================================================
+-- KEYBINDS
+-- =========================================================
 
-local function getTargetRoot()
+UserInputService.InputBegan:Connect(
+	function(input, processed)
 
-if selectedTargetMode == "Me" then
+		if processed then
+			return
+		end
 
-local char = LocalPlayer.Character
+		if input.KeyCode ==
+			Enum.KeyCode.R then
 
-if char then
-return char:FindFirstChild("HumanoidRootPart")
-end
+			toggleTornado()
 
-elseif selectedTargetMode == "Player" then
+		elseif input.KeyCode ==
+			Enum.KeyCode.O then
 
-if targetPlayer
-and targetPlayer.Parent then
+			toggleOrbit()
 
-local char = targetPlayer.Character
+		elseif input.KeyCode ==
+			Enum.KeyCode.T then
 
-if char then
-return char:FindFirstChild("HumanoidRootPart")
-end
+			triggerCompressAndBlast()
 
-end
+		elseif input.KeyCode ==
+			Enum.KeyCode.M then
 
-elseif selectedTargetMode == "Random" then
+			MinButton:Activate()
 
-local possible = {}
+		elseif input.KeyCode ==
+			Enum.KeyCode.F then
 
-for _, p in ipairs(Players:GetPlayers()) do
+			toggleMe()
 
-if p ~= LocalPlayer
-and p.Character then
+		end
 
-local root =        
-	p.Character:FindFirstChild(        
-		"HumanoidRootPart"        
-	)        
-
-if root then        
-	table.insert(possible, root)        
-end
-
-end
-
-end
-
-if #possible > 0 then
-
-return possible[
-math.random(1, #possible)
-]
-
-end
-
-end
-
-return nil
-
-end
-
---==================================================
--- RANGE
---==================================================
-
-local function isWithinRange(part)
-
-local root = getTargetRoot()
-
-if not root or not part then
-return false
-end
-
-local distance =
-(part.Position - root.Position).Magnitude
-
-return distance <= MAX_DISTANCE
-
-end
-
---==================================================
--- TORNADO BUTTON
---==================================================
-
-local btn = Instance.new("TextButton")
-btn.Name = "TornadoButton"
-btn.Size = UDim2.new(0.90, 0, 0, 35)
-btn.Position = UDim2.new(0.05, 0, 0.48, 0)
-btn.BackgroundTransparency = 1
-btn.BorderSizePixel = 0
-btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-btn.Font = Enum.Font.SourceSansBold
-btn.Text = "🌪 OFF 🌪"
-btn.TextScaled = true
-btn.ZIndex = 3
-btn.Parent = contentFrame
-
-Instance.new("UICorner", btn).CornerRadius =
-UDim.new(0, 8)
-
---==================================================
--- BLAST BUTTON
---==================================================
-
-local blastBtn = Instance.new("TextButton")
-blastBtn.Name = "BlastButton"
-blastBtn.Size = UDim2.new(0.90, 0, 0, 35)
-blastBtn.Position = UDim2.new(0.05, 0, 0.73, 0)
-blastBtn.BackgroundTransparency = 1
-blastBtn.BorderSizePixel = 0
-blastBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-blastBtn.Font = Enum.Font.SourceSansBold
-blastBtn.Text = "💥"
-blastBtn.TextScaled = true
-blastBtn.ZIndex = 3
-blastBtn.Parent = contentFrame
-
-Instance.new("UICorner", blastBtn).CornerRadius =
-UDim.new(0, 8)
-
---==================================================
--- RGB BORDER
---==================================================
-
-local colorTime = 0
-
-RunService.RenderStepped:Connect(function(dt)
-
-colorTime += dt
-
-local wave =
-(math.sin(colorTime * 2) + 1) / 2
-
-mainStroke.Color =
-Color3.new(
-wave,
-0,
-1 - wave
+	end
 )
 
-titleStroke.Color =
-Color3.new(
-1 - wave,
-0,
-wave
+-- =========================================================
+-- MOVEMENT LOOP
+-- =========================================================
+
+RunService.Stepped:Connect(
+	function(_, deltaTime)
+
+		if selectedTargetMode ==
+			"Random Map" then
+
+			randomTimer += deltaTime
+
+			if randomTimer >= 4 then
+
+				randomTimer = 0
+
+				randomTargetPos =
+					Vector3.new(
+						math.random(-300, 300),
+						300,
+						math.random(-300, 300)
+					)
+
+			end
+
+		end
+
+		if isCompressing then
+			return
+		end
+
+		-- =================================================
+		-- TORNADO
+		-- =================================================
+
+		if isActive then
+
+			local targetPos =
+				getTargetPosition()
+
+			local t =
+				os.clock()
+
+			for part, data in pairs(activeProps) do
+
+				if part
+					and part:IsDescendantOf(Workspace)
+					and data.AP then
+
+					local section =
+						data.Section or 1
+
+					local slot =
+						data.SubSlot or 0
+
+					local offset =
+						data.AngleOffset or 0
+
+					local height
+
+					if section == 1 then
+						height = 10
+					elseif section == 2 then
+						height = 35
+					else
+						height = 60
+					end
+
+					local radius
+
+					if section == 1 then
+						radius = 18
+					elseif section == 2 then
+						radius = 13
+					else
+						radius = 8
+					end
+
+					local angle =
+						t * (3.5 + section * 0.7)
+						+ offset
+						+ slot * 0.45
+
+					local yWave =
+						math.sin(
+							t * 3 + slot
+						) * 4
+
+					local pos =
+						targetPos
+						+ Vector3.new(
+							math.cos(angle) * radius,
+							height + yWave,
+							math.sin(angle) * radius
+						)
+
+					data.AP.Position =
+						pos
+
+					data.AO.CFrame =
+						CFrame.lookAt(
+							part.Position,
+							targetPos +
+								Vector3.new(
+									0,
+									height,
+									0
+								)
+						)
+
+				end
+
+			end
+
+		-- =================================================
+		-- ME
+		-- =================================================
+
+		elseif isMeActive then
+
+			local targetPos =
+				LocalPlayer.Character
+				and LocalPlayer.Character:FindFirstChild(
+					"HumanoidRootPart"
+				)
+
+			if targetPos then
+
+				local center =
+					targetPos.Position
+
+				local t =
+					os.clock()
+
+				for part, data in pairs(activeProps) do
+
+					if part
+						and part:IsDescendantOf(Workspace)
+						and data.AP then
+
+						local section =
+							data.Section or 1
+
+						local slot =
+							data.SubSlot or 0
+
+						local radius =
+							10 + section * 5
+
+						local angle =
+							t * 2
+							+ slot * 0.8
+							+ (data.AngleOffset or 0)
+
+						local height =
+							8 + section * 8
+
+						local pos =
+							center
+							+ Vector3.new(
+								math.cos(angle) * radius,
+								height +
+									math.sin(
+										t * 2 + slot
+									) * 2,
+								math.sin(angle) * radius
+							)
+
+						data.AP.Position =
+							pos
+
+						data.AO.CFrame =
+							CFrame.lookAt(
+								part.Position,
+								center
+							)
+
+					end
+
+				end
+
+			end
+
+		-- =================================================
+		-- ORBIT
+		-- =================================================
+
+		elseif isOrbitActive then
+
+			local t =
+				os.clock()
+
+			local targetPos =
+				getTargetPosition()
+
+			for part, data in pairs(activeProps) do
+
+				if part
+					and part:IsDescendantOf(Workspace)
+					and data.AP then
+
+					local section =
+						data.Section or 1
+
+					local slot =
+						data.SubSlot or 0
+
+					local radius =
+						20 + section * 12
+
+					local height =
+						20 + section * 12
+
+					local angle =
+						t *
+						(2 + section * 0.5)
+						+ slot * 0.7
+						+ (
+							data.AngleOffset or 0
+						)
+
+					local pos =
+						targetPos
+						+ Vector3.new(
+							math.cos(angle) *
+								radius,
+
+							height +
+								math.sin(
+									t * 2 + slot
+								) * 3,
+
+							math.sin(angle) *
+								radius
+						)
+
+					data.AP.Position =
+						pos
+
+					data.AO.CFrame =
+						CFrame.Angles(
+							0,
+							angle,
+							0
+						)
+
+				end
+
+			end
+
+		end
+
+	end
 )
 
-targetStroke.Color =
-Color3.new(
-0,
-0.5 + wave * 0.5,
-1
-)
+-- =========================================================
+-- MINIMIZE
+-- =========================================================
+
+MinButton.MouseButton1Click:Connect(function()
+
+	minimized =
+		not minimized
+
+	if minimized then
+
+		Main.Size =
+			UDim2.new(
+				0,
+				220,
+				0,
+				38
+			)
+
+		for _, child in ipairs(Main:GetChildren()) do
+
+			if child ~= Title
+				and child ~= CloseButton
+				and child ~= MinButton
+				and child ~= MainCorner
+				and child ~= MainStroke
+				and child ~= Background
+				and child ~= BackgroundCorner then
+
+				if child:IsA("GuiObject") then
+					child.Visible = false
+				end
+
+			end
+
+		end
+
+		Title.Text =
+			"🌪️ XR HUB"
+
+	else
+
+		Main.Size =
+			UDim2.new(
+				0,
+				220,
+				0,
+				245
+			)
+
+		for _, child in ipairs(Main:GetChildren()) do
+
+			if child:IsA("GuiObject") then
+
+				if child ~= Background
+					and child ~= Title
+					and child ~= CloseButton
+					and child ~= MinButton then
+
+					child.Visible = true
+
+				end
+
+			end
+
+		end
+
+		Dropdown.Visible = false
+
+		Title.Text =
+			"🌪️ by XR 🌪️"
+
+		if selectedTargetMode ==
+			"Random Map" then
+
+			ProfileCard.Visible = false
+
+		end
+
+	end
 
 end)
 
---==================================================
+-- =========================================================
+-- CLOSE
+-- =========================================================
+
+CloseButton.MouseButton1Click:Connect(function()
+
+	for part, data in pairs(activeProps) do
+
+		pcall(function()
+
+			if data.AP then
+				data.AP:Destroy()
+			end
+
+			if data.AO then
+				data.AO:Destroy()
+			end
+
+			if data.Attachment then
+				data.Attachment:Destroy()
+			end
+
+		end)
+
+	end
+
+	activeProps = {}
+
+	ScreenGui:Destroy()
+
+end)
+
+-- =========================================================
 -- DRAG
---==================================================
+-- =========================================================
 
 local dragging = false
 local dragStart
-local startPos
+local startPosition
 
-titleBar.InputBegan:Connect(function(input)
+local function updateDrag(input)
 
-if input.UserInputType ==
-Enum.UserInputType.Touch
+	local delta =
+		input.Position - dragStart
 
-or input.UserInputType ==
-Enum.UserInputType.MouseButton1 then
+	Main.Position =
+		UDim2.new(
+			startPosition.X.Scale,
+			startPosition.X.Offset + delta.X,
 
-dragging = true
-
-dragStart = input.Position
-startPos = mainFrame.Position
+			startPosition.Y.Scale,
+			startPosition.Y.Offset + delta.Y
+		)
 
 end
+
+Title.InputBegan:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		dragging = true
+		dragStart = input.Position
+		startPosition = Main.Position
+
+		input.Changed:Connect(function()
+
+			if input.UserInputState ==
+				Enum.UserInputState.End then
+
+				dragging = false
+
+			end
+
+		end)
+
+	end
 
 end)
 
 UserInputService.InputChanged:Connect(function(input)
 
-if dragging
-and (
-input.UserInputType ==
-Enum.UserInputType.Touch
+	if not dragging then
+		return
+	end
 
-or input.UserInputType ==
-Enum.UserInputType.MouseMovement
-) then
+	if input.UserInputType ==
+		Enum.UserInputType.MouseMovement
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
 
-local delta =
-input.Position - dragStart
+		updateDrag(input)
 
-mainFrame.Position =
-UDim2.new(
-startPos.X.Scale,
-startPos.X.Offset + delta.X,
-
-startPos.Y.Scale,
-startPos.Y.Offset + delta.Y
-)
-
-end
+	end
 
 end)
 
-UserInputService.InputEnded:Connect(function(input)
+-- =========================================================
+-- INITIAL
+-- =========================================================
 
-if input.UserInputType ==
-Enum.UserInputType.Touch
+refreshTargets()
+updateTargetText()
 
-or input.UserInputType ==
-Enum.UserInputType.MouseButton1 then
-
-dragging = false
-
-end
-
-end)
-
---==================================================
--- MINIMIZE
---==================================================
-
-minBtn.Activated:Connect(function()
-
-isMinimized =
-not isMinimized
-
-if isMinimized then
-
-contentFrame.Visible = false
-
-mainFrame.Size =
-UDim2.new(
-0,
-220,
-0,
-32
-)
-
-minBtn.Text = "+"
-
-else
-
-contentFrame.Visible = true
-
-mainFrame.Size =
-UDim2.new(
-0,
-220,
-0,
-190
-)
-
-minBtn.Text = "-"
-
-end
-
-end)
-
---==================================================
--- PROP VALIDATION
---==================================================
-
-local function isValidProp(part)
-
-if not part
-or not part:IsA("BasePart")
-or part.Anchored then
-
-return false
-
-end
-
-if explodedBlacklist[part] then
-return false
-end
-
-if not isWithinRange(part) then
-return false
-end
-
-local ancestor =
-part:FindFirstAncestorOfClass("Model")
-
-if ancestor
-and ancestor:FindFirstChildOfClass("Humanoid") then
-
-return false
-
-end
-
-if part.Parent
-and part.Parent:FindFirstChildOfClass("Humanoid") then
-
-return false
-
-end
-
-return true
-
-end
-
---==================================================
--- REMOVE PHYSICS
---==================================================
-
-local function removePropPhysics(part)
-
-if activeProps[part] then
-
-local data =
-activeProps[part]
-
-if data.AP then
-data.AP:Destroy()
-end
-
-if data.AO then
-data.AO:Destroy()
-end
-
-if data.Att then
-data.Att:Destroy()
-end
-
-activeProps[part] = nil
-
-end
-
-end
-
---==================================================
--- STOP
---==================================================
-
-local function stopTornado()
-
-isActive = false
-isCompressing = false
-globalItemCount = 0
-
-btn.Text = "🌪 OFF 🌪"
-
-for part, _ in pairs(activeProps) do
-removePropPhysics(part)
-end
-
-activeProps = {}
-explodedBlacklist = {}
-
-end
-
---==================================================
--- CLOSE
---==================================================
-
-closeBtn.Activated:Connect(function()
-
-stopTornado()
-
-screenGui:Destroy()
-
-end)
-
---==================================================
--- ATTACH PHYSICS
---==================================================
-
-local function attachPhysicsToProp(part)
-
-if activeProps[part] then
-return
-end
-
-if not isValidProp(part) then
-return
-end
-
-pcall(function()
-part:SetNetworkOwner(LocalPlayer)
-end)
-
-local att =
-Instance.new("Attachment")
-
-att.Name =
-"TornadoGrabbedAtt"
-
-att.Parent = part
-
-local ao =
-Instance.new("AlignOrientation")
-
-ao.Mode =
-Enum.OrientationAlignmentMode.OneAttachment
-
-ao.Attachment0 = att
-ao.MaxTorque = math.huge
-ao.Responsiveness = 100
-ao.CFrame = part.CFrame
-ao.Parent = part
-
-local ap =
-Instance.new("AlignPosition")
-
-ap.Mode =
-Enum.PositionAlignmentMode.OneAttachment
-
-ap.Attachment0 = att
-ap.MaxForce = math.huge
-ap.MaxVelocity = 1200
-ap.Responsiveness = 90
-ap.Parent = part
-
-globalItemCount += 1
-
-local section =
-((globalItemCount - 1) % 3) + 1
-
-local subSlot =
-math.floor(
-(globalItemCount - 1) / 3
-) % 10
-
-activeProps[part] = {
-
-Part = part,
-
-Att = att,
-
-AO = ao,
-
-AP = ap,
-
-Section = section,
-
-SubSlot = subSlot,
-
-AngleOffset =
-globalItemCount * 0.5
-
-}
-
-end
-
---==================================================
--- GRAB PARTS
---==================================================
-
-Workspace.ChildAdded:Connect(function(child)
-
-if not isActive then
-return
-end
-
-if child.Name ~= "GrabParts" then
-return
-end
-
-task.spawn(function()
-
-local success, grabbedPart =
-pcall(function()
-
-local grabPart =
-child:WaitForChild(
-"GrabPart",
-1.5
-)
-
-local weld =        
-	grabPart:WaitForChild(        
-		"WeldConstraint",        
-		1.5        
-	)        
-
-return weld.Part1
-
-end)
-
-if success and grabbedPart then
-
-attachPhysicsToProp(
-grabbedPart
-)
-
-end
-
-end)
-
-end)
-
---==================================================
--- COMPRESS + BLAST
---==================================================
-
-local function triggerCompressAndBlast()
-
-if not isActive
-or isCompressing then
-
-return
-
-end
-
-isCompressing = true
-
-local root =
-getTargetRoot()
-
-if not root then
-
-isCompressing = false
-return
-
-end
-
-local compressPoint =
-root.Position
-
-Vector3.new(0, 110, 0)
-
-for part, data in pairs(activeProps) do
-
-if part
-and part:IsDescendantOf(workspace)
-and isWithinRange(part) then
-
-data.AP.Position =
-compressPoint
-
-end
-
-end
-
-task.wait(1)
-
-local exp =
-Instance.new("Explosion")
-
-exp.Position = compressPoint
-exp.BlastRadius = 150
-exp.BlastPressure = 0
-exp.Parent = workspace
-
-local propsToBlast = {}
-
-for part, _ in pairs(activeProps) do
-table.insert(propsToBlast, part)
-end
-
-for _, part in ipairs(propsToBlast) do
-
-if part
-and part:IsDescendantOf(workspace)
-and isWithinRange(part) then
-
-removePropPhysics(part)
-
-explodedBlacklist[part] = true
-
-task.delay(2.5, function()
-
-explodedBlacklist[part] = nil
-
-end)
-
-pcall(function()
-part:SetNetworkOwner(LocalPlayer)
-end)
-
-local randomDirection =
-Vector3.new(
-math.random(-100, 100),
-math.random(30, 120),
-math.random(-100, 100)
-).Unit
-
-local blastSpeed =
-math.random(1200, 2500)
-
-part.AssemblyLinearVelocity =
-randomDirection * blastSpeed
-
-part.AssemblyAngularVelocity =
-Vector3.new(
-math.random(-200, 200),
-math.random(-200, 200),
-math.random(-200, 200)
-)
-
-end
-
-end
-
-isCompressing = false
-
-end
-
---==================================================
--- START TORNADO
---==================================================
-
-local function startTornado()
-
-local root =
-getTargetRoot()
-
-if not root then
-return
-end
-
-isActive = true
-globalItemCount = 0
-
-btn.Text = "🌪 ON 🌪"
-
-end
-
-local function toggleTornado()
-
-if isActive then
-stopTornado()
-else
-startTornado()
-end
-
-end
-
-btn.Activated:Connect(toggleTornado)
-
-blastBtn.Activated:Connect(
-triggerCompressAndBlast
-)
-
---==================================================
--- KEYBOARD
---==================================================
-
-UserInputService.InputBegan:Connect(function(
-input,
-gpe
-)
-
-if gpe then
-return
-end
-
-if input.KeyCode == Enum.KeyCode.R then
-
-toggleTornado()
-
-elseif input.KeyCode == Enum.KeyCode.T then
-
-triggerCompressAndBlast()
-
-elseif input.KeyCode == Enum.KeyCode.M then
-
-mainFrame.Visible =
-not mainFrame.Visible
-
-end
-
-end)
-
---==================================================
--- TORNADO MOVEMENT
---==================================================
-
-RunService.Stepped:Connect(function()
-
-if not isActive
-or isCompressing then
-
-return
-
-end
-
-local root =
-getTargetRoot()
-
-if not root then
-return
-end
-
-local rootPos =
-root.Position
-
-local timeSeconds =
-workspace.DistributedGameTime
-
-for part, data in pairs(activeProps) do
-
-if not part
-or not part:IsDescendantOf(workspace)
-or part.Anchored then
-
-removePropPhysics(part)
-
-elseif not isWithinRange(part) then
-
-removePropPhysics(part)
-
-else
-
-local angle =
-(timeSeconds * 3.5)
-+ data.AngleOffset
-
-local baseHeight
-local sectionLength
-local startRadius
-local endRadius
-
-if data.Section == 1 then
-
-baseHeight = 10        
-sectionLength = 50        
-startRadius = 15        
-endRadius = 35
-
-elseif data.Section == 2 then
-
-baseHeight = 60        
-sectionLength = 75        
-startRadius = 35        
-endRadius = 75
-
-else
-
-baseHeight = 135        
-sectionLength = 100        
-startRadius = 75        
-endRadius = 130
-
-end
-
-local slotProgress =
-(data.SubSlot + 0.5) / 10
-
-local height =
-baseHeight
-+ (
-slotProgress
-* sectionLength
-)
-
-local radius =
-startRadius
-+ (
-slotProgress
-* (
-endRadius
-- startRadius
-)
-)
-
-local targetPos =
-rootPos
-+ Vector3.new(
-math.cos(angle) * radius,
-height,
-math.sin(angle) * radius
-)
-
-data.AP.Position =
-targetPos
-
-data.AO.CFrame =
-CFrame.new(
-part.Position,
-targetPos
-)
-
-end
-
-end
-
-end)
-
---==================================================
--- CHARACTER RESPAWN
--- IMPORTANT:
--- DO NOT STOP TORNADO WHEN PLAYER DIES
---==================================================
-
-LocalPlayer.CharacterAdded:Connect(function()
-
--- لا نستخدم stopTornado() هنا
--- إذا كان ON يبقى ON
-
-selectedTargetMode = "Me"
-targetPlayer = LocalPlayer
-
-targetDropdownBtn.Text =
-"Target: Me"
-
-updateDropdownList()
-
--- ننتظر الشخصية الجديدة
-local character = LocalPlayer.Character
-
-if character then
-
-character:WaitForChild(
-"HumanoidRootPart",
-10
-)
-
-end
-
--- إذا كان شغال قبل الموت
--- يبقى ON
-if isActive then
-
-btn.Text =
-"🌪 ON 🌪"
-
-end
-
-end)
-
---==================================================
--- KEEP GUI AFTER CHARACTER RESET
---==================================================
-
-screenGui.ResetOnSpawn = false
+print("🌪️ XR TORNADO HUB LOADED")
