@@ -318,7 +318,6 @@ end
 
 local options = {
 "Me",
-"Random Map"
 }
 
 for _, p in ipairs(Players:GetPlayers()) do
