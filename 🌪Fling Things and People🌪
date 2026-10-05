@@ -73,6 +73,7 @@ local activeProps = {}
 local explodedBlacklist = {}
 local globalItemCount = 0
 
+
 -- =========================================================
 -- 🌪️ XR TORNADO HUB
 -- by A_A + XR
@@ -83,6 +84,8 @@ local globalItemCount = 0
 -- STABLE TEXT SHAPE
 -- TARGET + PLAYER PROFILE + AVATAR
 -- TORNADO / ME / ORBIT / BLAST / TEXT / RANDOM MAP
+-- FIXED: OFF = PROPS STAY EXACTLY WHERE THEY ARE
+-- FIXED: NO CENTER SNAP WHEN TURNING MODES ON/OFF
 -- =========================================================
 
 local Players = game:GetService("Players")
@@ -145,7 +148,6 @@ local RANDOM_MAP_INTERVAL = 4
 local randomTargetPos = Vector3.new(0, RANDOM_MAP_HEIGHT, 0)
 local randomTimer = 0
 
--- سرعة دوران RANDOM MAP
 local RANDOM_ROTATION_SPEED = 3.5
 
 -- =========================================================
@@ -656,6 +658,164 @@ TextInfo.Parent = TextPanel
 local OFF_COLOR = Color3.fromRGB(35, 35, 45)
 local ON_COLOR = Color3.fromRGB(120, 35, 160)
 
+-- =========================================================
+-- MOVEMENT STATE
+-- =========================================================
+
+local function isMovementActive()
+
+	return
+		isActive
+		or isMeActive
+		or isOrbitActive
+		or isTextShapeActive
+		or isRandomMapActive
+
+end
+
+-- =========================================================
+-- FREEZE PROPS
+-- =========================================================
+
+local function freezeAllProps()
+
+	for part, data in pairs(activeProps) do
+
+		if part
+			and part:IsDescendantOf(Workspace) then
+
+			-- =================================================
+			-- IMPORTANT:
+			-- خذ المكان الحالي الحقيقي للبلوك
+			-- وليس مكان الهدف القديم.
+			-- =================================================
+
+			local currentPosition = part.Position
+			local currentCFrame = part.CFrame
+
+			if data.AP then
+
+				data.AP.Position =
+					currentPosition
+
+				data.AP.Enabled =
+					false
+
+			end
+
+			if data.AO then
+
+				data.AO.CFrame =
+					currentCFrame
+
+				data.AO.Enabled =
+					false
+
+			end
+
+			pcall(function()
+
+				part.AssemblyLinearVelocity =
+					Vector3.zero
+
+				part.AssemblyAngularVelocity =
+					Vector3.zero
+
+				part.Anchored =
+					true
+
+			end)
+
+		end
+
+	end
+
+end
+
+-- =========================================================
+-- RELEASE PROPS
+-- IMPORTANT:
+-- لا نخلي AP يحتفظ بمكان قديم بالنص.
+-- =========================================================
+
+local function releaseAllProps()
+
+	for part, data in pairs(activeProps) do
+
+		if part
+			and part:IsDescendantOf(Workspace) then
+
+			-- خذ المكان الحالي قبل تشغيل AlignPosition
+			local currentPosition =
+				part.Position
+
+			local currentCFrame =
+				part.CFrame
+
+			if data.AP then
+
+				data.AP.Position =
+					currentPosition
+
+			end
+
+			if data.AO then
+
+				data.AO.CFrame =
+					currentCFrame
+
+			end
+
+			pcall(function()
+
+				part.Anchored =
+					false
+
+				part.AssemblyLinearVelocity =
+					Vector3.zero
+
+				part.AssemblyAngularVelocity =
+					Vector3.zero
+
+			end)
+
+			-- بعد تثبيت الهدف الحالي فقط نشغل القيود
+			if data.AP then
+				data.AP.Enabled = true
+			end
+
+			if data.AO then
+				data.AO.Enabled = true
+			end
+
+		end
+
+	end
+
+end
+
+-- =========================================================
+-- SYNC PROP STATE
+-- =========================================================
+
+local function syncPropState()
+
+	if isMovementActive() then
+
+		releaseAllProps()
+
+	else
+
+		freezeAllProps()
+
+	end
+
+end
+
+-- =========================================================
+-- UPDATE BUTTON STATES
+-- =========================================================
+
 local function updateButtonStates()
 
 	TornadoButton.Text =
@@ -681,25 +841,29 @@ local function updateButtonStates()
 	if isActive then
 		TornadoButton.BackgroundColor3 = ON_COLOR
 	else
-		TornadoButton.BackgroundColor3 = Color3.fromRGB(35, 25, 35)
+		TornadoButton.BackgroundColor3 =
+			Color3.fromRGB(35, 25, 35)
 	end
 
 	if isMeActive then
 		MeButton.BackgroundColor3 = ON_COLOR
 	else
-		MeButton.BackgroundColor3 = Color3.fromRGB(55, 45, 20)
+		MeButton.BackgroundColor3 =
+			Color3.fromRGB(55, 45, 20)
 	end
 
 	if isOrbitActive then
 		OrbitButton.BackgroundColor3 = ON_COLOR
 	else
-		OrbitButton.BackgroundColor3 = Color3.fromRGB(35, 55, 75)
+		OrbitButton.BackgroundColor3 =
+			Color3.fromRGB(35, 55, 75)
 	end
 
 	if isTextShapeActive then
 		TextShapeButton.BackgroundColor3 = ON_COLOR
 	else
-		TextShapeButton.BackgroundColor3 = Color3.fromRGB(65, 30, 75)
+		TextShapeButton.BackgroundColor3 =
+			Color3.fromRGB(65, 30, 75)
 	end
 
 	if isRandomMapActive then
@@ -707,6 +871,11 @@ local function updateButtonStates()
 	else
 		RandomButton.BackgroundColor3 = OFF_COLOR
 	end
+
+	-- مهم جداً
+	-- بعد أي تغيير ON/OFF نعمل مزامنة فورية
+	syncPropState()
+
 end
 
 -- =========================================================
@@ -719,11 +888,14 @@ local function getTargetRoot()
 		or selectedTargetMode == "Random Map" then
 
 		return nil
+
 	end
 
-	local player = targetPlayer or LocalPlayer
+	local player =
+		targetPlayer or LocalPlayer
 
-	if player and player.Character then
+	if player
+		and player.Character then
 
 		return player.Character:FindFirstChild(
 			"HumanoidRootPart"
@@ -732,6 +904,7 @@ local function getTargetRoot()
 	end
 
 	return nil
+
 end
 
 -- =========================================================
@@ -742,7 +915,9 @@ local function chooseRandomMapPosition()
 
 	local candidates = {}
 
-	for _, obj in ipairs(Workspace:GetDescendants()) do
+	for _, obj in ipairs(
+		Workspace:GetDescendants()
+	) do
 
 		if obj:IsA("BasePart")
 			and obj:IsDescendantOf(Workspace)
@@ -752,11 +927,15 @@ local function chooseRandomMapPosition()
 			and obj.CanCollide then
 
 			local model =
-				obj:FindFirstAncestorOfClass("Model")
+				obj:FindFirstAncestorOfClass(
+					"Model"
+				)
 
 			local isCharacterPart =
 				model
-				and model:FindFirstChildOfClass("Humanoid")
+				and model:FindFirstChildOfClass(
+					"Humanoid"
+				)
 
 			if not isCharacterPart
 				and obj.Name ~= "Baseplate"
@@ -783,11 +962,6 @@ local function chooseRandomMapPosition()
 				)
 			]
 
-		-- =================================================
-		-- IMPORTANT:
-		-- RANDOM MAP IS NOW 999 STUD ABOVE THE MAP PART
-		-- =================================================
-
 		randomTargetPos =
 			chosen.Position
 			+ Vector3.new(
@@ -806,6 +980,7 @@ local function chooseRandomMapPosition()
 			)
 
 	end
+
 end
 
 local function getTargetPosition()
@@ -814,15 +989,18 @@ local function getTargetPosition()
 		or selectedTargetMode == "Random Map" then
 
 		return randomTargetPos
+
 	end
 
-	local root = getTargetRoot()
+	local root =
+		getTargetRoot()
 
 	if root then
 		return root.Position
 	end
 
 	return Vector3.zero
+
 end
 
 -- =========================================================
@@ -837,18 +1015,25 @@ local function isValidProp(part)
 		or part.Anchored then
 
 		return false
+
 	end
 
 	local model =
-		part:FindFirstAncestorOfClass("Model")
+		part:FindFirstAncestorOfClass(
+			"Model"
+		)
 
 	if model
-		and model:FindFirstChildOfClass("Humanoid") then
+		and model:FindFirstChildOfClass(
+			"Humanoid"
+		) then
 
 		return false
+
 	end
 
 	return true
+
 end
 
 -- =========================================================
@@ -861,11 +1046,16 @@ local function isWithinRange(part)
 		or not part:IsDescendantOf(Workspace) then
 
 		return false
+
 	end
 
 	return
-		(part.Position - getTargetPosition()).Magnitude
+		(
+			part.Position
+			- getTargetPosition()
+		).Magnitude
 		<= 1000
+
 end
 
 -- =========================================================
@@ -901,7 +1091,8 @@ local function attachPhysicsToProp(part)
 	attachment.Name =
 		"XR_TornadoAttachment"
 
-	attachment.Parent = part
+	attachment.Parent =
+		part
 
 	local AO =
 		Instance.new("AlignOrientation")
@@ -923,6 +1114,9 @@ local function attachPhysicsToProp(part)
 
 	AO.Responsiveness =
 		200
+
+	AO.Enabled =
+		false
 
 	AO.Parent =
 		part
@@ -951,6 +1145,9 @@ local function attachPhysicsToProp(part)
 	AP.RigidityEnabled =
 		false
 
+	AP.Enabled =
+		false
+
 	AP.Parent =
 		part
 
@@ -975,6 +1172,63 @@ local function attachPhysicsToProp(part)
 		OrderIndex =
 			globalItemCount
 	}
+
+	-- =====================================================
+	-- إذا كل شيء OFF:
+	-- ثبت البلوك فوراً في مكانه الحالي.
+	-- =====================================================
+
+	if not isMovementActive() then
+
+		local data =
+			activeProps[part]
+
+		data.AP.Position =
+			part.Position
+
+		data.AO.CFrame =
+			part.CFrame
+
+		data.AP.Enabled =
+			false
+
+		data.AO.Enabled =
+			false
+
+		pcall(function()
+
+			part.AssemblyLinearVelocity =
+				Vector3.zero
+
+			part.AssemblyAngularVelocity =
+				Vector3.zero
+
+			part.Anchored =
+				true
+
+		end)
+
+	else
+
+		-- الوضع شغال:
+		-- نبدأ من مكان البلوك الحالي
+		-- حتى لا يقفز للنص.
+
+		AP.Position =
+			part.Position
+
+		AO.CFrame =
+			part.CFrame
+
+		pcall(function()
+			part.Anchored = false
+		end)
+
+		AP.Enabled = true
+		AO.Enabled = true
+
+	end
+
 end
 
 -- =========================================================
@@ -1071,6 +1325,7 @@ local function buildTextPoints(text)
 			)
 
 		end
+
 	end
 
 	if #letters == 0 then
@@ -1090,6 +1345,7 @@ local function buildTextPoints(text)
 		if index < #letters then
 			totalWidth += letterSpacing
 		end
+
 	end
 
 	local cursorX =
@@ -1097,7 +1353,8 @@ local function buildTextPoints(text)
 
 	for _, info in ipairs(letters) do
 
-		local glyph = info.glyph
+		local glyph =
+			info.glyph
 
 		if glyph then
 
@@ -1155,6 +1412,7 @@ local function buildTextPoints(text)
 	end
 
 	return points
+
 end
 
 -- =========================================================
@@ -1208,6 +1466,7 @@ local function getTextShapePosition(
 				+ baseHeight,
 			0
 		)
+
 end
 
 -- =========================================================
@@ -1224,6 +1483,7 @@ local function createTextShape()
 
 		typed = "ALI"
 		ShapeTextBox.Text = typed
+
 	end
 
 	currentText =
@@ -1254,6 +1514,7 @@ local function createTextShape()
 
 	updateTargetText()
 	updateButtonStates()
+
 end
 
 CreateTextButton.MouseButton1Click:Connect(
@@ -1290,9 +1551,15 @@ TextShapeButton.MouseButton1Click:Connect(
 			TextPanel.Visible = true
 
 			if selectedTargetMode == "Random Map" then
-				selectedTargetMode = "Me"
-				targetPlayer = LocalPlayer
+
+				selectedTargetMode =
+					"Me"
+
+				targetPlayer =
+					LocalPlayer
+
 				updateTargetText()
+
 			end
 
 		else
@@ -1310,9 +1577,13 @@ TextShapeButton.MouseButton1Click:Connect(
 -- TARGET PLAYER BUTTON
 -- =========================================================
 
-local function createPlayerButton(player, order)
+local function createPlayerButton(
+	player,
+	order
+)
 
-	local Button = Instance.new("TextButton")
+	local Button =
+		Instance.new("TextButton")
 
 	Button.Name =
 		"Player_" .. player.UserId
@@ -1364,10 +1635,16 @@ local function createPlayerButton(player, order)
 		UDim2.new(0, 38, 0, 2)
 
 	NameLabel.BackgroundTransparency = 1
-	NameLabel.Text = player.DisplayName
-	NameLabel.TextColor3 = Color3.new(1, 1, 1)
+	NameLabel.Text =
+		player.DisplayName
+
+	NameLabel.TextColor3 =
+		Color3.new(1, 1, 1)
+
 	NameLabel.TextSize = 11
-	NameLabel.Font = Enum.Font.GothamBold
+	NameLabel.Font =
+		Enum.Font.GothamBold
+
 	NameLabel.TextXAlignment =
 		Enum.TextXAlignment.Left
 
@@ -1387,7 +1664,9 @@ local function createPlayerButton(player, order)
 		UDim2.new(0, 38, 0, 18)
 
 	UserLabel.BackgroundTransparency = 1
-	UserLabel.Text = "@" .. player.Name
+	UserLabel.Text =
+		"@" .. player.Name
+
 	UserLabel.TextColor3 =
 		Color3.fromRGB(
 			160,
@@ -1396,7 +1675,9 @@ local function createPlayerButton(player, order)
 		)
 
 	UserLabel.TextSize = 8
-	UserLabel.Font = Enum.Font.Gotham
+	UserLabel.Font =
+		Enum.Font.Gotham
+
 	UserLabel.TextXAlignment =
 		Enum.TextXAlignment.Left
 
@@ -1406,12 +1687,16 @@ local function createPlayerButton(player, order)
 	task.spawn(function()
 
 		local image =
-			getAvatar(player.UserId)
+			getAvatar(
+				player.UserId
+			)
 
 		if player.Parent
 			and SmallAvatar.Parent then
 
-			SmallAvatar.Image = image
+			SmallAvatar.Image =
+				image
+
 		end
 
 	end)
@@ -1421,21 +1706,26 @@ local function createPlayerButton(player, order)
 
 			if player.Parent then
 
-				targetPlayer = player
+				targetPlayer =
+					player
+
 				selectedTargetMode =
 					"Player"
 
-				isRandomMapActive = false
+				isRandomMapActive =
+					false
 
 				updateTargetText()
 				updateButtonStates()
 
-				Dropdown.Visible = false
+				Dropdown.Visible =
+					false
 
 			end
 
 		end
 	)
+
 end
 
 -- =========================================================
@@ -1461,10 +1751,12 @@ local function refreshTargets()
 	) do
 
 		if player ~= LocalPlayer then
+
 			table.insert(
 				playerList,
 				player
 			)
+
 		end
 
 	end
@@ -1502,6 +1794,7 @@ local function refreshTargets()
 			0,
 			(#playerList * 38) + 6
 		)
+
 end
 
 -- =========================================================
@@ -1547,15 +1840,17 @@ RandomButton.MouseButton1Click:Connect(
 
 			randomTimer = 0
 
-			-- اختيار أول خريطة فورًا
 			chooseRandomMapPosition()
 
 			updateTargetText()
 
 		else
 
-			selectedTargetMode = "Me"
-			targetPlayer = LocalPlayer
+			selectedTargetMode =
+				"Me"
+
+			targetPlayer =
+				LocalPlayer
 
 			updateTargetText()
 
@@ -1587,6 +1882,7 @@ local function toggleTornado()
 	end
 
 	updateButtonStates()
+
 end
 
 TornadoButton.Activated:Connect(
@@ -1611,14 +1907,18 @@ local function toggleMe()
 
 		TextPanel.Visible = false
 
-		selectedTargetMode = "Me"
-		targetPlayer = LocalPlayer
+		selectedTargetMode =
+			"Me"
+
+		targetPlayer =
+			LocalPlayer
 
 		updateTargetText()
 
 	end
 
 	updateButtonStates()
+
 end
 
 MeButton.Activated:Connect(
@@ -1646,6 +1946,7 @@ local function toggleOrbit()
 	end
 
 	updateButtonStates()
+
 end
 
 OrbitButton.Activated:Connect(
@@ -1662,6 +1963,7 @@ local function triggerCompressAndBlast()
 		or isCompressing then
 
 		return
+
 	end
 
 	local root =
@@ -1747,6 +2049,7 @@ local function triggerCompressAndBlast()
 	end
 
 	isCompressing = false
+
 end
 
 BlastButton.Activated:Connect(
@@ -1834,7 +2137,8 @@ Players.PlayerRemoving:Connect(
 			selectedTargetMode =
 				"Me"
 
-			isRandomMapActive = false
+			isRandomMapActive =
+				false
 
 			updateTargetText()
 			updateButtonStates()
@@ -1909,13 +2213,127 @@ RunService.Stepped:Connect(
 			randomTimer +=
 				deltaTime
 
-			if randomTimer >= RANDOM_MAP_INTERVAL then
+			if randomTimer >=
+				RANDOM_MAP_INTERVAL then
 
 				randomTimer = 0
 
-				-- يختار مكان جديد كل 4 ثواني
-				-- ويبقى الارتفاع 999 Stud
 				chooseRandomMapPosition()
+
+			end
+
+		end
+
+		-- =================================================
+		-- HARD OFF FREEZE
+		-- =================================================
+		-- لا يوجد أي وضع شغال؟
+		-- إذن:
+		-- 1. AlignPosition OFF
+		-- 2. AlignOrientation OFF
+		-- 3. السرعة = صفر
+		-- 4. القطعة Anchored
+		-- 5. لا يتم استعمال getTargetPosition
+		-- 6. لا يتم إرسال القطعة للنص أو للنص الأوسط
+		-- =================================================
+
+		if not isMovementActive() then
+
+			for part, data in pairs(
+				activeProps
+			) do
+
+				if part
+					and part:IsDescendantOf(Workspace) then
+
+					if data.AP then
+
+						data.AP.Position =
+							part.Position
+
+						data.AP.Enabled =
+							false
+
+					end
+
+					if data.AO then
+
+						data.AO.CFrame =
+							part.CFrame
+
+						data.AO.Enabled =
+							false
+
+					end
+
+					pcall(function()
+
+						part.AssemblyLinearVelocity =
+							Vector3.zero
+
+						part.AssemblyAngularVelocity =
+							Vector3.zero
+
+						part.Anchored =
+							true
+
+					end)
+
+				end
+
+			end
+
+			return
+
+		end
+
+		-- =================================================
+		-- ENABLE ACTIVE CONSTRAINTS
+		-- =================================================
+
+		for part, data in pairs(
+			activeProps
+		) do
+
+			if part
+				and part:IsDescendantOf(Workspace) then
+
+				-- =================================================
+				-- مهم:
+				-- عند تشغيل الوضع، لا نخلي AP يستخدم
+				-- مكان قديم كان بالنص.
+				-- =================================================
+
+				if data.AP
+					and not data.AP.Enabled then
+
+					data.AP.Position =
+						part.Position
+
+				end
+
+				if data.AO
+					and not data.AO.Enabled then
+
+					data.AO.CFrame =
+						part.CFrame
+
+				end
+
+				if data.AP then
+					data.AP.Enabled = true
+				end
+
+				if data.AO then
+					data.AO.Enabled = true
+				end
+
+				pcall(function()
+
+					part.Anchored =
+						false
+
+				end)
 
 			end
 
@@ -2086,7 +2504,8 @@ RunService.Stepped:Connect(
 
 		-- =================================================
 		-- RANDOM MAP
-		-- 999 STUD ABOVE MAP + CONTINUOUS ROTATION
+		-- 999 STUD ABOVE MAP
+		-- + CONTINUOUS ROTATION
 		-- =================================================
 
 		elseif isRandomMapActive then
@@ -2114,7 +2533,6 @@ RunService.Stepped:Connect(
 					local offset =
 						data.AngleOffset or 0
 
-					-- ثلاث حلقات مثل العصا/الدوامة
 					local radius
 
 					if section == 1 then
@@ -2125,7 +2543,6 @@ RunService.Stepped:Connect(
 						radius = 8
 					end
 
-					-- ارتفاع داخل المجموعة
 					local height
 
 					if section == 1 then
@@ -2136,13 +2553,11 @@ RunService.Stepped:Connect(
 						height = 25
 					end
 
-					-- دوران مستمر
 					local angle =
 						t * RANDOM_ROTATION_SPEED
 						+ offset
 						+ slot * 0.45
 
-					-- حركة دائرية مستمرة
 					local pos =
 						targetPos
 						+ Vector3.new(
@@ -2158,7 +2573,6 @@ RunService.Stepped:Connect(
 					data.AP.Position =
 						pos
 
-					-- يجعل القطع تدور مع الحلقة
 					data.AO.CFrame =
 						CFrame.Angles(
 							0,
@@ -2435,6 +2849,10 @@ CloseButton.MouseButton1Click:Connect(
 					data.Attachment:Destroy()
 				end
 
+				if part then
+					part.Anchored = false
+				end
+
 			end)
 
 		end
@@ -2467,6 +2885,7 @@ local function updateDrag(input)
 			startPosition.Y.Scale,
 			startPosition.Y.Offset + delta.Y
 		)
+
 end
 
 Title.InputBegan:Connect(
@@ -2532,15 +2951,19 @@ isOrbitActive = false
 isTextShapeActive = false
 isRandomMapActive = false
 
-selectedTargetMode = "Me"
-targetPlayer = LocalPlayer
+selectedTargetMode =
+	"Me"
 
-TextPanel.Visible = false
+targetPlayer =
+	LocalPlayer
+
+TextPanel.Visible =
+	false
 
 refreshTargets()
 updateTargetText()
 updateButtonStates()
 
 print(
-	"🌪️ XR TORNADO HUB + RANDOM MAP 999 STUD + CONTINUOUS ROTATION LOADED"
+	"🌪️ XR TORNADO HUB + HARD OFF FREEZE + NO CENTER SNAP + RANDOM MAP 999 STUD LOADED"
 )
