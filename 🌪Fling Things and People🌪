@@ -1,3 +1,4 @@
+
 -- =========================================================
 --  by A_A - IMAGE + TEXT UI
 -- =========================================================
@@ -72,13 +73,16 @@ local activeProps = {}
 local explodedBlacklist = {}
 local globalItemCount = 0
 
-
 -- =========================================================
 -- 🌪️ XR TORNADO HUB
 -- by A_A + XR
 -- FULL VERSION
--- TARGET + PLAYER PROFILE + AVATAR + RANDOM MAP
--- TORNADO / ME / ORBIT / BLAST
+-- ALL MODES ON / OFF
+-- RANDOM MAP ON / OFF
+-- RANDOM MAP = 999 STUD ABOVE + CONTINUOUS ROTATION
+-- STABLE TEXT SHAPE
+-- TARGET + PLAYER PROFILE + AVATAR
+-- TORNADO / ME / ORBIT / BLAST / TEXT / RANDOM MAP
 -- =========================================================
 
 local Players = game:GetService("Players")
@@ -117,7 +121,11 @@ end
 local isActive = false
 local isMeActive = false
 local isOrbitActive = false
+local isTextShapeActive = false
+local isRandomMapActive = false
 local isCompressing = false
+
+local currentText = "ALI"
 
 local selectedTargetMode = "Me"
 local targetPlayer = LocalPlayer
@@ -127,8 +135,18 @@ local minimized = false
 local activeProps = {}
 local globalItemCount = 0
 
-local randomTargetPos = Vector3.new(0, 300, 0)
+-- =========================================================
+-- RANDOM MAP SETTINGS
+-- =========================================================
+
+local RANDOM_MAP_HEIGHT = 999
+local RANDOM_MAP_INTERVAL = 4
+
+local randomTargetPos = Vector3.new(0, RANDOM_MAP_HEIGHT, 0)
 local randomTimer = 0
+
+-- سرعة دوران RANDOM MAP
+local RANDOM_ROTATION_SPEED = 3.5
 
 -- =========================================================
 -- SCREEN GUI
@@ -147,7 +165,7 @@ ScreenGui.Parent = PlayerGui
 
 local Main = Instance.new("Frame")
 Main.Name = "Main"
-Main.Size = UDim2.new(0, 220, 0, 245)
+Main.Size = UDim2.new(0, 220, 0, 320)
 Main.Position = UDim2.new(0.5, -110, 0.35, 0)
 Main.BackgroundColor3 = Color3.fromRGB(8, 7, 12)
 Main.BorderSizePixel = 0
@@ -215,8 +233,7 @@ CloseButton.Font = Enum.Font.GothamBold
 CloseButton.ZIndex = 20
 CloseButton.Parent = Main
 
-Instance.new("UICorner", CloseButton).CornerRadius =
-	UDim.new(0, 7)
+Instance.new("UICorner", CloseButton).CornerRadius = UDim.new(0, 7)
 
 -- =========================================================
 -- MINIMIZE
@@ -234,8 +251,7 @@ MinButton.Font = Enum.Font.GothamBold
 MinButton.ZIndex = 20
 MinButton.Parent = Main
 
-Instance.new("UICorner", MinButton).CornerRadius =
-	UDim.new(0, 7)
+Instance.new("UICorner", MinButton).CornerRadius = UDim.new(0, 7)
 
 -- =========================================================
 -- TARGET
@@ -253,8 +269,7 @@ TargetButton.Font = Enum.Font.GothamBold
 TargetButton.ZIndex = 20
 TargetButton.Parent = Main
 
-Instance.new("UICorner", TargetButton).CornerRadius =
-	UDim.new(0, 7)
+Instance.new("UICorner", TargetButton).CornerRadius = UDim.new(0, 7)
 
 local TargetStroke = Instance.new("UIStroke")
 TargetStroke.Thickness = 1
@@ -276,8 +291,7 @@ ProfileCard.Visible = true
 ProfileCard.ZIndex = 25
 ProfileCard.Parent = Main
 
-Instance.new("UICorner", ProfileCard).CornerRadius =
-	UDim.new(0, 8)
+Instance.new("UICorner", ProfileCard).CornerRadius = UDim.new(0, 8)
 
 local ProfileStroke = Instance.new("UIStroke")
 ProfileStroke.Thickness = 1.5
@@ -297,8 +311,7 @@ Avatar.BorderSizePixel = 0
 Avatar.ZIndex = 26
 Avatar.Parent = ProfileCard
 
-Instance.new("UICorner", Avatar).CornerRadius =
-	UDim.new(1, 0)
+Instance.new("UICorner", Avatar).CornerRadius = UDim.new(1, 0)
 
 -- =========================================================
 -- DISPLAY NAME
@@ -351,8 +364,7 @@ Dropdown.CanvasSize = UDim2.new(0, 0, 0, 0)
 Dropdown.AutomaticCanvasSize = Enum.AutomaticSize.Y
 Dropdown.Parent = Main
 
-Instance.new("UICorner", Dropdown).CornerRadius =
-	UDim.new(0, 8)
+Instance.new("UICorner", Dropdown).CornerRadius = UDim.new(0, 8)
 
 local DropdownStroke = Instance.new("UIStroke")
 DropdownStroke.Thickness = 1.5
@@ -371,13 +383,11 @@ DropdownLayout.Parent = Dropdown
 local function getAvatar(userId)
 
 	local success, image = pcall(function()
-
 		return Players:GetUserThumbnailAsync(
 			userId,
 			Enum.ThumbnailType.HeadShot,
 			Enum.ThumbnailSize.Size150x150
 		)
-
 	end)
 
 	if success and image then
@@ -385,7 +395,6 @@ local function getAvatar(userId)
 	end
 
 	return ""
-
 end
 
 -- =========================================================
@@ -395,58 +404,47 @@ end
 local function showProfile(player)
 
 	if not player then
-
 		ProfileCard.Visible = false
 		return
-
 	end
 
 	ProfileCard.Visible = true
 
-	DisplayNameLabel.Text =
-		player.DisplayName
-
-	UsernameLabel.Text =
-		"@" .. player.Name
+	DisplayNameLabel.Text = player.DisplayName
+	UsernameLabel.Text = "@" .. player.Name
 
 	task.spawn(function()
 
-		local image =
-			getAvatar(player.UserId)
+		local image = getAvatar(player.UserId)
 
 		if targetPlayer == player then
 			Avatar.Image = image
 		end
 
 	end)
-
 end
 
 -- =========================================================
--- UPDATE TARGET
+-- UPDATE TARGET TEXT
 -- =========================================================
 
 local function updateTargetText()
 
 	if selectedTargetMode == "Me" then
 
-		targetPlayer =
-			LocalPlayer
+		targetPlayer = LocalPlayer
 
-		TargetButton.Text =
-			"Target: Me ▼"
+		TargetButton.Text = "Target: Me ▼"
 
 		showProfile(LocalPlayer)
 
 	elseif selectedTargetMode == "Random Map" then
 
-		TargetButton.Text =
-			"Target: Random Map ▼"
+		TargetButton.Text = "Target: Random Map ▼"
 
 		ProfileCard.Visible = false
 
-	elseif selectedTargetMode == "Player"
-		and targetPlayer then
+	elseif selectedTargetMode == "Player" and targetPlayer then
 
 		TargetButton.Text =
 			"Target: "
@@ -456,392 +454,260 @@ local function updateTargetText()
 		showProfile(targetPlayer)
 
 	end
-
 end
-
--- =========================================================
--- CREATE PLAYER BUTTON
--- =========================================================
-
-local function createPlayerButton(player, order)
-
-	local Button =
-		Instance.new("TextButton")
-
-	Button.Name =
-		"Player_" .. player.UserId
-
-	Button.Size =
-		UDim2.new(1, -8, 0, 34)
-
-	Button.BackgroundColor3 =
-		Color3.fromRGB(22, 22, 30)
-
-	Button.Text = ""
-
-	Button.BorderSizePixel = 0
-	Button.LayoutOrder = order
-	Button.ZIndex = 101
-	Button.Parent = Dropdown
-
-	Instance.new("UICorner", Button).CornerRadius =
-		UDim.new(0, 6)
-
-	local SmallAvatar =
-		Instance.new("ImageLabel")
-
-	SmallAvatar.Size =
-		UDim2.new(0, 28, 0, 28)
-
-	SmallAvatar.Position =
-		UDim2.new(0, 4, 0, 3)
-
-	SmallAvatar.BackgroundTransparency = 1
-	SmallAvatar.ZIndex = 102
-	SmallAvatar.Parent = Button
-
-	Instance.new("UICorner", SmallAvatar).CornerRadius =
-		UDim.new(1, 0)
-
-	local NameLabel =
-		Instance.new("TextLabel")
-
-	NameLabel.Size =
-		UDim2.new(1, -40, 0, 17)
-
-	NameLabel.Position =
-		UDim2.new(0, 38, 0, 2)
-
-	NameLabel.BackgroundTransparency = 1
-
-	NameLabel.Text =
-		player.DisplayName
-
-	NameLabel.TextColor3 =
-		Color3.new(1, 1, 1)
-
-	NameLabel.TextSize = 11
-	NameLabel.Font = Enum.Font.GothamBold
-
-	NameLabel.TextXAlignment =
-		Enum.TextXAlignment.Left
-
-	NameLabel.TextTruncate =
-		Enum.TextTruncate.AtEnd
-
-	NameLabel.ZIndex = 102
-	NameLabel.Parent = Button
-
-	local UserLabel =
-		Instance.new("TextLabel")
-
-	UserLabel.Size =
-		UDim2.new(1, -40, 0, 13)
-
-	UserLabel.Position =
-		UDim2.new(0, 38, 0, 18)
-
-	UserLabel.BackgroundTransparency = 1
-
-	UserLabel.Text =
-		"@" .. player.Name
-
-	UserLabel.TextColor3 =
-		Color3.fromRGB(160, 160, 170)
-
-	UserLabel.TextSize = 8
-	UserLabel.Font = Enum.Font.Gotham
-
-	UserLabel.TextXAlignment =
-		Enum.TextXAlignment.Left
-
-	UserLabel.ZIndex = 102
-	UserLabel.Parent = Button
-
-	task.spawn(function()
-
-		local image =
-			getAvatar(player.UserId)
-
-		if player.Parent
-			and SmallAvatar.Parent then
-
-			SmallAvatar.Image = image
-
-		end
-
-	end)
-
-	Button.MouseButton1Click:Connect(function()
-
-		if player.Parent then
-
-			targetPlayer =
-				player
-
-			selectedTargetMode =
-				"Player"
-
-			updateTargetText()
-
-			Dropdown.Visible = false
-
-		end
-
-	end)
-
-end
-
--- =========================================================
--- REFRESH TARGETS
--- =========================================================
-
-local function refreshTargets()
-
-	for _, child in ipairs(Dropdown:GetChildren()) do
-
-		if child:IsA("TextButton") then
-			child:Destroy()
-		end
-
-	end
-
-	local playerList = {}
-
-	for _, player in ipairs(Players:GetPlayers()) do
-
-		if player ~= LocalPlayer then
-			table.insert(playerList, player)
-		end
-
-	end
-
-	table.sort(
-		playerList,
-		function(a, b)
-
-			return string.lower(a.DisplayName)
-				< string.lower(b.DisplayName)
-
-		end
-	)
-
-	for index, player in ipairs(playerList) do
-
-		createPlayerButton(
-			player,
-			index
-		)
-
-	end
-
-	Dropdown.CanvasSize =
-		UDim2.new(
-			0,
-			0,
-			0,
-			(#playerList * 38) + 6
-		)
-
-end
-
--- =========================================================
--- TARGET BUTTON
--- =========================================================
-
-TargetButton.MouseButton1Click:Connect(function()
-
-	Dropdown.Visible =
-		not Dropdown.Visible
-
-	if Dropdown.Visible then
-		refreshTargets()
-	end
-
-end)
-
--- =========================================================
--- RANDOM MAP
--- =========================================================
-
-local RandomButton =
-	Instance.new("TextButton")
-
-RandomButton.Name =
-	"RandomMapButton"
-
-RandomButton.Size =
-	UDim2.new(1, -16, 0, 28)
-
-RandomButton.Position =
-	UDim2.new(0, 8, 0, 127)
-
-RandomButton.BackgroundColor3 =
-	Color3.fromRGB(35, 35, 45)
-
-RandomButton.Text =
-	"🎲 RANDOM MAP"
-
-RandomButton.TextColor3 =
-	Color3.new(1, 1, 1)
-
-RandomButton.TextSize = 9
-RandomButton.Font = Enum.Font.GothamBold
-RandomButton.ZIndex = 20
-RandomButton.Parent = Main
-
-Instance.new("UICorner", RandomButton).CornerRadius =
-	UDim.new(0, 7)
-
-RandomButton.MouseButton1Click:Connect(function()
-
-	selectedTargetMode =
-		"Random Map"
-
-	targetPlayer = nil
-
-	updateTargetText()
-
-	Dropdown.Visible = false
-
-end)
 
 -- =========================================================
 -- ACTION BUTTONS
 -- =========================================================
 
-local TornadoButton =
-	Instance.new("TextButton")
+local RandomButton = Instance.new("TextButton")
+RandomButton.Name = "RandomMapButton"
+RandomButton.Size = UDim2.new(1, -16, 0, 28)
+RandomButton.Position = UDim2.new(0, 8, 0, 127)
+RandomButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+RandomButton.Text = "🎲 RANDOM MAP: OFF"
+RandomButton.TextColor3 = Color3.new(1, 1, 1)
+RandomButton.TextSize = 9
+RandomButton.Font = Enum.Font.GothamBold
+RandomButton.ZIndex = 20
+RandomButton.Parent = Main
 
-TornadoButton.Name =
-	"TornadoButton"
+Instance.new("UICorner", RandomButton).CornerRadius = UDim.new(0, 7)
 
-TornadoButton.Size =
-	UDim2.new(0.48, -5, 0, 31)
-
-TornadoButton.Position =
-	UDim2.new(0, 8, 0, 161)
-
-TornadoButton.BackgroundColor3 =
-	Color3.fromRGB(35, 25, 35)
-
-TornadoButton.Text =
-	"🌪️ TORNADO: OFF"
-
-TornadoButton.TextColor3 =
-	Color3.new(1, 1, 1)
-
+local TornadoButton = Instance.new("TextButton")
+TornadoButton.Name = "TornadoButton"
+TornadoButton.Size = UDim2.new(0.48, -5, 0, 31)
+TornadoButton.Position = UDim2.new(0, 8, 0, 161)
+TornadoButton.BackgroundColor3 = Color3.fromRGB(35, 25, 35)
+TornadoButton.Text = "🌪️ TORNADO: OFF"
+TornadoButton.TextColor3 = Color3.new(1, 1, 1)
 TornadoButton.TextSize = 9
 TornadoButton.Font = Enum.Font.GothamBold
 TornadoButton.ZIndex = 20
 TornadoButton.Parent = Main
 
-Instance.new("UICorner", TornadoButton).CornerRadius =
-	UDim.new(0, 7)
+Instance.new("UICorner", TornadoButton).CornerRadius = UDim.new(0, 7)
 
-local BlastButton =
-	Instance.new("TextButton")
-
-BlastButton.Name =
-	"BlastButton"
-
-BlastButton.Size =
-	UDim2.new(0.48, -5, 0, 31)
-
-BlastButton.Position =
-	UDim2.new(0.52, 0, 0, 161)
-
-BlastButton.BackgroundColor3 =
-	Color3.fromRGB(100, 25, 30)
-
-BlastButton.Text =
-	"💥 BLAST"
-
-BlastButton.TextColor3 =
-	Color3.new(1, 1, 1)
-
+local BlastButton = Instance.new("TextButton")
+BlastButton.Name = "BlastButton"
+BlastButton.Size = UDim2.new(0.48, -5, 0, 31)
+BlastButton.Position = UDim2.new(0.52, 0, 0, 161)
+BlastButton.BackgroundColor3 = Color3.fromRGB(100, 25, 30)
+BlastButton.Text = "💥 BLAST"
+BlastButton.TextColor3 = Color3.new(1, 1, 1)
 BlastButton.TextSize = 10
 BlastButton.Font = Enum.Font.GothamBold
 BlastButton.ZIndex = 20
 BlastButton.Parent = Main
 
-Instance.new("UICorner", BlastButton).CornerRadius =
-	UDim.new(0, 7)
+Instance.new("UICorner", BlastButton).CornerRadius = UDim.new(0, 7)
 
 -- =========================================================
 -- ME BUTTON
 -- =========================================================
 
-local MeButton =
-	Instance.new("TextButton")
-
-MeButton.Name =
-	"MeButton"
-
-MeButton.Size =
-	UDim2.new(0.31, -4, 0, 27)
-
-MeButton.Position =
-	UDim2.new(0, 8, 0, 197)
-
-MeButton.BackgroundColor3 =
-	Color3.fromRGB(55, 45, 20)
-
-MeButton.Text =
-	"👤 ME"
-
-MeButton.TextColor3 =
-	Color3.new(1, 1, 1)
-
+local MeButton = Instance.new("TextButton")
+MeButton.Name = "MeButton"
+MeButton.Size = UDim2.new(0.31, -4, 0, 27)
+MeButton.Position = UDim2.new(0, 8, 0, 197)
+MeButton.BackgroundColor3 = Color3.fromRGB(55, 45, 20)
+MeButton.Text = "👤 ME: OFF"
+MeButton.TextColor3 = Color3.new(1, 1, 1)
 MeButton.TextSize = 9
 MeButton.Font = Enum.Font.GothamBold
 MeButton.ZIndex = 20
 MeButton.Parent = Main
 
-Instance.new("UICorner", MeButton).CornerRadius =
-	UDim.new(0, 7)
+Instance.new("UICorner", MeButton).CornerRadius = UDim.new(0, 7)
 
-local MeStroke =
-	Instance.new("UIStroke")
-
+local MeStroke = Instance.new("UIStroke")
 MeStroke.Thickness = 1
-MeStroke.Color =
-	Color3.fromRGB(255, 220, 40)
-
+MeStroke.Color = Color3.fromRGB(255, 220, 40)
 MeStroke.Parent = MeButton
 
 -- =========================================================
 -- ORBIT BUTTON
 -- =========================================================
 
-local OrbitButton =
-	Instance.new("TextButton")
-
-OrbitButton.Name =
-	"OrbitButton"
-
-OrbitButton.Size =
-	UDim2.new(0.31, -4, 0, 27)
-
-OrbitButton.Position =
-	UDim2.new(0.345, 0, 0, 197)
-
-OrbitButton.BackgroundColor3 =
-	Color3.fromRGB(35, 55, 75)
-
-OrbitButton.Text =
-	"🌀 ORBIT"
-
-OrbitButton.TextColor3 =
-	Color3.new(1, 1, 1)
-
+local OrbitButton = Instance.new("TextButton")
+OrbitButton.Name = "OrbitButton"
+OrbitButton.Size = UDim2.new(0.31, -4, 0, 27)
+OrbitButton.Position = UDim2.new(0.345, 0, 0, 197)
+OrbitButton.BackgroundColor3 = Color3.fromRGB(35, 55, 75)
+OrbitButton.Text = "🌀 ORBIT: OFF"
+OrbitButton.TextColor3 = Color3.new(1, 1, 1)
 OrbitButton.TextSize = 9
 OrbitButton.Font = Enum.Font.GothamBold
 OrbitButton.ZIndex = 20
 OrbitButton.Parent = Main
 
-Instance.new("UICorner", OrbitButton).CornerRadius =
-	UDim.new(0, 7)
+Instance.new("UICorner", OrbitButton).CornerRadius = UDim.new(0, 7)
+
+-- =========================================================
+-- TEXT SHAPE BUTTON
+-- =========================================================
+
+local TextShapeButton = Instance.new("TextButton")
+TextShapeButton.Name = "TextShapeButton"
+TextShapeButton.Size = UDim2.new(0.31, -4, 0, 27)
+TextShapeButton.Position = UDim2.new(0.69, 0, 0, 197)
+TextShapeButton.BackgroundColor3 = Color3.fromRGB(65, 30, 75)
+TextShapeButton.Text = "✏️ TEXT: OFF"
+TextShapeButton.TextColor3 = Color3.new(1, 1, 1)
+TextShapeButton.TextSize = 9
+TextShapeButton.Font = Enum.Font.GothamBold
+TextShapeButton.ZIndex = 20
+TextShapeButton.Parent = Main
+
+Instance.new("UICorner", TextShapeButton).CornerRadius = UDim.new(0, 7)
+
+local TextShapeStroke = Instance.new("UIStroke")
+TextShapeStroke.Thickness = 1
+TextShapeStroke.Color = Color3.fromRGB(190, 60, 255)
+TextShapeStroke.Parent = TextShapeButton
+
+-- =========================================================
+-- TEXT PANEL
+-- =========================================================
+
+local TextPanel = Instance.new("Frame")
+TextPanel.Name = "TextShapePanel"
+TextPanel.Size = UDim2.new(1, -16, 0, 76)
+TextPanel.Position = UDim2.new(0, 8, 0, 229)
+TextPanel.BackgroundColor3 = Color3.fromRGB(12, 10, 18)
+TextPanel.BorderSizePixel = 0
+TextPanel.Visible = false
+TextPanel.ZIndex = 50
+TextPanel.Parent = Main
+
+Instance.new("UICorner", TextPanel).CornerRadius = UDim.new(0, 8)
+
+local TextPanelStroke = Instance.new("UIStroke")
+TextPanelStroke.Thickness = 1.5
+TextPanelStroke.Color = Color3.fromRGB(190, 60, 255)
+TextPanelStroke.Parent = TextPanel
+
+-- =========================================================
+-- TEXT BOX
+-- =========================================================
+
+local ShapeTextBox = Instance.new("TextBox")
+ShapeTextBox.Name = "ShapeTextBox"
+ShapeTextBox.Size = UDim2.new(1, -80, 0, 30)
+ShapeTextBox.Position = UDim2.new(0, 6, 0, 6)
+ShapeTextBox.BackgroundColor3 = Color3.fromRGB(25, 22, 32)
+ShapeTextBox.Text = currentText
+ShapeTextBox.PlaceholderText = "اكتب الكلام هنا..."
+ShapeTextBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 160)
+ShapeTextBox.TextColor3 = Color3.new(1, 1, 1)
+ShapeTextBox.TextSize = 12
+ShapeTextBox.Font = Enum.Font.GothamBold
+ShapeTextBox.ClearTextOnFocus = false
+ShapeTextBox.TextXAlignment = Enum.TextXAlignment.Left
+ShapeTextBox.ZIndex = 51
+ShapeTextBox.Parent = TextPanel
+
+Instance.new("UICorner", ShapeTextBox).CornerRadius = UDim.new(0, 6)
+
+local ShapeTextStroke = Instance.new("UIStroke")
+ShapeTextStroke.Thickness = 1
+ShapeTextStroke.Color = Color3.fromRGB(190, 60, 255)
+ShapeTextStroke.Parent = ShapeTextBox
+
+-- =========================================================
+-- CREATE TEXT BUTTON
+-- =========================================================
+
+local CreateTextButton = Instance.new("TextButton")
+CreateTextButton.Name = "CreateTextButton"
+CreateTextButton.Size = UDim2.new(0, 62, 0, 30)
+CreateTextButton.Position = UDim2.new(1, -68, 0, 6)
+CreateTextButton.BackgroundColor3 = Color3.fromRGB(120, 35, 160)
+CreateTextButton.Text = "CREATE"
+CreateTextButton.TextColor3 = Color3.new(1, 1, 1)
+CreateTextButton.TextSize = 9
+CreateTextButton.Font = Enum.Font.GothamBold
+CreateTextButton.ZIndex = 51
+CreateTextButton.Parent = TextPanel
+
+Instance.new("UICorner", CreateTextButton).CornerRadius = UDim.new(0, 6)
+
+-- =========================================================
+-- TEXT INFO
+-- =========================================================
+
+local TextInfo = Instance.new("TextLabel")
+TextInfo.Name = "TextInfo"
+TextInfo.Size = UDim2.new(1, -12, 0, 25)
+TextInfo.Position = UDim2.new(0, 6, 0, 43)
+TextInfo.BackgroundTransparency = 1
+TextInfo.Text = "اكتب A-Z أو 0-9 ثم CREATE"
+TextInfo.TextColor3 = Color3.fromRGB(190, 190, 200)
+TextInfo.TextSize = 8
+TextInfo.Font = Enum.Font.Gotham
+TextInfo.TextXAlignment = Enum.TextXAlignment.Left
+TextInfo.ZIndex = 51
+TextInfo.Parent = TextPanel
+
+-- =========================================================
+-- BUTTON STATE COLORS
+-- =========================================================
+
+local OFF_COLOR = Color3.fromRGB(35, 35, 45)
+local ON_COLOR = Color3.fromRGB(120, 35, 160)
+
+local function updateButtonStates()
+
+	TornadoButton.Text =
+		"🌪️ TORNADO: "
+		.. (isActive and "ON" or "OFF")
+
+	MeButton.Text =
+		"👤 ME: "
+		.. (isMeActive and "ON" or "OFF")
+
+	OrbitButton.Text =
+		"🌀 ORBIT: "
+		.. (isOrbitActive and "ON" or "OFF")
+
+	TextShapeButton.Text =
+		"✏️ TEXT: "
+		.. (isTextShapeActive and "ON" or "OFF")
+
+	RandomButton.Text =
+		"🎲 RANDOM MAP: "
+		.. (isRandomMapActive and "ON" or "OFF")
+
+	if isActive then
+		TornadoButton.BackgroundColor3 = ON_COLOR
+	else
+		TornadoButton.BackgroundColor3 = Color3.fromRGB(35, 25, 35)
+	end
+
+	if isMeActive then
+		MeButton.BackgroundColor3 = ON_COLOR
+	else
+		MeButton.BackgroundColor3 = Color3.fromRGB(55, 45, 20)
+	end
+
+	if isOrbitActive then
+		OrbitButton.BackgroundColor3 = ON_COLOR
+	else
+		OrbitButton.BackgroundColor3 = Color3.fromRGB(35, 55, 75)
+	end
+
+	if isTextShapeActive then
+		TextShapeButton.BackgroundColor3 = ON_COLOR
+	else
+		TextShapeButton.BackgroundColor3 = Color3.fromRGB(65, 30, 75)
+	end
+
+	if isRandomMapActive then
+		RandomButton.BackgroundColor3 = ON_COLOR
+	else
+		RandomButton.BackgroundColor3 = OFF_COLOR
+	end
+end
 
 -- =========================================================
 -- TARGET ROOT
@@ -849,42 +715,114 @@ Instance.new("UICorner", OrbitButton).CornerRadius =
 
 local function getTargetRoot()
 
-	if selectedTargetMode == "Random Map" then
+	if isRandomMapActive
+		or selectedTargetMode == "Random Map" then
+
 		return nil
 	end
 
-	local player =
-		targetPlayer or LocalPlayer
+	local player = targetPlayer or LocalPlayer
 
 	if player and player.Character then
 
-		return player.Character:
-			FindFirstChild("HumanoidRootPart")
+		return player.Character:FindFirstChild(
+			"HumanoidRootPart"
+		)
 
 	end
 
 	return nil
+end
 
+-- =========================================================
+-- RANDOM MAP POSITION
+-- =========================================================
+
+local function chooseRandomMapPosition()
+
+	local candidates = {}
+
+	for _, obj in ipairs(Workspace:GetDescendants()) do
+
+		if obj:IsA("BasePart")
+			and obj:IsDescendantOf(Workspace)
+			and obj.Size.X >= 4
+			and obj.Size.Z >= 4
+			and obj.Transparency < 1
+			and obj.CanCollide then
+
+			local model =
+				obj:FindFirstAncestorOfClass("Model")
+
+			local isCharacterPart =
+				model
+				and model:FindFirstChildOfClass("Humanoid")
+
+			if not isCharacterPart
+				and obj.Name ~= "Baseplate"
+				and obj.Name ~= "HumanoidRootPart" then
+
+				table.insert(
+					candidates,
+					obj
+				)
+
+			end
+
+		end
+
+	end
+
+	if #candidates > 0 then
+
+		local chosen =
+			candidates[
+				math.random(
+					1,
+					#candidates
+				)
+			]
+
+		-- =================================================
+		-- IMPORTANT:
+		-- RANDOM MAP IS NOW 999 STUD ABOVE THE MAP PART
+		-- =================================================
+
+		randomTargetPos =
+			chosen.Position
+			+ Vector3.new(
+				0,
+				RANDOM_MAP_HEIGHT,
+				0
+			)
+
+	else
+
+		randomTargetPos =
+			Vector3.new(
+				math.random(-300, 300),
+				RANDOM_MAP_HEIGHT,
+				math.random(-300, 300)
+			)
+
+	end
 end
 
 local function getTargetPosition()
 
-	if selectedTargetMode ==
-		"Random Map" then
+	if isRandomMapActive
+		or selectedTargetMode == "Random Map" then
 
 		return randomTargetPos
-
 	end
 
-	local root =
-		getTargetRoot()
+	local root = getTargetRoot()
 
 	if root then
 		return root.Position
 	end
 
 	return Vector3.zero
-
 end
 
 -- =========================================================
@@ -899,7 +837,6 @@ local function isValidProp(part)
 		or part.Anchored then
 
 		return false
-
 	end
 
 	local model =
@@ -909,11 +846,9 @@ local function isValidProp(part)
 		and model:FindFirstChildOfClass("Humanoid") then
 
 		return false
-
 	end
 
 	return true
-
 end
 
 -- =========================================================
@@ -926,13 +861,11 @@ local function isWithinRange(part)
 		or not part:IsDescendantOf(Workspace) then
 
 		return false
-
 	end
 
 	return
 		(part.Position - getTargetPosition()).Magnitude
 		<= 1000
-
 end
 
 -- =========================================================
@@ -968,8 +901,7 @@ local function attachPhysicsToProp(part)
 	attachment.Name =
 		"XR_TornadoAttachment"
 
-	attachment.Parent =
-		part
+	attachment.Parent = part
 
 	local AO =
 		Instance.new("AlignOrientation")
@@ -1038,63 +970,601 @@ local function attachPhysicsToProp(part)
 
 		AngleOffset =
 			(globalItemCount * 0.75)
-			% (math.pi * 2)
+			% (math.pi * 2),
 
+		OrderIndex =
+			globalItemCount
 	}
-
 end
 
 -- =========================================================
--- GRAB DETECTOR
+-- FONT
 -- =========================================================
 
-Workspace.ChildAdded:Connect(function(child)
+local FONT = {
 
-	if child.Name ~= "GrabParts" then
-		return
+A={"01110","10001","10001","11111","10001","10001","10001"},
+B={"11110","10001","10001","11110","10001","10001","11110"},
+C={"01111","10000","10000","10000","10000","10000","01111"},
+D={"11110","10001","10001","10001","10001","10001","11110"},
+E={"11111","10000","10000","11110","10000","10000","11111"},
+F={"11111","10000","10000","11110","10000","10000","10000"},
+G={"01111","10000","10000","10111","10001","10001","01111"},
+H={"10001","10001","10001","11111","10001","10001","10001"},
+I={"11111","00100","00100","00100","00100","00100","11111"},
+J={"00111","00010","00010","00010","00010","10010","01100"},
+K={"10001","10010","10100","11000","10100","10010","10001"},
+L={"10000","10000","10000","10000","10000","10000","11111"},
+M={"10001","11011","10101","10101","10001","10001","10001"},
+N={"10001","11001","10101","10011","10001","10001","10001"},
+O={"01110","10001","10001","10001","10001","10001","01110"},
+P={"11110","10001","10001","11110","10000","10000","10000"},
+Q={"01110","10001","10001","10001","10101","10010","01101"},
+R={"11110","10001","10001","11110","10100","10010","10001"},
+S={"01111","10000","10000","01110","00001","00001","11110"},
+T={"11111","00100","00100","00100","00100","00100","00100"},
+U={"10001","10001","10001","10001","10001","10001","01110"},
+V={"10001","10001","10001","10001","10001","01010","00100"},
+W={"10001","10001","10001","10101","10101","11011","10001"},
+X={"10001","10001","01010","00100","01010","10001","10001"},
+Y={"10001","10001","01010","00100","00100","00100","00100"},
+Z={"11111","00001","00010","00100","01000","10000","11111"},
+
+["0"]={"01110","10001","10011","10101","11001","10001","01110"},
+["1"]={"00100","01100","00100","00100","00100","00100","01110"},
+["2"]={"01110","10001","00001","00010","00100","01000","11111"},
+["3"]={"11110","00001","00001","01110","00001","00001","11110"},
+["4"]={"00010","00110","01010","10010","11111","00010","00010"},
+["5"]={"11111","10000","10000","11110","00001","00001","11110"},
+["6"]={"01110","10000","10000","11110","10001","10001","01110"},
+["7"]={"11111","00001","00010","00100","01000","01000","01000"},
+["8"]={"01110","10001","10001","01110","10001","10001","01110"},
+["9"]={"01110","10001","10001","01111","00001","00001","01110"},
+
+["!"]={"00100","00100","00100","00100","00100","00000","00100"},
+["?"]={"01110","10001","00001","00010","00100","00000","00100"}
+
+}
+
+-- =========================================================
+-- BUILD TEXT POINTS
+-- =========================================================
+
+local function buildTextPoints(text)
+
+	text = string.upper(text or "")
+
+	if text == "" then
+		text = "ALI"
 	end
+
+	local points = {}
+
+	local cellSize = 6
+	local letterSpacing = 3 * cellSize
+
+	local letters = {}
+
+	for i = 1, #text do
+
+		local char =
+			string.sub(text, i, i)
+
+		if FONT[char] then
+
+			table.insert(
+				letters,
+				{
+					char = char,
+					glyph = FONT[char]
+				}
+			)
+
+		elseif char == " " then
+
+			table.insert(
+				letters,
+				{
+					char = " ",
+					glyph = nil
+				}
+			)
+
+		end
+	end
+
+	if #letters == 0 then
+		return points
+	end
+
+	local totalWidth = 0
+
+	for index, info in ipairs(letters) do
+
+		if info.glyph then
+			totalWidth += 5 * cellSize
+		else
+			totalWidth += 3 * cellSize
+		end
+
+		if index < #letters then
+			totalWidth += letterSpacing
+		end
+	end
+
+	local cursorX =
+		-(totalWidth / 2)
+
+	for _, info in ipairs(letters) do
+
+		local glyph = info.glyph
+
+		if glyph then
+
+			for row = 1, 7 do
+
+				local line =
+					glyph[row]
+
+				for col = 1, 5 do
+
+					if string.sub(
+						line,
+						col,
+						col
+					) == "1" then
+
+						table.insert(
+							points,
+							{
+								position =
+									Vector3.new(
+										cursorX
+										+ (col - 1)
+										* cellSize,
+
+										(7 - row)
+										* cellSize,
+
+										0
+									),
+
+								character =
+									info.char
+							}
+						)
+
+					end
+
+				end
+
+			end
+
+			cursorX +=
+				5 * cellSize
+				+ letterSpacing
+
+		else
+
+			cursorX +=
+				3 * cellSize
+				+ letterSpacing
+
+		end
+
+	end
+
+	return points
+end
+
+-- =========================================================
+-- CURRENT TEXT POINTS
+-- =========================================================
+
+local textPoints =
+	buildTextPoints(currentText)
+
+-- =========================================================
+-- TEXT POSITION
+-- =========================================================
+
+local function getTextShapePosition(
+	index,
+	total,
+	rootPos
+)
+
+	total =
+		math.max(total, 1)
+
+	if #textPoints == 0 then
+
+		return rootPos
+			+ Vector3.new(
+				0,
+				105,
+				0
+			)
+
+	end
+
+	local pointIndex =
+		((index - 1)
+		% #textPoints) + 1
+
+	local pointData =
+		textPoints[pointIndex]
+
+	local point =
+		pointData.position
+
+	local scale = 1
+	local baseHeight = 105
+
+	return rootPos
+		+ Vector3.new(
+			point.X * scale,
+			point.Y * scale
+				+ baseHeight,
+			0
+		)
+end
+
+-- =========================================================
+-- TEXT CREATE
+-- =========================================================
+
+local function createTextShape()
+
+	local typed =
+		ShapeTextBox.Text
+
+	if not typed
+		or typed == "" then
+
+		typed = "ALI"
+		ShapeTextBox.Text = typed
+	end
+
+	currentText =
+		string.upper(typed)
+
+	textPoints =
+		buildTextPoints(
+			currentText
+		)
+
+	isTextShapeActive = true
+
+	isActive = false
+	isMeActive = false
+	isOrbitActive = false
+	isRandomMapActive = false
+
+	TextPanel.Visible = true
+
+	selectedTargetMode =
+		selectedTargetMode == "Random Map"
+		and "Me"
+		or selectedTargetMode
+
+	if selectedTargetMode == "Me" then
+		targetPlayer = LocalPlayer
+	end
+
+	updateTargetText()
+	updateButtonStates()
+end
+
+CreateTextButton.MouseButton1Click:Connect(
+	createTextShape
+)
+
+ShapeTextBox.FocusLost:Connect(
+	function(enterPressed)
+
+		if enterPressed then
+			createTextShape()
+		end
+
+	end
+)
+
+-- =========================================================
+-- TEXT BUTTON
+-- =========================================================
+
+TextShapeButton.MouseButton1Click:Connect(
+	function()
+
+		isTextShapeActive =
+			not isTextShapeActive
+
+		if isTextShapeActive then
+
+			isActive = false
+			isMeActive = false
+			isOrbitActive = false
+			isRandomMapActive = false
+
+			TextPanel.Visible = true
+
+			if selectedTargetMode == "Random Map" then
+				selectedTargetMode = "Me"
+				targetPlayer = LocalPlayer
+				updateTargetText()
+			end
+
+		else
+
+			TextPanel.Visible = false
+
+		end
+
+		updateButtonStates()
+
+	end
+)
+
+-- =========================================================
+-- TARGET PLAYER BUTTON
+-- =========================================================
+
+local function createPlayerButton(player, order)
+
+	local Button = Instance.new("TextButton")
+
+	Button.Name =
+		"Player_" .. player.UserId
+
+	Button.Size =
+		UDim2.new(1, -8, 0, 34)
+
+	Button.BackgroundColor3 =
+		Color3.fromRGB(22, 22, 30)
+
+	Button.Text = ""
+	Button.BorderSizePixel = 0
+	Button.LayoutOrder = order
+	Button.ZIndex = 101
+	Button.Parent = Dropdown
+
+	Instance.new(
+		"UICorner",
+		Button
+	).CornerRadius =
+		UDim.new(0, 6)
+
+	local SmallAvatar =
+		Instance.new("ImageLabel")
+
+	SmallAvatar.Size =
+		UDim2.new(0, 28, 0, 28)
+
+	SmallAvatar.Position =
+		UDim2.new(0, 4, 0, 3)
+
+	SmallAvatar.BackgroundTransparency = 1
+	SmallAvatar.ZIndex = 102
+	SmallAvatar.Parent = Button
+
+	Instance.new(
+		"UICorner",
+		SmallAvatar
+	).CornerRadius =
+		UDim.new(1, 0)
+
+	local NameLabel =
+		Instance.new("TextLabel")
+
+	NameLabel.Size =
+		UDim2.new(1, -40, 0, 17)
+
+	NameLabel.Position =
+		UDim2.new(0, 38, 0, 2)
+
+	NameLabel.BackgroundTransparency = 1
+	NameLabel.Text = player.DisplayName
+	NameLabel.TextColor3 = Color3.new(1, 1, 1)
+	NameLabel.TextSize = 11
+	NameLabel.Font = Enum.Font.GothamBold
+	NameLabel.TextXAlignment =
+		Enum.TextXAlignment.Left
+
+	NameLabel.TextTruncate =
+		Enum.TextTruncate.AtEnd
+
+	NameLabel.ZIndex = 102
+	NameLabel.Parent = Button
+
+	local UserLabel =
+		Instance.new("TextLabel")
+
+	UserLabel.Size =
+		UDim2.new(1, -40, 0, 13)
+
+	UserLabel.Position =
+		UDim2.new(0, 38, 0, 18)
+
+	UserLabel.BackgroundTransparency = 1
+	UserLabel.Text = "@" .. player.Name
+	UserLabel.TextColor3 =
+		Color3.fromRGB(
+			160,
+			160,
+			170
+		)
+
+	UserLabel.TextSize = 8
+	UserLabel.Font = Enum.Font.Gotham
+	UserLabel.TextXAlignment =
+		Enum.TextXAlignment.Left
+
+	UserLabel.ZIndex = 102
+	UserLabel.Parent = Button
 
 	task.spawn(function()
 
-		local grabPart =
-			child:WaitForChild(
-				"GrabPart",
-				2
-			)
+		local image =
+			getAvatar(player.UserId)
 
-		if not grabPart then
-			return
-		end
+		if player.Parent
+			and SmallAvatar.Parent then
 
-		local weld =
-			grabPart:FindFirstChildOfClass(
-				"WeldConstraint"
-			)
-
-		if not weld then
-
-			weld =
-				grabPart:WaitForChild(
-					"WeldConstraint",
-					2
-				)
-
-		end
-
-		if not weld then
-			return
-		end
-
-		local part =
-			weld.Part1
-
-		if isValidProp(part) then
-			attachPhysicsToProp(part)
+			SmallAvatar.Image = image
 		end
 
 	end)
 
-end)
+	Button.MouseButton1Click:Connect(
+		function()
+
+			if player.Parent then
+
+				targetPlayer = player
+				selectedTargetMode =
+					"Player"
+
+				isRandomMapActive = false
+
+				updateTargetText()
+				updateButtonStates()
+
+				Dropdown.Visible = false
+
+			end
+
+		end
+	)
+end
+
+-- =========================================================
+-- REFRESH TARGETS
+-- =========================================================
+
+local function refreshTargets()
+
+	for _, child in ipairs(
+		Dropdown:GetChildren()
+	) do
+
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+
+	end
+
+	local playerList = {}
+
+	for _, player in ipairs(
+		Players:GetPlayers()
+	) do
+
+		if player ~= LocalPlayer then
+			table.insert(
+				playerList,
+				player
+			)
+		end
+
+	end
+
+	table.sort(
+		playerList,
+		function(a, b)
+
+			return string.lower(
+				a.DisplayName
+			)
+			<
+			string.lower(
+				b.DisplayName
+			)
+
+		end
+	)
+
+	for index, player in ipairs(
+		playerList
+	) do
+
+		createPlayerButton(
+			player,
+			index
+		)
+
+	end
+
+	Dropdown.CanvasSize =
+		UDim2.new(
+			0,
+			0,
+			0,
+			(#playerList * 38) + 6
+		)
+end
+
+-- =========================================================
+-- TARGET BUTTON
+-- =========================================================
+
+TargetButton.MouseButton1Click:Connect(
+	function()
+
+		Dropdown.Visible =
+			not Dropdown.Visible
+
+		if Dropdown.Visible then
+			refreshTargets()
+		end
+
+	end
+)
+
+-- =========================================================
+-- RANDOM MAP BUTTON
+-- =========================================================
+
+RandomButton.MouseButton1Click:Connect(
+	function()
+
+		isRandomMapActive =
+			not isRandomMapActive
+
+		if isRandomMapActive then
+
+			isActive = false
+			isMeActive = false
+			isOrbitActive = false
+			isTextShapeActive = false
+
+			TextPanel.Visible = false
+
+			selectedTargetMode =
+				"Random Map"
+
+			targetPlayer = nil
+
+			randomTimer = 0
+
+			-- اختيار أول خريطة فورًا
+			chooseRandomMapPosition()
+
+			updateTargetText()
+
+		else
+
+			selectedTargetMode = "Me"
+			targetPlayer = LocalPlayer
+
+			updateTargetText()
+
+		end
+
+		updateButtonStates()
+
+	end
+)
 
 -- =========================================================
 -- TORNADO
@@ -1102,24 +1572,21 @@ end)
 
 local function toggleTornado()
 
+	isActive =
+		not isActive
+
 	if isActive then
 
-		isActive = false
-
-		TornadoButton.Text =
-			"🌪️ TORNADO: OFF"
-
-	else
-
-		isActive = true
 		isMeActive = false
 		isOrbitActive = false
+		isTextShapeActive = false
+		isRandomMapActive = false
 
-		TornadoButton.Text =
-			"🌪️ TORNADO: ON"
+		TextPanel.Visible = false
 
 	end
 
+	updateButtonStates()
 end
 
 TornadoButton.Activated:Connect(
@@ -1139,25 +1606,19 @@ local function toggleMe()
 
 		isActive = false
 		isOrbitActive = false
+		isTextShapeActive = false
+		isRandomMapActive = false
 
-		selectedTargetMode =
-			"Me"
+		TextPanel.Visible = false
 
-		targetPlayer =
-			LocalPlayer
+		selectedTargetMode = "Me"
+		targetPlayer = LocalPlayer
 
 		updateTargetText()
 
-		MeButton.Text =
-			"👤 ME: ON"
-
-	else
-
-		MeButton.Text =
-			"👤 ME"
-
 	end
 
+	updateButtonStates()
 end
 
 MeButton.Activated:Connect(
@@ -1177,17 +1638,14 @@ local function toggleOrbit()
 
 		isActive = false
 		isMeActive = false
+		isTextShapeActive = false
+		isRandomMapActive = false
 
-		OrbitButton.Text =
-			"🌀 ORBIT: ON"
-
-	else
-
-		OrbitButton.Text =
-			"🌀 ORBIT"
+		TextPanel.Visible = false
 
 	end
 
+	updateButtonStates()
 end
 
 OrbitButton.Activated:Connect(
@@ -1204,7 +1662,6 @@ local function triggerCompressAndBlast()
 		or isCompressing then
 
 		return
-
 	end
 
 	local root =
@@ -1218,7 +1675,9 @@ local function triggerCompressAndBlast()
 
 	local savedPositions = {}
 
-	for part, data in pairs(activeProps) do
+	for part, data in pairs(
+		activeProps
+	) do
 
 		if part
 			and part:IsDescendantOf(Workspace)
@@ -1235,7 +1694,9 @@ local function triggerCompressAndBlast()
 	local centerPoint =
 		root.Position
 
-	for part, data in pairs(activeProps) do
+	for part, data in pairs(
+		activeProps
+	) do
 
 		if part
 			and part:IsDescendantOf(Workspace)
@@ -1269,7 +1730,9 @@ local function triggerCompressAndBlast()
 	explosion.Parent =
 		Workspace
 
-	for part, data in pairs(activeProps) do
+	for part, data in pairs(
+		activeProps
+	) do
 
 		if part
 			and part:IsDescendantOf(Workspace)
@@ -1284,7 +1747,6 @@ local function triggerCompressAndBlast()
 	end
 
 	isCompressing = false
-
 end
 
 BlastButton.Activated:Connect(
@@ -1292,41 +1754,103 @@ BlastButton.Activated:Connect(
 )
 
 -- =========================================================
+-- GRAB DETECTOR
+-- =========================================================
+
+Workspace.ChildAdded:Connect(
+	function(child)
+
+		if child.Name ~= "GrabParts" then
+			return
+		end
+
+		task.spawn(function()
+
+			local grabPart =
+				child:WaitForChild(
+					"GrabPart",
+					2
+				)
+
+			if not grabPart then
+				return
+			end
+
+			local weld =
+				grabPart:FindFirstChildOfClass(
+					"WeldConstraint"
+				)
+
+			if not weld then
+
+				weld =
+					grabPart:WaitForChild(
+						"WeldConstraint",
+						2
+					)
+
+			end
+
+			if not weld then
+				return
+			end
+
+			local part =
+				weld.Part1
+
+			if isValidProp(part) then
+				attachPhysicsToProp(part)
+			end
+
+		end)
+
+	end
+)
+
+-- =========================================================
 -- PLAYER EVENTS
 -- =========================================================
 
-Players.PlayerAdded:Connect(function()
+Players.PlayerAdded:Connect(
+	function()
 
-	task.wait(0.2)
+		task.wait(0.2)
 
-	if Dropdown.Visible then
-		refreshTargets()
-	end
-
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-
-	if targetPlayer == player then
-
-		targetPlayer =
-			LocalPlayer
-
-		selectedTargetMode =
-			"Me"
-
-		updateTargetText()
+		if Dropdown.Visible then
+			refreshTargets()
+		end
 
 	end
+)
 
-	if Dropdown.Visible then
+Players.PlayerRemoving:Connect(
+	function(player)
 
-		task.wait(0.1)
-		refreshTargets()
+		if targetPlayer == player then
+
+			targetPlayer =
+				LocalPlayer
+
+			selectedTargetMode =
+				"Me"
+
+			isRandomMapActive = false
+
+			updateTargetText()
+			updateButtonStates()
+
+		end
+
+		if Dropdown.Visible then
+
+			task.wait(0.1)
+
+			refreshTargets()
+
+		end
 
 	end
-
-end)
+)
 
 -- =========================================================
 -- KEYBINDS
@@ -1376,21 +1900,22 @@ UserInputService.InputBegan:Connect(
 RunService.Stepped:Connect(
 	function(_, deltaTime)
 
-		if selectedTargetMode ==
-			"Random Map" then
+		-- =================================================
+		-- RANDOM MAP TIMER
+		-- =================================================
 
-			randomTimer += deltaTime
+		if isRandomMapActive then
 
-			if randomTimer >= 4 then
+			randomTimer +=
+				deltaTime
+
+			if randomTimer >= RANDOM_MAP_INTERVAL then
 
 				randomTimer = 0
 
-				randomTargetPos =
-					Vector3.new(
-						math.random(-300, 300),
-						300,
-						math.random(-300, 300)
-					)
+				-- يختار مكان جديد كل 4 ثواني
+				-- ويبقى الارتفاع 999 Stud
+				chooseRandomMapPosition()
 
 			end
 
@@ -1401,10 +1926,78 @@ RunService.Stepped:Connect(
 		end
 
 		-- =================================================
+		-- TEXT SHAPE
+		-- =================================================
+
+		if isTextShapeActive then
+
+			local targetPos =
+				getTargetPosition()
+
+			local total =
+				math.max(
+					#textPoints,
+					1
+				)
+
+			local orderedParts = {}
+
+			for part, data in pairs(
+				activeProps
+			) do
+
+				if part
+					and part:IsDescendantOf(Workspace)
+					and data.AP then
+
+					table.insert(
+						orderedParts,
+						{
+							part = part,
+							data = data
+						}
+					)
+
+				end
+
+			end
+
+			table.sort(
+				orderedParts,
+				function(a, b)
+
+					return
+						(a.data.OrderIndex or 0)
+						<
+						(b.data.OrderIndex or 0)
+
+				end
+			)
+
+			for index, entry in ipairs(
+				orderedParts
+			) do
+
+				local pos =
+					getTextShapePosition(
+						index,
+						total,
+						targetPos
+					)
+
+				entry.data.AP.Position =
+					pos
+
+				entry.data.AO.CFrame =
+					CFrame.new()
+
+			end
+
+		-- =================================================
 		-- TORNADO
 		-- =================================================
 
-		if isActive then
+		elseif isActive then
 
 			local targetPos =
 				getTargetPosition()
@@ -1412,7 +2005,9 @@ RunService.Stepped:Connect(
 			local t =
 				os.clock()
 
-			for part, data in pairs(activeProps) do
+			for part, data in pairs(
+				activeProps
+			) do
 
 				if part
 					and part:IsDescendantOf(Workspace)
@@ -1460,9 +2055,14 @@ RunService.Stepped:Connect(
 					local pos =
 						targetPos
 						+ Vector3.new(
-							math.cos(angle) * radius,
-							height + yWave,
-							math.sin(angle) * radius
+							math.cos(angle)
+								* radius,
+
+							height
+								+ yWave,
+
+							math.sin(angle)
+								* radius
 						)
 
 					data.AP.Position =
@@ -1471,12 +2071,99 @@ RunService.Stepped:Connect(
 					data.AO.CFrame =
 						CFrame.lookAt(
 							part.Position,
-							targetPos +
-								Vector3.new(
+
+							targetPos
+								+ Vector3.new(
 									0,
 									height,
 									0
 								)
+						)
+
+				end
+
+			end
+
+		-- =================================================
+		-- RANDOM MAP
+		-- 999 STUD ABOVE MAP + CONTINUOUS ROTATION
+		-- =================================================
+
+		elseif isRandomMapActive then
+
+			local targetPos =
+				randomTargetPos
+
+			local t =
+				os.clock()
+
+			for part, data in pairs(
+				activeProps
+			) do
+
+				if part
+					and part:IsDescendantOf(Workspace)
+					and data.AP then
+
+					local section =
+						data.Section or 1
+
+					local slot =
+						data.SubSlot or 0
+
+					local offset =
+						data.AngleOffset or 0
+
+					-- ثلاث حلقات مثل العصا/الدوامة
+					local radius
+
+					if section == 1 then
+						radius = 18
+					elseif section == 2 then
+						radius = 13
+					else
+						radius = 8
+					end
+
+					-- ارتفاع داخل المجموعة
+					local height
+
+					if section == 1 then
+						height = -25
+					elseif section == 2 then
+						height = 0
+					else
+						height = 25
+					end
+
+					-- دوران مستمر
+					local angle =
+						t * RANDOM_ROTATION_SPEED
+						+ offset
+						+ slot * 0.45
+
+					-- حركة دائرية مستمرة
+					local pos =
+						targetPos
+						+ Vector3.new(
+							math.cos(angle)
+								* radius,
+
+							height,
+
+							math.sin(angle)
+								* radius
+						)
+
+					data.AP.Position =
+						pos
+
+					-- يجعل القطع تدور مع الحلقة
+					data.AO.CFrame =
+						CFrame.Angles(
+							0,
+							angle,
+							0
 						)
 
 				end
@@ -1489,21 +2176,23 @@ RunService.Stepped:Connect(
 
 		elseif isMeActive then
 
-			local targetPos =
+			local targetRoot =
 				LocalPlayer.Character
 				and LocalPlayer.Character:FindFirstChild(
 					"HumanoidRootPart"
 				)
 
-			if targetPos then
+			if targetRoot then
 
 				local center =
-					targetPos.Position
+					targetRoot.Position
 
 				local t =
 					os.clock()
 
-				for part, data in pairs(activeProps) do
+				for part, data in pairs(
+					activeProps
+				) do
 
 					if part
 						and part:IsDescendantOf(Workspace)
@@ -1521,7 +2210,10 @@ RunService.Stepped:Connect(
 						local angle =
 							t * 2
 							+ slot * 0.8
-							+ (data.AngleOffset or 0)
+							+ (
+								data.AngleOffset
+								or 0
+							)
 
 						local height =
 							8 + section * 8
@@ -1529,12 +2221,16 @@ RunService.Stepped:Connect(
 						local pos =
 							center
 							+ Vector3.new(
-								math.cos(angle) * radius,
-								height +
-									math.sin(
+								math.cos(angle)
+									* radius,
+
+								height
+									+ math.sin(
 										t * 2 + slot
 									) * 2,
-								math.sin(angle) * radius
+
+								math.sin(angle)
+									* radius
 							)
 
 						data.AP.Position =
@@ -1564,7 +2260,9 @@ RunService.Stepped:Connect(
 			local targetPos =
 				getTargetPosition()
 
-			for part, data in pairs(activeProps) do
+			for part, data in pairs(
+				activeProps
+			) do
 
 				if part
 					and part:IsDescendantOf(Workspace)
@@ -1583,26 +2281,27 @@ RunService.Stepped:Connect(
 						20 + section * 12
 
 					local angle =
-						t *
-						(2 + section * 0.5)
+						t
+						* (2 + section * 0.5)
 						+ slot * 0.7
 						+ (
-							data.AngleOffset or 0
+							data.AngleOffset
+							or 0
 						)
 
 					local pos =
 						targetPos
 						+ Vector3.new(
-							math.cos(angle) *
-								radius,
+							math.cos(angle)
+								* radius,
 
-							height +
-								math.sin(
+							height
+								+ math.sin(
 									t * 2 + slot
 								) * 3,
 
-							math.sin(angle) *
-								radius
+							math.sin(angle)
+								* radius
 						)
 
 					data.AP.Position =
@@ -1628,116 +2327,124 @@ RunService.Stepped:Connect(
 -- MINIMIZE
 -- =========================================================
 
-MinButton.MouseButton1Click:Connect(function()
+MinButton.MouseButton1Click:Connect(
+	function()
 
-	minimized =
-		not minimized
+		minimized =
+			not minimized
 
-	if minimized then
+		if minimized then
 
-		Main.Size =
-			UDim2.new(
-				0,
-				220,
-				0,
-				38
-			)
+			Main.Size =
+				UDim2.new(
+					0,
+					220,
+					0,
+					38
+				)
 
-		for _, child in ipairs(Main:GetChildren()) do
+			for _, child in ipairs(
+				Main:GetChildren()
+			) do
 
-			if child ~= Title
-				and child ~= CloseButton
-				and child ~= MinButton
-				and child ~= MainCorner
-				and child ~= MainStroke
-				and child ~= Background
-				and child ~= BackgroundCorner then
+				if child ~= Title
+					and child ~= CloseButton
+					and child ~= MinButton
+					and child ~= MainCorner
+					and child ~= MainStroke
+					and child ~= Background
+					and child ~= BackgroundCorner then
+
+					if child:IsA("GuiObject") then
+						child.Visible = false
+					end
+
+				end
+
+			end
+
+			Title.Text =
+				"🌪️ XR HUB"
+
+		else
+
+			Main.Size =
+				UDim2.new(
+					0,
+					220,
+					0,
+					320
+				)
+
+			for _, child in ipairs(
+				Main:GetChildren()
+			) do
 
 				if child:IsA("GuiObject") then
-					child.Visible = false
-				end
 
-			end
+					if child ~= Background
+						and child ~= Title
+						and child ~= CloseButton
+						and child ~= MinButton then
 
-		end
+						child.Visible = true
 
-		Title.Text =
-			"🌪️ XR HUB"
-
-	else
-
-		Main.Size =
-			UDim2.new(
-				0,
-				220,
-				0,
-				245
-			)
-
-		for _, child in ipairs(Main:GetChildren()) do
-
-			if child:IsA("GuiObject") then
-
-				if child ~= Background
-					and child ~= Title
-					and child ~= CloseButton
-					and child ~= MinButton then
-
-					child.Visible = true
+					end
 
 				end
 
 			end
 
-		end
+			Dropdown.Visible =
+				false
 
-		Dropdown.Visible = false
+			Title.Text =
+				"🌪️ by XR 🌪️"
 
-		Title.Text =
-			"🌪️ by XR 🌪️"
-
-		if selectedTargetMode ==
-			"Random Map" then
-
-			ProfileCard.Visible = false
+			if isRandomMapActive then
+				ProfileCard.Visible = false
+			end
 
 		end
 
 	end
-
-end)
+)
 
 -- =========================================================
 -- CLOSE
 -- =========================================================
 
-CloseButton.MouseButton1Click:Connect(function()
+CloseButton.MouseButton1Click:Connect(
+	function()
 
-	for part, data in pairs(activeProps) do
+		for part, data in pairs(
+			activeProps
+		) do
 
-		pcall(function()
+			pcall(function()
 
-			if data.AP then
-				data.AP:Destroy()
-			end
+				if data.AP then
+					data.AP:Destroy()
+				end
 
-			if data.AO then
-				data.AO:Destroy()
-			end
+				if data.AO then
+					data.AO:Destroy()
+				end
 
-			if data.Attachment then
-				data.Attachment:Destroy()
-			end
+				if data.Attachment then
+					data.Attachment:Destroy()
+				end
 
-		end)
+			end)
+
+		end
+
+		activeProps = {}
+
+		ScreenGui:Destroy()
 
 	end
-
-	activeProps = {}
-
-	ScreenGui:Destroy()
-
-end)
+)
 
 -- =========================================================
 -- DRAG
@@ -1760,57 +2467,80 @@ local function updateDrag(input)
 			startPosition.Y.Scale,
 			startPosition.Y.Offset + delta.Y
 		)
-
 end
 
-Title.InputBegan:Connect(function(input)
+Title.InputBegan:Connect(
+	function(input)
 
-	if input.UserInputType ==
-		Enum.UserInputType.MouseButton1
-		or input.UserInputType ==
-		Enum.UserInputType.Touch then
+		if input.UserInputType ==
+			Enum.UserInputType.MouseButton1
+			or input.UserInputType ==
+			Enum.UserInputType.Touch then
 
-		dragging = true
-		dragStart = input.Position
-		startPosition = Main.Position
+			dragging = true
 
-		input.Changed:Connect(function()
+			dragStart =
+				input.Position
 
-			if input.UserInputState ==
-				Enum.UserInputState.End then
+			startPosition =
+				Main.Position
 
-				dragging = false
+			input.Changed:Connect(
+				function()
 
-			end
+					if input.UserInputState ==
+						Enum.UserInputState.End then
 
-		end)
+						dragging = false
 
-	end
+					end
 
-end)
+				end
+			)
 
-UserInputService.InputChanged:Connect(function(input)
-
-	if not dragging then
-		return
-	end
-
-	if input.UserInputType ==
-		Enum.UserInputType.MouseMovement
-		or input.UserInputType ==
-		Enum.UserInputType.Touch then
-
-		updateDrag(input)
+		end
 
 	end
+)
 
-end)
+UserInputService.InputChanged:Connect(
+	function(input)
+
+		if not dragging then
+			return
+		end
+
+		if input.UserInputType ==
+			Enum.UserInputType.MouseMovement
+			or input.UserInputType ==
+			Enum.UserInputType.Touch then
+
+			updateDrag(input)
+
+		end
+
+	end
+)
 
 -- =========================================================
 -- INITIAL
 -- =========================================================
 
+isActive = false
+isMeActive = false
+isOrbitActive = false
+isTextShapeActive = false
+isRandomMapActive = false
+
+selectedTargetMode = "Me"
+targetPlayer = LocalPlayer
+
+TextPanel.Visible = false
+
 refreshTargets()
 updateTargetText()
+updateButtonStates()
 
-print("🌪️ XR TORNADO HUB LOADED")
+print(
+	"🌪️ XR TORNADO HUB + RANDOM MAP 999 STUD + CONTINUOUS ROTATION LOADED"
+)
