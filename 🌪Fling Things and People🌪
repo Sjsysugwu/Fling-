@@ -2146,3 +2146,146 @@ print("👑 ULTRA LUXURY TITLE ENABLED")
 print("Display Name + Username VISIBLE")
 print("ORBIT + TEXT REMOVED")
 print("OFF = FALL / ON = WORK AGAIN")
+
+-- =====================================================
+-- ANTI GRAB - TRANSPARENT CORNER BUTTON
+-- =====================================================
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+local autoStruggleConn = nil
+local antiGrabEnabled = false
+
+-- =====================================================
+-- إنشاء ScreenGui
+-- =====================================================
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "AntiGrabCornerGui"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.DisplayOrder = 999999
+gui.Parent = PlayerGui
+
+-- =====================================================
+-- زر Anti Grab الشفاف
+-- =====================================================
+
+local AntiGrabButton = Instance.new("TextButton")
+AntiGrabButton.Name = "AntiGrabButton"
+AntiGrabButton.Size = UDim2.new(0, 120, 0, 40)
+AntiGrabButton.Position = UDim2.new(1, -130, 0, 10)
+
+-- شفاف بالكامل
+AntiGrabButton.BackgroundTransparency = 1
+AntiGrabButton.BorderSizePixel = 0
+
+AntiGrabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+AntiGrabButton.Text = ""
+AntiGrabButton.TextSize = 14
+AntiGrabButton.Font = Enum.Font.GothamBold
+AntiGrabButton.ZIndex = 999
+AntiGrabButton.Parent = gui
+
+-- =====================================================
+-- Anti Grab
+-- =====================================================
+
+local function setAntiGrab(Value)
+
+antiGrabEnabled = Value  
+
+local Struggle =  
+    ReplicatedStorage:FindFirstChild("CharacterEvents")  
+    and ReplicatedStorage.CharacterEvents:FindFirstChild("Struggle")  
+
+if Value then  
+
+    if autoStruggleConn then  
+        autoStruggleConn:Disconnect()  
+        autoStruggleConn = nil  
+    end  
+
+    autoStruggleConn = RunService.Heartbeat:Connect(function()  
+
+        local character = LocalPlayer.Character  
+
+        if character and character:FindFirstChild("Head") then  
+
+            local head = character.Head  
+
+            if head:FindFirstChild("PartOwner") then  
+
+                task.spawn(function()  
+
+                    if Struggle then  
+                        Struggle:FireServer(LocalPlayer)  
+                    end  
+
+                    for _, part in pairs(character:GetChildren()) do  
+                        if part:IsA("BasePart") then  
+                            part.Anchored = true  
+                        end  
+                    end  
+
+                    local isHeld = LocalPlayer:FindFirstChild("IsHeld")  
+
+                    while isHeld and isHeld.Value do  
+                        task.wait()  
+                    end  
+
+                    for _, part in pairs(character:GetChildren()) do  
+                        if part:IsA("BasePart") then  
+                            part.Anchored = false  
+                        end  
+                    end  
+
+                end)  
+
+            end  
+
+        end  
+
+    end)  
+
+else  
+
+    if autoStruggleConn then  
+        autoStruggleConn:Disconnect()  
+        autoStruggleConn = nil  
+    end  
+
+end
+
+end
+
+-- =====================================================
+-- زر ON / OFF
+-- =====================================================
+
+AntiGrabButton.MouseButton1Click:Connect(function()
+
+antiGrabEnabled = not antiGrabEnabled  
+
+if antiGrabEnabled then  
+    AntiGrabButton.Text = ""  
+    setAntiGrab(true)  
+else  
+    AntiGrabButton.Text = ""  
+    setAntiGrab(false)  
+end
+
+end)
+
+-- =====================================================
+-- تشغيل Anti Grab تلقائيًا
+-- =========================================
+
+antiGrabEnabled = true
+AntiGrabButton.Text = ""
+setAntiGrab(true)
