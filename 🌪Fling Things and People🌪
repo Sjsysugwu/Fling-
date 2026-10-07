@@ -5,6 +5,7 @@
 -- DISPLAY NAME + USERNAME VISIBLE
 -- BIG PLAYER BUTTONS
 -- ORBIT + TEXT REMOVED
+-- ULTRA LUXURY ANIMATED TITLE
 -- =========================================================
 
 local Players = game:GetService("Players")
@@ -12,6 +13,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -97,21 +99,289 @@ Instance.new("UICorner", Background).CornerRadius =
 	UDim.new(0, 14)
 
 -- =========================================================
--- TITLE
+-- 👑✨ ULTRA LUXURY TITLE ✨👑
 -- =========================================================
 
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
-Title.Size = UDim2.new(1, -75, 0, 28)
-Title.Position = UDim2.new(0, 10, 0, 5)
+Title.Size = UDim2.new(1, -78, 0, 32)
+Title.Position = UDim2.new(0, 10, 0, 3)
 Title.BackgroundTransparency = 1
-Title.Text = "🌪️ by XR 🌪️"
+
+Title.Text = "👑 XR TORNADO 👑"
 Title.TextColor3 = Color3.fromRGB(255, 220, 40)
-Title.TextSize = 17
-Title.Font = Enum.Font.GothamBold
+Title.TextSize = 18
+Title.Font = Enum.Font.GothamBlack
+
 Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.ZIndex = 20
+Title.TextYAlignment = Enum.TextYAlignment.Center
+
+Title.TextStrokeTransparency = 0.15
+Title.TextStrokeColor3 = Color3.fromRGB(255, 120, 20)
+
+Title.ZIndex = 50
 Title.Parent = Main
+
+local TitleGlow = Instance.new("UIStroke")
+TitleGlow.Name = "LuxuryGlow"
+TitleGlow.Thickness = 2
+TitleGlow.Transparency = 0.15
+TitleGlow.Color = Color3.fromRGB(255, 210, 40)
+TitleGlow.Parent = Title
+
+local TitleGradient = Instance.new("UIGradient")
+TitleGradient.Name = "LuxuryGradient"
+
+TitleGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(
+		0,
+		Color3.fromRGB(255, 45, 70)
+	),
+
+	ColorSequenceKeypoint.new(
+		0.25,
+		Color3.fromRGB(255, 210, 40)
+	),
+
+	ColorSequenceKeypoint.new(
+		0.5,
+		Color3.fromRGB(255, 255, 255)
+	),
+
+	ColorSequenceKeypoint.new(
+		0.75,
+		Color3.fromRGB(190, 60, 255)
+	),
+
+	ColorSequenceKeypoint.new(
+		1,
+		Color3.fromRGB(255, 45, 70)
+	)
+})
+
+TitleGradient.Offset = Vector2.new(-1, 0)
+TitleGradient.Rotation = 0
+TitleGradient.Parent = Title
+
+-- =========================================================
+-- 💎 MOVING SHINE
+-- =========================================================
+
+task.spawn(function()
+
+	while Title
+		and Title.Parent do
+
+		TitleGradient.Offset =
+			Vector2.new(-1, 0)
+
+		local shine = TweenService:Create(
+			TitleGradient,
+
+			TweenInfo.new(
+				2.2,
+				Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut
+			),
+
+			{
+				Offset = Vector2.new(1, 0)
+			}
+		)
+
+		shine:Play()
+		shine.Completed:Wait()
+
+		task.wait(0.15)
+
+	end
+
+end)
+
+-- =========================================================
+-- ✨ TEXT FADE + GLOW
+-- =========================================================
+
+task.spawn(function()
+
+	while Title
+		and Title.Parent do
+
+		local bright = TweenService:Create(
+			Title,
+
+			TweenInfo.new(
+				0.9,
+				Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut
+			),
+
+			{
+				TextTransparency = 0,
+				TextStrokeTransparency = 0.05
+			}
+		)
+
+		local brightGlow = TweenService:Create(
+			TitleGlow,
+
+			TweenInfo.new(
+				0.9,
+				Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut
+			),
+
+			{
+				Transparency = 0,
+				Thickness = 3
+			}
+		)
+
+		bright:Play()
+		brightGlow:Play()
+
+		bright.Completed:Wait()
+
+		local fade = TweenService:Create(
+			Title,
+
+			TweenInfo.new(
+				0.9,
+				Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut
+			),
+
+			{
+				TextTransparency = 0.35,
+				TextStrokeTransparency = 0.4
+			}
+		)
+
+		local fadeGlow = TweenService:Create(
+			TitleGlow,
+
+			TweenInfo.new(
+				0.9,
+				Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut
+			),
+
+			{
+				Transparency = 0.55,
+				Thickness = 1.5
+			}
+		)
+
+		fade:Play()
+		fadeGlow:Play()
+
+		fade.Completed:Wait()
+
+	end
+
+end)
+
+-- =========================================================
+-- 👑 SMALL LUXURY PULSE
+-- =========================================================
+
+task.spawn(function()
+
+	local originalSize =
+		Title.Size
+
+	while Title
+		and Title.Parent do
+
+		local pulseUp = TweenService:Create(
+			Title,
+
+			TweenInfo.new(
+				1.1,
+				Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut
+			),
+
+			{
+				Size = UDim2.new(
+					1, -74,
+					0, 34
+				)
+			}
+		)
+
+		pulseUp:Play()
+		pulseUp.Completed:Wait()
+
+		local pulseDown = TweenService:Create(
+			Title,
+
+			TweenInfo.new(
+				1.1,
+				Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut
+			),
+
+			{
+				Size = originalSize
+			}
+		)
+
+		pulseDown:Play()
+		pulseDown.Completed:Wait()
+
+	end
+
+end)
+
+-- =========================================================
+-- 🌈 RGB BORDER COLOR
+-- =========================================================
+
+task.spawn(function()
+
+	local colors = {
+		Color3.fromRGB(255, 45, 70),
+		Color3.fromRGB(255, 210, 40),
+		Color3.fromRGB(190, 60, 255),
+		Color3.fromRGB(45, 130, 255),
+		Color3.fromRGB(255, 70, 180)
+	}
+
+	local index = 1
+
+	while MainStroke
+		and MainStroke.Parent do
+
+		local nextIndex =
+			index + 1
+
+		if nextIndex > #colors then
+			nextIndex = 1
+		end
+
+		local colorTween = TweenService:Create(
+			MainStroke,
+
+			TweenInfo.new(
+				1.2,
+				Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut
+			),
+
+			{
+				Color = colors[nextIndex]
+			}
+		)
+
+		colorTween:Play()
+		colorTween.Completed:Wait()
+
+		index = nextIndex
+
+	end
+
+end)
 
 -- =========================================================
 -- CLOSE
@@ -1707,7 +1977,7 @@ MinButton.Activated:Connect(function()
 		end
 
 		Title.Text =
-			"🌪️ XR HUB"
+			"👑 XR TORNADO 👑"
 
 	else
 
@@ -1738,7 +2008,7 @@ MinButton.Activated:Connect(function()
 		Dropdown.Visible = false
 
 		Title.Text =
-			"🌪️ by XR 🌪️"
+			"👑 XR TORNADO 👑"
 
 		if selectedTargetMode ==
 			"Random Map" then
@@ -1872,6 +2142,7 @@ updateTargetText()
 updateButtonStates()
 
 print("👑 XR TORNADO HUB READY")
+print("👑 ULTRA LUXURY TITLE ENABLED")
 print("Display Name + Username VISIBLE")
 print("ORBIT + TEXT REMOVED")
 print("OFF = FALL / ON = WORK AGAIN")
