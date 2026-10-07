@@ -280,8 +280,8 @@ end
 -- UI
 
 local Window = Library:CreateWindow({
-    Title            = "Qhosts.lol",
-    Footer           = "The Worst Script",
+    Title            = "💀XR script  ZAZ💀",
+    Footer           = "XR Script",
     ShowCustomCursor = true,
     NotifySide       = "Right",
 })
