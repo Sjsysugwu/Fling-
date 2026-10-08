@@ -6,6 +6,7 @@
 -- UP TO 1000 PROPS
 -- SMALL GUI VERSION
 -- RED LUXURY MOVING BUTTONS - LESS BLACK
+-- IMAGE CLARITY FIXED
 -- =========================================================
 
 local Players=game:GetService("Players")
@@ -19,7 +20,7 @@ local LocalPlayer=Players.LocalPlayer
 local PlayerGui=LocalPlayer:WaitForChild("PlayerGui")
 
 local GUI_NAME="XR_Tornado_GUI"
-local IMAGE_ID="rbxassetid://131039661990217"
+local IMAGE_ID="rbxassetid://88090543209567"
 
 local isActive=false
 local isMeActive=false
@@ -122,8 +123,11 @@ local Background=Instance.new("ImageLabel")
 Background.Name="Background"
 Background.Size=UDim2.new(1,0,1,0)
 Background.BackgroundTransparency=1
+
+-- ★ الصورة الآن واضحة جدًا
 Background.Image=IMAGE_ID
-Background.ImageTransparency=0.72
+Background.ImageTransparency=0.05
+
 Background.ScaleType=Enum.ScaleType.Crop
 Background.ZIndex=1
 Background.Parent=Main
@@ -541,7 +545,6 @@ end)
 
 -- =========================================================
 -- ❤️ RED LUXURY MOVING BUTTON SYSTEM
--- الأسود صار خفيف
 -- =========================================================
 
 local LuxuryButtonGradients={}
@@ -644,7 +647,6 @@ local function makeButton(name,text,x,y,w,h)
 	button.Size=UDim2.new(0,w,0,h)
 	button.Position=UDim2.new(0,x,0,y)
 
-	-- ❤️ لون أساسي أحمر خفيف بدل الأسود
 	button.BackgroundColor3=Color3.fromRGB(45,8,12)
 
 	button.Text=text
@@ -1018,7 +1020,6 @@ local function updateButtonStates()
 		"🧬 DNA: "
 		..(isDNAActive and "ON" or "OFF")
 
-	-- ❤️ الأحمر هو اللون الأساسي
 	TornadoButton.BackgroundColor3=Color3.fromRGB(45,8,12)
 	MeButton.BackgroundColor3=Color3.fromRGB(45,8,12)
 	RandomButton.BackgroundColor3=Color3.fromRGB(45,8,12)
@@ -1930,6 +1931,7 @@ updateButtonStates()
 print("👑 XR TORNADO HUB READY")
 print("📱 SMALL GUI 0.78x")
 print("❤️ RED LUXURY BUTTONS - LESS BLACK")
+print("🖼️ IMAGE CLARITY: 0.05 TRANSPARENCY")
 print("🌀 HEAD SPIRAL READY")
 print("🧬 DNA READY - CLOSE TO HEAD")
 print("🌀 MAX 1000 PROPS")
