@@ -1,3 +1,314 @@
+
+-- =====================================================
+-- 👑 XR RED & BLACK LUXURY IMAGE HUB
+-- SPIN IMAGE + AUTO IMAGE SWITCH
+-- IMAGE SWITCH EVERY 5 SECONDS
+-- ANIMATED RED & BLACK LUXURY STYLE
+-- by A_A + XR
+-- =====================================================
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+-- =====================================================
+-- 🖼️ XR IMAGES
+-- =====================================================
+
+local XRImages = {
+    "rbxassetid://106977004812441",
+    "rbxassetid://85558273968736",
+    "rbxassetid://71037538779373"
+}
+
+-- =====================================================
+-- ❤️🖤 COLORS
+-- =====================================================
+
+local RED = Color3.fromRGB(255, 0, 25)
+local BLACK = Color3.fromRGB(5, 5, 5)
+local DARK_RED = Color3.fromRGB(100, 0, 10)
+local WHITE = Color3.fromRGB(255, 255, 255)
+
+-- =====================================================
+-- 🧹 REMOVE OLD GUI
+-- =====================================================
+
+local OldGui = PlayerGui:FindFirstChild("XR_Standalone_Image_Hub")
+
+if OldGui then
+    OldGui:Destroy()
+end
+
+-- =====================================================
+-- 👑 MAIN GUI
+-- =====================================================
+
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "XR_Standalone_Image_Hub"
+Gui.ResetOnSpawn = false
+Gui.IgnoreGuiInset = false
+Gui.DisplayOrder = 999999
+Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+Gui.Parent = PlayerGui
+
+-- =====================================================
+-- 📦 CONTAINER
+-- =====================================================
+
+local Container = Instance.new("Frame")
+Container.Name = "XR_Container"
+Container.Size = UDim2.fromOffset(145, 130)
+Container.Position = UDim2.new(0.5, -72, 0, 10)
+Container.BackgroundTransparency = 1
+Container.BorderSizePixel = 0
+Container.Parent = Gui
+
+-- =====================================================
+-- 🖼️ IMAGE
+-- =====================================================
+
+local Image = Instance.new("ImageLabel")
+Image.Name = "XR_Image"
+Image.Size = UDim2.fromOffset(78, 78)
+Image.Position = UDim2.new(0.5, -39, 0, 0)
+Image.BackgroundColor3 = BLACK
+Image.BorderSizePixel = 0
+Image.Image = XRImages[1]
+Image.ImageColor3 = WHITE
+Image.ImageTransparency = 0
+Image.ScaleType = Enum.ScaleType.Fit
+Image.Rotation = 0
+Image.ZIndex = 101
+Image.Parent = Container
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(1, 0)
+Corner.Parent = Image
+
+-- =====================================================
+-- 🔴 RED BORDER
+-- =====================================================
+
+local Border = Instance.new("UIStroke")
+Border.Name = "XR_Border"
+Border.Thickness = 3
+Border.Color = RED
+Border.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+Border.Parent = Image
+
+-- =====================================================
+-- ✨ LUXURY GLOW
+-- =====================================================
+
+local Glow = Instance.new("UIStroke")
+Glow.Name = "XR_Glow"
+Glow.Thickness = 6
+Glow.Transparency = 0.4
+Glow.Color = RED
+Glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+Glow.Parent = Image
+
+-- =====================================================
+-- 👑 TITLE
+-- =====================================================
+
+local Title = Instance.new("TextLabel")
+Title.Name = "XR_Title"
+Title.Size = UDim2.new(1, 0, 0, 32)
+Title.Position = UDim2.new(0, 0, 0, 82)
+Title.BackgroundTransparency = 1
+Title.BorderSizePixel = 0
+Title.Text = "🐍https://discord.gg/897cSXvD2🌪"
+Title.TextColor3 = RED
+Title.TextScaled = true
+Title.Font = Enum.Font.GothamBlack
+Title.TextStrokeColor3 = BLACK
+Title.TextStrokeTransparency = 0
+Title.ZIndex = 102
+Title.Parent = Container
+
+local TitleBorder = Instance.new("UIStroke")
+TitleBorder.Name = "XR_TitleBorder"
+TitleBorder.Thickness = 1.5
+TitleBorder.Color = BLACK
+TitleBorder.Parent = Title
+
+-- =====================================================
+-- 🔄 SPIN + AUTO IMAGE SWITCH
+-- تلف باستمرار وتتبدل الصورة كل 5 ثوانٍ
+-- =====================================================
+
+local ImageIndex = 1
+local IMAGE_SWITCH_INTERVAL = 5
+local IMAGE_ROTATION_SPEED = 180
+
+local LastSwitch = os.clock()
+local IsSwitching = false
+
+local RotationConnection
+
+RotationConnection = RunService.RenderStepped:Connect(function(DeltaTime)
+    if not Gui.Parent or not Image.Parent then
+        if RotationConnection then
+            RotationConnection:Disconnect()
+        end
+        return
+    end
+
+    -- تدوير الصورة باستمرار
+    Image.Rotation =
+        (Image.Rotation + IMAGE_ROTATION_SPEED * DeltaTime) % 360
+end)
+
+task.spawn(function()
+    while Gui.Parent and Image.Parent do
+        task.wait(0.1)
+
+        if not Gui.Parent or not Image.Parent then
+            break
+        end
+
+        if os.clock() - LastSwitch >= IMAGE_SWITCH_INTERVAL
+            and not IsSwitching then
+
+            IsSwitching = true
+            LastSwitch = os.clock()
+
+            -- إخفاء الصورة القديمة
+            local FadeOut = TweenService:Create(
+                Image,
+                TweenInfo.new(0.2, Enum.EasingStyle.Sine),
+                {ImageTransparency = 1}
+            )
+
+            FadeOut:Play()
+            FadeOut.Completed:Wait()
+
+            if not Gui.Parent or not Image.Parent then
+                break
+            end
+
+            -- اختيار الصورة التالية
+            ImageIndex = (ImageIndex % #XRImages) + 1
+            Image.Image = XRImages[ImageIndex]
+
+            -- إظهار الصورة الجديدة
+            local FadeIn = TweenService:Create(
+                Image,
+                TweenInfo.new(0.3, Enum.EasingStyle.Sine),
+                {ImageTransparency = 0}
+            )
+
+            FadeIn:Play()
+            FadeIn.Completed:Wait()
+
+            IsSwitching = false
+        end
+    end
+end)
+
+-- =====================================================
+-- ❤️🖤 RED & BLACK LUXURY ANIMATION
+-- =====================================================
+
+task.spawn(function()
+    while Gui.Parent do
+
+        -- المرحلة الأولى: أسود مع توهج أحمر
+        local ToBlack = TweenService:Create(
+            Title,
+            TweenInfo.new(0.8, Enum.EasingStyle.Sine),
+            {
+                TextColor3 = BLACK,
+                TextStrokeColor3 = RED
+            }
+        )
+
+        local BorderToRed = TweenService:Create(
+            Border,
+            TweenInfo.new(0.8, Enum.EasingStyle.Sine),
+            {Color = RED}
+        )
+
+        local GlowToRed = TweenService:Create(
+            Glow,
+            TweenInfo.new(0.8, Enum.EasingStyle.Sine),
+            {
+                Color = RED,
+                Transparency = 0.2
+            }
+        )
+
+        local TitleBorderToRed = TweenService:Create(
+            TitleBorder,
+            TweenInfo.new(0.8, Enum.EasingStyle.Sine),
+            {Color = RED}
+        )
+
+        ToBlack:Play()
+        BorderToRed:Play()
+        GlowToRed:Play()
+        TitleBorderToRed:Play()
+
+        task.wait(0.8)
+
+        if not Gui.Parent then
+            break
+        end
+
+        -- المرحلة الثانية: أحمر مع حدود سوداء
+        local ToRed = TweenService:Create(
+            Title,
+            TweenInfo.new(0.8, Enum.EasingStyle.Sine),
+            {
+                TextColor3 = RED,
+                TextStrokeColor3 = BLACK
+            }
+        )
+
+        local BorderToBlack = TweenService:Create(
+            Border,
+            TweenInfo.new(0.8, Enum.EasingStyle.Sine),
+            {Color = BLACK}
+        )
+
+        local GlowToBlack = TweenService:Create(
+            Glow,
+            TweenInfo.new(0.8, Enum.EasingStyle.Sine),
+            {
+                Color = DARK_RED,
+                Transparency = 0.5
+            }
+        )
+
+        local TitleBorderToBlack = TweenService:Create(
+            TitleBorder,
+            TweenInfo.new(0.8, Enum.EasingStyle.Sine),
+            {Color = BLACK}
+        )
+
+        ToRed:Play()
+        BorderToBlack:Play()
+        GlowToBlack:Play()
+        TitleBorderToBlack:Play()
+
+        task.wait(0.8)
+    end
+end)
+
+-- =====================================================
+-- 👑 XR TORNADO LUXURY HUB READY
+-- IMAGE SPINS CONTINUOUSLY
+-- IMAGE CHANGES EVERY 5 SECONDS
+-- RED & BLACK ANIMATED DESIGN
+-- by A_A + XR
+-- =====================================================
+
+
 -- =========================================================
 -- 👑 XR TORNADO HUB
 -- by A_A + XR
