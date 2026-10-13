@@ -392,8 +392,8 @@ end)
 Library.ToggleKeybind = Options.MenuKeybind
 
 -- =====================================================
--- 🛡️ TAREKSCRIPTER TORNADO V5
--- DEFENSE + INFINITE JUMP + SPEED
+-- 👑 TAREKSCRIPTER TORNADO V5
+-- 🛡️ NEW ANTI GRAB + INFINITE JUMP + AUTO SPEED
 -- Obsidian UI
 -- =====================================================
 
@@ -401,15 +401,10 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 
--- =====================================================
--- 📋 DEFENSE TAB
--- Requires existing Window, Tabs and Library
--- =====================================================
-
+-- Requires your existing Obsidian Window and Library
 Tabs = Tabs or {}
 
 local DefenseTab = Tabs.Defense
@@ -422,147 +417,126 @@ end
 local DefenseGroup = DefenseTab:AddLeftGroupbox("🛡️ Defense Main")
 
 -- =====================================================
--- ⚙️ VARIABLES
+-- ⚙️ SETTINGS
 -- =====================================================
 
 local antiGrabEnabled = false
-local antiExplosionEnabled = false
+local autoStruggleConn = nil
+local lastStruggle = 0
 
 local infiniteJumpEnabled = false
-local customJumpEnabled = false
 local customJumpPower = 50
 
-local speedEnabled = false
-local customSpeed = 16
-
-local antiGrabConnection = nil
-local antiExplosionConnection = nil
-local speedConnectionName = "DefensePlayerSpeed"
+local speedEnabled = true
+local customSpeed = 32
 
 -- =====================================================
--- 🔎 CHARACTER EVENTS
+-- 🛡️ NEW ANTI GRAB
 -- =====================================================
 
-local function getCharacterEvents()
+local function findStruggleRemote()
     local events = ReplicatedStorage:FindFirstChild("CharacterEvents")
+    if not events then
+        return nil
+    end
 
-    local struggle = events and events:FindFirstChild("Struggle")
-    local ragdoll = events and events:FindFirstChild("RagdollRemote")
+    local remote = events:FindFirstChild("Struggle")
 
-    return struggle, ragdoll
+    if remote and remote:IsA("RemoteEvent") then
+        return remote
+    end
+
+    return nil
 end
-
--- =====================================================
--- 🧹 STOP CONNECTIONS
--- =====================================================
 
 local function stopAntiGrab()
-    if antiGrabConnection then
-        antiGrabConnection:Disconnect()
-        antiGrabConnection = nil
+    antiGrabEnabled = false
+
+    if autoStruggleConn then
+        autoStruggleConn:Disconnect()
+        autoStruggleConn = nil
     end
 end
 
-local function stopAntiExplosion()
-    if antiExplosionConnection then
-        antiExplosionConnection:Disconnect()
-        antiExplosionConnection = nil
+local function startAntiGrab()
+    if autoStruggleConn then
+        autoStruggleConn:Disconnect()
+        autoStruggleConn = nil
     end
+
+    antiGrabEnabled = true
+    lastStruggle = 0
+
+    autoStruggleConn = RunService.Heartbeat:Connect(function()
+        if not antiGrabEnabled then
+            return
+        end
+
+        local character = LocalPlayer.Character
+        if not character then
+            return
+        end
+
+        local head = character:FindFirstChild("Head")
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+        if not head or not humanoid or humanoid.Health <= 0 then
+            return
+        end
+
+        local partOwner = head:FindFirstChild("PartOwner")
+        local isHeld = LocalPlayer:FindFirstChild("IsHeld")
+        local heldAttribute = LocalPlayer:GetAttribute("IsHeld")
+
+        local grabbed =
+            partOwner ~= nil
+            or (isHeld and isHeld:IsA("BoolValue") and isHeld.Value)
+            or heldAttribute == true
+
+        if not grabbed then
+            return
+        end
+
+        local now = os.clock()
+        if now - lastStruggle < 0.5 then
+            return
+        end
+
+        lastStruggle = now
+
+        local struggle = findStruggleRemote()
+
+        if struggle then
+            pcall(function()
+                struggle:FireServer(LocalPlayer)
+            end)
+        end
+    end)
 end
 
--- =====================================================
--- 🛡️ ANTI GRAB
--- =====================================================
-
-DefenseGroup:AddToggle("DefenseAntiGrab", {
+DefenseGroup:AddToggle("AntiGrabObsidian", {
     Text = "🛡️ Anti Grab",
     Default = false,
 
-    Callback = function(Value)
-        antiGrabEnabled = Value
-        stopAntiGrab()
-
-        if Value then
-            antiGrabConnection = RunService.Heartbeat:Connect(function()
-                if not antiGrabEnabled then
-                    return
-                end
-
-                local character = LocalPlayer.Character
-                if not character then
-                    return
-                end
-
-                local isHeld = LocalPlayer:FindFirstChild("IsHeld")
-
-                if not isHeld or not isHeld.Value then
-                    return
-                end
-
-                local struggle = getCharacterEvents()
-
-                if struggle then
-                    pcall(function()
-                        struggle:FireServer(LocalPlayer)
-                    end)
-                end
-            end)
+    Callback = function(value)
+        if value then
+            startAntiGrab()
+        else
+            stopAntiGrab()
         end
 
         Library:Notify({
             Title = "🛡️ Anti Grab",
-            Description = Value and "Anti Grab ON" or "Anti Grab OFF",
+            Description = value
+                and "محاولة الإفلات مفعّلة"
+                or "Anti Grab OFF",
             Time = 2
         })
     end
 })
 
--- =====================================================
--- 💥 ANTI EXPLOSION
--- =====================================================
-
-DefenseGroup:AddToggle("DefenseAntiExplosion", {
-    Text = "💥 Anti Explosion",
-    Default = false,
-
-    Callback = function(Value)
-        antiExplosionEnabled = Value
-        stopAntiExplosion()
-
-        if Value then
-            antiExplosionConnection = Workspace.ChildAdded:Connect(function(object)
-                if not antiExplosionEnabled then
-                    return
-                end
-
-                if not object:IsA("Explosion") then
-                    return
-                end
-
-                local character = LocalPlayer.Character
-                local root = character and character:FindFirstChild("HumanoidRootPart")
-                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-
-                if not root or not humanoid or humanoid.Health <= 0 then
-                    return
-                end
-
-                local distance = (object.Position - root.Position).Magnitude
-
-                if distance <= object.BlastRadius then
-                    root.AssemblyLinearVelocity = Vector3.zero
-                    root.AssemblyAngularVelocity = Vector3.zero
-                end
-            end)
-        end
-
-        Library:Notify({
-            Title = "💥 Anti Explosion",
-            Description = Value and "Protection ON" or "Protection OFF",
-            Time = 2
-        })
-    end
-})
+DefenseGroup:AddLabel("🛡️ Protection Status")
+DefenseGroup:AddLabel("Anti Grab: Escape Attempt")
 
 -- =====================================================
 -- 🏃 MANUAL ESCAPE
@@ -572,7 +546,10 @@ DefenseGroup:AddButton("ManualEscape", {
     Text = "🏃 Manual Escape / Break Free",
 
     Func = function()
-        local struggle, ragdoll = getCharacterEvents()
+        local struggle = findStruggleRemote()
+
+        local events = ReplicatedStorage:FindFirstChild("CharacterEvents")
+        local ragdoll = events and events:FindFirstChild("RagdollRemote")
 
         local character = LocalPlayer.Character
         local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -582,7 +559,7 @@ DefenseGroup:AddButton("ManualEscape", {
                 struggle:FireServer(LocalPlayer)
             end
 
-            if ragdoll and root then
+            if ragdoll and ragdoll:IsA("RemoteEvent") and root then
                 ragdoll:FireServer(root, 0)
             end
         end)
@@ -603,29 +580,20 @@ DefenseGroup:AddToggle("DefenseInfiniteJump", {
     Text = "🦘 Infinite Jump",
     Default = false,
 
-    Callback = function(Value)
-        infiniteJumpEnabled = Value
+    Callback = function(value)
+        infiniteJumpEnabled = value
 
         Library:Notify({
             Title = "🦘 Infinite Jump",
-            Description = Value and "Infinite Jump ON" or "Infinite Jump OFF",
+            Description = value and "Infinite Jump ON" or "Infinite Jump OFF",
             Time = 2
         })
     end
 })
 
 -- =====================================================
--- 🚀 CUSTOM JUMP POWER
+-- 🦘 JUMP POWER SLIDER
 -- =====================================================
-
-DefenseGroup:AddToggle("DefenseCustomJump", {
-    Text = "🚀 Enable Custom Jump",
-    Default = false,
-
-    Callback = function(Value)
-        customJumpEnabled = Value
-    end
-})
 
 DefenseGroup:AddSlider("DefenseJumpPower", {
     Text = "🦘 Jump Power",
@@ -634,8 +602,8 @@ DefenseGroup:AddSlider("DefenseJumpPower", {
     Max = 500,
     Rounding = 0,
 
-    Callback = function(Value)
-        customJumpPower = Value
+    Callback = function(value)
+        customJumpPower = value
     end
 })
 
@@ -656,31 +624,33 @@ UserInputService.JumpRequest:Connect(function()
         return
     end
 
-    if customJumpEnabled then
-        root.AssemblyLinearVelocity = Vector3.new(
-            root.AssemblyLinearVelocity.X,
-            customJumpPower,
-            root.AssemblyLinearVelocity.Z
-        )
-    else
-        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-    end
+    root.AssemblyLinearVelocity = Vector3.new(
+        root.AssemblyLinearVelocity.X,
+        customJumpPower,
+        root.AssemblyLinearVelocity.Z
+    )
+
+    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 end)
 
 -- =====================================================
--- 🏃 PLAYER SPEED
+-- 👑 XR PLAYER SPEED - ORIGINAL MOVEMENT METHOD
 -- =====================================================
+
+local speedEnabled = true
+local customSpeed = 32
+local SPEED_BIND_NAME = "XR_Tornado_PlayerSpeed"
 
 DefenseGroup:AddToggle("DefenseSpeed", {
     Text = "🏃 Enable Player Speed",
-    Default = false,
+    Default = true,
 
-    Callback = function(Value)
-        speedEnabled = Value
+    Callback = function(value)
+        speedEnabled = value
 
         Library:Notify({
-            Title = "🏃 Player Speed",
-            Description = Value and "Speed ON" or "Speed OFF",
+            Title = "🏃 XR Player Speed",
+            Description = value and "Speed ON" or "Speed OFF",
             Time = 2
         })
     end
@@ -688,22 +658,24 @@ DefenseGroup:AddToggle("DefenseSpeed", {
 
 DefenseGroup:AddSlider("DefenseSpeedValue", {
     Text = "⚡ Movement Speed",
-    Default = 16,
+    Default = 32,
     Min = 16,
     Max = 300,
     Rounding = 0,
 
-    Callback = function(Value)
-        customSpeed = Value
+    Callback = function(value)
+        customSpeed = value
     end
 })
 
--- =====================================================
--- ⚡ APPLY MOVEMENT SPEED
--- =====================================================
+-- إزالة الربط السابق إذا كان موجودًا
+pcall(function()
+    RunService:UnbindFromRenderStep(SPEED_BIND_NAME)
+end)
 
+-- طريقة الحركة من السكربت الأول
 RunService:BindToRenderStep(
-    speedConnectionName,
+    SPEED_BIND_NAME,
     Enum.RenderPriority.Character.Value + 1,
     function()
         if not speedEnabled then
@@ -711,8 +683,10 @@ RunService:BindToRenderStep(
         end
 
         local character = LocalPlayer.Character
-        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-        local root = character and character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character
+            and character:FindFirstChildOfClass("Humanoid")
+        local root = character
+            and character:FindFirstChild("HumanoidRootPart")
 
         if not humanoid or not root or humanoid.Health <= 0 then
             return
@@ -732,25 +706,62 @@ RunService:BindToRenderStep(
     end
 )
 
+-- السرعة تبقى مفعلة بعد إعادة ظهور الشخصية
+LocalPlayer.CharacterAdded:Connect(function()
+    speedEnabled = true
+end)
+
+-- =====================================================
+-- 🔄 APPLY SPEED AND HANDLE RESPAWNS
+-- =====================================================
+
+local function applySpeed(character)
+    local humanoid = character:WaitForChild("Humanoid", 10)
+
+    if humanoid and speedEnabled then
+        humanoid.WalkSpeed = customSpeed
+    end
+end
+
+if LocalPlayer.Character then
+    task.spawn(applySpeed, LocalPlayer.Character)
+end
+
+LocalPlayer.CharacterAdded:Connect(function(character)
+    task.spawn(applySpeed, character)
+end)
+
+-- Keep the selected speed applied while enabled.
+local speedConnection = RunService.Heartbeat:Connect(function()
+    if not speedEnabled then
+        return
+    end
+
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+    if humanoid and humanoid.Health > 0 and humanoid.WalkSpeed ~= customSpeed then
+        humanoid.WalkSpeed = customSpeed
+    end
+end)
+
 -- =====================================================
 -- 📊 STATUS
 -- =====================================================
 
 DefenseGroup:AddDivider()
-DefenseGroup:AddLabel("🛡️ Defense System Ready")
+DefenseGroup:AddLabel("👑 XR Defense System Ready")
+DefenseGroup:AddLabel("🏃 Player Speed: ON")
 
 -- =====================================================
--- 🧹 CLEANUP ON CHARACTER REMOVAL
+-- 🧹 CLEANUP
 -- =====================================================
 
 LocalPlayer.CharacterRemoving:Connect(function()
     stopAntiGrab()
-    stopAntiExplosion()
 end)
 
--- =====================================================
--- ✅ DEFENSE SYSTEM LOADED
--- =====================================================
+print("XR TORNADO V5 Defense loaded")
 
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
