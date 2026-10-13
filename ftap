@@ -763,6 +763,222 @@ end)
 
 print("XR TORNADO V5 Defense loaded")
 
+-- =====================================================
+-- 👑 XR TORNADO V5 - CLEAN HUB
+-- 🎥 THIRD PERSON
+-- 🌀 SPIN CHARACTER
+-- 📍 TELEPORT TO MOUSE
+-- 🔄 RESPAWN
+-- by A_A + XR
+-- =====================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local Player = Players.LocalPlayer
+local Mouse = Player:GetMouse()
+
+assert(Window, "Load your Obsidian Window first")
+assert(Library, "Load your Obsidian Library first")
+
+Tabs = Tabs or {}
+
+local function getTab(key, title, iconName)
+    if Tabs[key] then
+        return Tabs[key]
+    end
+
+    local tab = Window:AddTab(title, iconName)
+    Tabs[key] = tab
+    return tab
+end
+
+local PlayerTab = getTab("Player", "Player", "user")
+local KeybindsTab = getTab("Keybinds", "Keybinds", "keyboard")
+
+local PlayerView = PlayerTab:AddLeftGroupbox("View & Movement")
+local KeybindsGroup = KeybindsTab:AddLeftGroupbox("Keybinds")
+
+local function notify(title, description)
+    pcall(function()
+        Library:Notify({
+            Title = title,
+            Description = description,
+            Time = 3
+        })
+    end)
+end
+
+-- =====================================================
+-- 🎥 THIRD PERSON VIEW
+-- =====================================================
+
+local thirdPersonEnabled = false
+
+local function applyCamera()
+    local camera = workspace.CurrentCamera
+    local character = Player.Character
+    local humanoid = character
+        and character:FindFirstChildOfClass("Humanoid")
+
+    if thirdPersonEnabled then
+        Player.CameraMode = Enum.CameraMode.Classic
+        Player.CameraMinZoomDistance = 0.5
+        Player.CameraMaxZoomDistance = 100
+    else
+        Player.CameraMode = Enum.CameraMode.LockFirstPerson
+        Player.CameraMinZoomDistance = 0
+        Player.CameraMaxZoomDistance = 0
+    end
+
+    if camera and humanoid then
+        camera.CameraType = Enum.CameraType.Custom
+        camera.CameraSubject = humanoid
+    end
+end
+
+PlayerView:AddToggle("ThirdPersonToggle", {
+    Text = "🎥 3rd Person View",
+    Default = false,
+    Callback = function(value)
+        thirdPersonEnabled = value
+        applyCamera()
+        notify("Third Person", value and "ON" or "OFF")
+    end
+})
+
+-- =====================================================
+-- 🌀 SPIN CHARACTER
+-- =====================================================
+
+local spinEnabled = false
+local spinSpeed = 5
+local spinConnection
+
+local function stopSpin()
+    spinEnabled = false
+
+    if spinConnection then
+        spinConnection:Disconnect()
+        spinConnection = nil
+    end
+end
+
+local function startSpin()
+    stopSpin()
+    spinEnabled = true
+
+    spinConnection = RunService.Heartbeat:Connect(function(dt)
+        if not spinEnabled then
+            return
+        end
+
+        local character = Player.Character
+        local root = character
+            and character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character
+            and character:FindFirstChildOfClass("Humanoid")
+
+        if root and humanoid and humanoid.Health > 0 then
+            root.CFrame = root.CFrame
+                * CFrame.Angles(
+                    0,
+                    math.rad(spinSpeed * 60 * dt),
+                    0
+                )
+        end
+    end)
+end
+
+PlayerView:AddToggle("SpinToggle", {
+    Text = "🌀 Spin Character",
+    Default = false,
+    Callback = function(value)
+        if value then
+            startSpin()
+        else
+            stopSpin()
+        end
+
+        notify("Spin Character", value and "ON" or "OFF")
+    end
+})
+
+PlayerView:AddSlider("SpinSpeed", {
+    Text = "⚡ Spin Speed",
+    Default = 5,
+    Min = 1,
+    Max = 50,
+    Rounding = 0,
+    Callback = function(value)
+        spinSpeed = value
+    end
+})
+
+-- =====================================================
+-- 📍 TELEPORT TO MOUSE
+-- =====================================================
+
+local teleportEnabled = true
+
+KeybindsGroup:AddToggle("TeleportEnabled", {
+    Text = "📍 Enable Teleport Tool",
+    Default = true,
+    Callback = function(value)
+        teleportEnabled = value
+        notify("Teleport", value and "ON" or "OFF")
+    end
+})
+
+KeybindsGroup:AddLabel("Press X to teleport to mouse")
+
+KeybindsGroup:AddKeyPicker("TPKeybind", {
+    Default = "X",
+    Text = "Teleport to Mouse",
+    NoUI = false,
+    Callback = function()
+        if not teleportEnabled then
+            return
+        end
+
+        local character = Player.Character
+        local root = character
+            and character:FindFirstChild("HumanoidRootPart")
+
+        if root then
+            root.CFrame = CFrame.new(
+                Mouse.Hit.Position + Vector3.new(0, 3, 0)
+            )
+        end
+    end
+})
+
+-- =====================================================
+-- 🔄 RESPAWN
+-- =====================================================
+
+Player.CharacterAdded:Connect(function(character)
+    task.spawn(function()
+        character:WaitForChild("Humanoid", 10)
+        task.wait(0.25)
+        applyCamera()
+    end)
+end)
+
+Player.CharacterRemoving:Connect(function()
+    stopSpin()
+end)
+
+-- =====================================================
+-- 👑 READY
+-- =====================================================
+
+PlayerView:AddDivider()
+PlayerView:AddLabel("👑 XR TORNADO V5 Ready")
+
+print("👑 XR TORNADO V5 Clean Hub loaded")
+
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings()
