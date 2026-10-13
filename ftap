@@ -391,18 +391,27 @@ end)
 
 Library.ToggleKeybind = Options.MenuKeybind
 
-
 -- =====================================================
--- 🛡️ DEFENSE TAB - FULL PROTECTION
+-- 🛡️ TAREKSCRIPTER TORNADO V5
+-- DEFENSE + INFINITE JUMP + SPEED
+-- Obsidian UI
 -- =====================================================
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 
--- إنشاء Defense Tab
+-- =====================================================
+-- 📋 DEFENSE TAB
+-- Requires existing Window, Tabs and Library
+-- =====================================================
+
+Tabs = Tabs or {}
+
 local DefenseTab = Tabs.Defense
 
 if not DefenseTab then
@@ -412,317 +421,335 @@ end
 
 local DefenseGroup = DefenseTab:AddLeftGroupbox("🛡️ Defense Main")
 
-local autoStruggleConn = nil
+-- =====================================================
+-- ⚙️ VARIABLES
+-- =====================================================
+
 local antiGrabEnabled = false
-local protectionRunning = false
+local antiExplosionEnabled = false
+
+local infiniteJumpEnabled = false
+local customJumpEnabled = false
+local customJumpPower = 50
+
+local speedEnabled = false
+local customSpeed = 16
+
+local antiGrabConnection = nil
+local antiExplosionConnection = nil
+local speedConnectionName = "DefensePlayerSpeed"
 
 -- =====================================================
--- 🛡️ Anti Grab
+-- 🔎 CHARACTER EVENTS
 -- =====================================================
 
-DefenseGroup:AddToggle("AntiGrabObsidian", {
+local function getCharacterEvents()
+    local events = ReplicatedStorage:FindFirstChild("CharacterEvents")
+
+    local struggle = events and events:FindFirstChild("Struggle")
+    local ragdoll = events and events:FindFirstChild("RagdollRemote")
+
+    return struggle, ragdoll
+end
+
+-- =====================================================
+-- 🧹 STOP CONNECTIONS
+-- =====================================================
+
+local function stopAntiGrab()
+    if antiGrabConnection then
+        antiGrabConnection:Disconnect()
+        antiGrabConnection = nil
+    end
+end
+
+local function stopAntiExplosion()
+    if antiExplosionConnection then
+        antiExplosionConnection:Disconnect()
+        antiExplosionConnection = nil
+    end
+end
+
+-- =====================================================
+-- 🛡️ ANTI GRAB
+-- =====================================================
+
+DefenseGroup:AddToggle("DefenseAntiGrab", {
     Text = "🛡️ Anti Grab",
     Default = false,
 
     Callback = function(Value)
-
         antiGrabEnabled = Value
+        stopAntiGrab()
 
-        -- إيقاف الحماية
-        if not Value then
-
-            protectionRunning = false
-
-            if autoStruggleConn then
-                autoStruggleConn:Disconnect()
-                autoStruggleConn = nil
-            end
-
-            local character = LocalPlayer.Character
-
-            if character then
-                for _, part in ipairs(character:GetChildren()) do
-                    if part:IsA("BasePart") then
-                        part.Anchored = false
-                    end
-                end
-            end
-
-            Library:Notify({
-                Title = "🛡️ Anti Grab",
-                Description = "Anti Grab OFF",
-                Time = 2
-            })
-
-            return
-        end
-
-        -- منع تشغيل اتصالين مع بعض
-        if autoStruggleConn then
-            autoStruggleConn:Disconnect()
-            autoStruggleConn = nil
-        end
-
-        protectionRunning = true
-
-        local CharacterEvents =
-            ReplicatedStorage:FindFirstChild("CharacterEvents")
-
-        local Struggle =
-            CharacterEvents
-            and CharacterEvents:FindFirstChild("Struggle")
-
-        -- =================================================
-        -- مراقبة حالة الإمساك
-        -- =================================================
-
-        autoStruggleConn = RunService.Heartbeat:Connect(function()
-
-            if not antiGrabEnabled or not protectionRunning then
-                return
-            end
-
-            local character = LocalPlayer.Character
-
-            if not character or not character.Parent then
-                return
-            end
-
-            local head = character:FindFirstChild("Head")
-
-            if not head then
-                return
-            end
-
-            -- فحص PartOwner
-            local partOwner = head:FindFirstChild("PartOwner")
-
-            if not partOwner then
-                return
-            end
-
-            -- محاولة التخلص من حالة الإمساك
-            if Struggle then
-                pcall(function()
-                    Struggle:FireServer(LocalPlayer)
-                end)
-            end
-
-            -- تثبيت الشخصية مؤقتًا
-            task.spawn(function()
-
+        if Value then
+            antiGrabConnection = RunService.Heartbeat:Connect(function()
                 if not antiGrabEnabled then
                     return
                 end
 
-                if not character or not character.Parent then
+                local character = LocalPlayer.Character
+                if not character then
                     return
                 end
 
-                for _, part in ipairs(character:GetChildren()) do
-                    if part:IsA("BasePart") then
-                        part.Anchored = true
-                    end
+                local isHeld = LocalPlayer:FindFirstChild("IsHeld")
+
+                if not isHeld or not isHeld.Value then
+                    return
                 end
 
-                local isHeld =
-                    LocalPlayer:FindFirstChild("IsHeld")
+                local struggle = getCharacterEvents()
 
-                if isHeld then
-
-                    while antiGrabEnabled
-                        and isHeld.Value
-                        and character.Parent do
-
-                        task.wait()
-
-                    end
-
-                else
-
-                    task.wait(0.15)
-
+                if struggle then
+                    pcall(function()
+                        struggle:FireServer(LocalPlayer)
+                    end)
                 end
-
-                -- إعادة الحركة
-                if character and character.Parent then
-
-                    for _, part in ipairs(character:GetChildren()) do
-
-                        if part:IsA("BasePart") then
-                            part.Anchored = false
-                        end
-
-                    end
-
-                end
-
             end)
-
-        end)
+        end
 
         Library:Notify({
             Title = "🛡️ Anti Grab",
-            Description = "Anti Grab ON",
+            Description = Value and "Anti Grab ON" or "Anti Grab OFF",
             Time = 2
         })
-
     end
 })
 
 -- =====================================================
--- 📊 Protection Status
+-- 💥 ANTI EXPLOSION
 -- =====================================================
 
-DefenseGroup:AddDivider()
+DefenseGroup:AddToggle("DefenseAntiExplosion", {
+    Text = "💥 Anti Explosion",
+    Default = false,
 
-DefenseGroup:AddLabel("🛡️ Protection Status")
+    Callback = function(Value)
+        antiExplosionEnabled = Value
+        stopAntiExplosion()
 
-local StatusLabel = DefenseGroup:AddLabel(
-    "Anti Grab: Ready"
-)
+        if Value then
+            antiExplosionConnection = Workspace.ChildAdded:Connect(function(object)
+                if not antiExplosionEnabled then
+                    return
+                end
 
--- =====================================================
--- 🔄 تحديث حالة الحماية
--- =====================================================
+                if not object:IsA("Explosion") then
+                    return
+                end
 
-task.spawn(function()
+                local character = LocalPlayer.Character
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 
-    while task.wait(0.5) do
+                if not root or not humanoid or humanoid.Health <= 0 then
+                    return
+                end
 
-        if not StatusLabel then
-            break
+                local distance = (object.Position - root.Position).Magnitude
+
+                if distance <= object.BlastRadius then
+                    root.AssemblyLinearVelocity = Vector3.zero
+                    root.AssemblyAngularVelocity = Vector3.zero
+                end
+            end)
         end
 
-        if antiGrabEnabled then
-            StatusLabel:SetText("Anti Grab: ACTIVE")
-        else
-            StatusLabel:SetText("Anti Grab: Ready")
-        end
-
+        Library:Notify({
+            Title = "💥 Anti Explosion",
+            Description = Value and "Protection ON" or "Protection OFF",
+            Time = 2
+        })
     end
-
-end)
+})
 
 -- =====================================================
--- ♻️ Respawn Protection
+-- 🏃 MANUAL ESCAPE
 -- =====================================================
 
-LocalPlayer.CharacterAdded:Connect(function(character)
+DefenseGroup:AddButton("ManualEscape", {
+    Text = "🏃 Manual Escape / Break Free",
 
-    -- إيقاف الاتصال القديم
-    if autoStruggleConn then
-        autoStruggleConn:Disconnect()
-        autoStruggleConn = nil
-    end
+    Func = function()
+        local struggle, ragdoll = getCharacterEvents()
 
-    protectionRunning = false
+        local character = LocalPlayer.Character
+        local root = character and character:FindFirstChild("HumanoidRootPart")
 
-    if not antiGrabEnabled then
-        return
-    end
-
-    task.wait(1)
-
-    if not antiGrabEnabled then
-        return
-    end
-
-    protectionRunning = true
-
-    local CharacterEvents =
-        ReplicatedStorage:FindFirstChild("CharacterEvents")
-
-    local Struggle =
-        CharacterEvents
-        and CharacterEvents:FindFirstChild("Struggle")
-
-    autoStruggleConn =
-        RunService.Heartbeat:Connect(function()
-
-            if not antiGrabEnabled
-                or not protectionRunning then
-                return
+        pcall(function()
+            if struggle then
+                struggle:FireServer(LocalPlayer)
             end
 
-            local currentCharacter =
-                LocalPlayer.Character
-
-            if not currentCharacter
-                or not currentCharacter.Parent then
-                return
+            if ragdoll and root then
+                ragdoll:FireServer(root, 0)
             end
-
-            local head =
-                currentCharacter:FindFirstChild("Head")
-
-            if not head then
-                return
-            end
-
-            local partOwner =
-                head:FindFirstChild("PartOwner")
-
-            if not partOwner then
-                return
-            end
-
-            if Struggle then
-                pcall(function()
-                    Struggle:FireServer(LocalPlayer)
-                end)
-            end
-
         end)
 
-    Library:Notify({
-        Title = "🛡️ Anti Grab",
-        Description = "Protection restored",
-        Time = 2
-    })
+        Library:Notify({
+            Title = "🏃 Manual Escape",
+            Description = "Escape request sent",
+            Time = 2
+        })
+    end
+})
 
+-- =====================================================
+-- 🦘 INFINITE JUMP
+-- =====================================================
+
+DefenseGroup:AddToggle("DefenseInfiniteJump", {
+    Text = "🦘 Infinite Jump",
+    Default = false,
+
+    Callback = function(Value)
+        infiniteJumpEnabled = Value
+
+        Library:Notify({
+            Title = "🦘 Infinite Jump",
+            Description = Value and "Infinite Jump ON" or "Infinite Jump OFF",
+            Time = 2
+        })
+    end
+})
+
+-- =====================================================
+-- 🚀 CUSTOM JUMP POWER
+-- =====================================================
+
+DefenseGroup:AddToggle("DefenseCustomJump", {
+    Text = "🚀 Enable Custom Jump",
+    Default = false,
+
+    Callback = function(Value)
+        customJumpEnabled = Value
+    end
+})
+
+DefenseGroup:AddSlider("DefenseJumpPower", {
+    Text = "🦘 Jump Power",
+    Default = 50,
+    Min = 50,
+    Max = 500,
+    Rounding = 0,
+
+    Callback = function(Value)
+        customJumpPower = Value
+    end
+})
+
+-- =====================================================
+-- 🎮 JUMP HANDLER
+-- =====================================================
+
+UserInputService.JumpRequest:Connect(function()
+    if not infiniteJumpEnabled then
+        return
+    end
+
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+
+    if not humanoid or not root or humanoid.Health <= 0 then
+        return
+    end
+
+    if customJumpEnabled then
+        root.AssemblyLinearVelocity = Vector3.new(
+            root.AssemblyLinearVelocity.X,
+            customJumpPower,
+            root.AssemblyLinearVelocity.Z
+        )
+    else
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
 end)
 
 -- =====================================================
--- 🧹 تنظيف عند Unload
+-- 🏃 PLAYER SPEED
 -- =====================================================
 
-local oldUnload = Library.Unload
+DefenseGroup:AddToggle("DefenseSpeed", {
+    Text = "🏃 Enable Player Speed",
+    Default = false,
 
-if oldUnload then
+    Callback = function(Value)
+        speedEnabled = Value
 
-    Library.Unload = function(...)
+        Library:Notify({
+            Title = "🏃 Player Speed",
+            Description = Value and "Speed ON" or "Speed OFF",
+            Time = 2
+        })
+    end
+})
 
-        antiGrabEnabled = false
-        protectionRunning = false
+DefenseGroup:AddSlider("DefenseSpeedValue", {
+    Text = "⚡ Movement Speed",
+    Default = 16,
+    Min = 16,
+    Max = 300,
+    Rounding = 0,
 
-        if autoStruggleConn then
-            autoStruggleConn:Disconnect()
-            autoStruggleConn = nil
+    Callback = function(Value)
+        customSpeed = Value
+    end
+})
+
+-- =====================================================
+-- ⚡ APPLY MOVEMENT SPEED
+-- =====================================================
+
+RunService:BindToRenderStep(
+    speedConnectionName,
+    Enum.RenderPriority.Character.Value + 1,
+    function()
+        if not speedEnabled then
+            return
         end
 
         local character = LocalPlayer.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        local root = character and character:FindFirstChild("HumanoidRootPart")
 
-        if character then
-
-            for _, part in ipairs(character:GetChildren()) do
-
-                if part:IsA("BasePart") then
-                    part.Anchored = false
-                end
-
-            end
-
+        if not humanoid or not root or humanoid.Health <= 0 then
+            return
         end
 
-        return oldUnload(...)
+        local direction = humanoid.MoveDirection
 
+        if direction.Magnitude > 0 then
+            local velocity = root.AssemblyLinearVelocity
+
+            root.AssemblyLinearVelocity = Vector3.new(
+                direction.X * customSpeed,
+                velocity.Y,
+                direction.Z * customSpeed
+            )
+        end
     end
-
-end
+)
 
 -- =====================================================
--- ✅ DEFENSE TAB READY
+-- 📊 STATUS
+-- =====================================================
+
+DefenseGroup:AddDivider()
+DefenseGroup:AddLabel("🛡️ Defense System Ready")
+
+-- =====================================================
+-- 🧹 CLEANUP ON CHARACTER REMOVAL
+-- =====================================================
+
+LocalPlayer.CharacterRemoving:Connect(function()
+    stopAntiGrab()
+    stopAntiExplosion()
+end)
+
+-- =====================================================
+-- ✅ DEFENSE SYSTEM LOADED
 -- =====================================================
 
 ThemeManager:SetLibrary(Library)
