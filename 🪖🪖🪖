@@ -1569,3 +1569,650 @@ end
 end)
 end
 })
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- Requires your existing Obsidian Window and Library
+Tabs = Tabs or {}
+
+local DefenseTab = Tabs.Defense
+
+if not DefenseTab then
+    DefenseTab = Window:AddTab("Defense", "shield")
+    Tabs.Defense = DefenseTab
+end
+
+local DefenseGroup = DefenseTab:AddLeftGroupbox("🛡️ Defense Main")
+
+-- =====================================================
+-- ⚙️ SETTINGS
+-- =====================================================
+
+local antiGrabEnabled = false
+local autoStruggleConn = nil
+local lastStruggle = 0
+
+local infiniteJumpEnabled = false
+local customJumpPower = 50
+
+local speedEnabled = true
+local customSpeed = 32
+
+-- =====================================================
+-- 🏃 MANUAL ESCAPE
+-- =====================================================
+
+DefenseGroup:AddButton("ManualEscape", {
+    Text = "🏃 Manual Escape / Break Free",
+
+    Func = function()
+        local struggle = findStruggleRemote()
+
+        local events = ReplicatedStorage:FindFirstChild("CharacterEvents")
+        local ragdoll = events and events:FindFirstChild("RagdollRemote")
+
+        local character = LocalPlayer.Character
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+
+        pcall(function()
+            if struggle then
+                struggle:FireServer(LocalPlayer)
+            end
+
+            if ragdoll and ragdoll:IsA("RemoteEvent") and root then
+                ragdoll:FireServer(root, 0)
+            end
+        end)
+
+        Library:Notify({
+            Title = "🏃 Manual Escape",
+            Description = "Escape request sent",
+            Time = 2
+        })
+    end
+})
+
+-- =====================================================
+-- 🦘 INFINITE JUMP
+-- =====================================================
+
+DefenseGroup:AddToggle("DefenseInfiniteJump", {
+    Text = "🦘 Infinite Jump",
+    Default = false,
+
+    Callback = function(value)
+        infiniteJumpEnabled = value
+
+        Library:Notify({
+            Title = "🦘 Infinite Jump",
+            Description = value and "Infinite Jump ON" or "Infinite Jump OFF",
+            Time = 2
+        })
+    end
+})
+
+-- =====================================================
+-- 🦘 JUMP POWER SLIDER
+-- =====================================================
+
+DefenseGroup:AddSlider("DefenseJumpPower", {
+    Text = "🦘 Jump Power",
+    Default = 50,
+    Min = 50,
+    Max = 500,
+    Rounding = 0,
+
+    Callback = function(value)
+        customJumpPower = value
+    end
+})
+
+-- =====================================================
+-- 🎮 JUMP HANDLER
+-- =====================================================
+
+UserInputService.JumpRequest:Connect(function()
+    if not infiniteJumpEnabled then
+        return
+    end
+
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+
+    if not humanoid or not root or humanoid.Health <= 0 then
+        return
+    end
+
+    root.AssemblyLinearVelocity = Vector3.new(
+        root.AssemblyLinearVelocity.X,
+        customJumpPower,
+        root.AssemblyLinearVelocity.Z
+    )
+
+    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+end)
+
+-- =====================================================
+-- 👑 XR PLAYER SPEED - ORIGINAL MOVEMENT METHOD
+-- =====================================================
+
+local speedEnabled = true
+local customSpeed = 32
+local SPEED_BIND_NAME = "XR_Tornado_PlayerSpeed"
+
+DefenseGroup:AddToggle("DefenseSpeed", {
+    Text = "🏃 Enable Player Speed",
+    Default = true,
+
+    Callback = function(value)
+        speedEnabled = value
+
+        Library:Notify({
+            Title = "🏃 XR Player Speed",
+            Description = value and "Speed ON" or "Speed OFF",
+            Time = 2
+        })
+    end
+})
+
+DefenseGroup:AddSlider("DefenseSpeedValue", {
+    Text = "⚡ Movement Speed",
+    Default = 32,
+    Min = 16,
+    Max = 300,
+    Rounding = 0,
+
+    Callback = function(value)
+        customSpeed = value
+    end
+})
+
+-- إزالة الربط السابق إذا كان موجودًا
+pcall(function()
+    RunService:UnbindFromRenderStep(SPEED_BIND_NAME)
+end)
+
+-- طريقة الحركة من السكربت الأول
+RunService:BindToRenderStep(
+    SPEED_BIND_NAME,
+    Enum.RenderPriority.Character.Value + 1,
+    function()
+        if not speedEnabled then
+            return
+        end
+
+        local character = LocalPlayer.Character
+        local humanoid = character
+            and character:FindFirstChildOfClass("Humanoid")
+        local root = character
+            and character:FindFirstChild("HumanoidRootPart")
+
+        if not humanoid or not root or humanoid.Health <= 0 then
+            return
+        end
+
+        local direction = humanoid.MoveDirection
+
+        if direction.Magnitude > 0 then
+            local velocity = root.AssemblyLinearVelocity
+
+            root.AssemblyLinearVelocity = Vector3.new(
+                direction.X * customSpeed,
+                velocity.Y,
+                direction.Z * customSpeed
+            )
+        end
+    end
+)
+
+-- السرعة تبقى مفعلة بعد إعادة ظهور الشخصية
+LocalPlayer.CharacterAdded:Connect(function()
+    speedEnabled = true
+end)
+
+-- =====================================================
+-- 🔄 APPLY SPEED AND HANDLE RESPAWNS
+-- =====================================================
+
+local function applySpeed(character)
+    local humanoid = character:WaitForChild("Humanoid", 10)
+
+    if humanoid and speedEnabled then
+        humanoid.WalkSpeed = customSpeed
+    end
+end
+
+if LocalPlayer.Character then
+    task.spawn(applySpeed, LocalPlayer.Character)
+end
+
+LocalPlayer.CharacterAdded:Connect(function(character)
+    task.spawn(applySpeed, character)
+end)
+
+-- Keep the selected speed applied while enabled.
+local speedConnection = RunService.Heartbeat:Connect(function()
+    if not speedEnabled then
+        return
+    end
+
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+    if humanoid and humanoid.Health > 0 and humanoid.WalkSpeed ~= customSpeed then
+        humanoid.WalkSpeed = customSpeed
+    end
+end)
+}) 
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local Player = Players.LocalPlayer
+local Mouse = Player:GetMouse()
+
+assert(Window, "Load your Obsidian Window first")
+assert(Library, "Load your Obsidian Library first")
+
+Tabs = Tabs or {}
+
+local function getTab(key, title, iconName)
+    if Tabs[key] then
+        return Tabs[key]
+    end
+
+    local tab = Window:AddTab(title, iconName)
+    Tabs[key] = tab
+    return tab
+end
+
+local PlayerTab = getTab("Player", "Player", "user")
+local KeybindsTab = getTab("Keybinds", "Keybinds", "keyboard")
+
+local PlayerView = PlayerTab:AddLeftGroupbox("View & Movement")
+local KeybindsGroup = KeybindsTab:AddLeftGroupbox("Keybinds")
+
+local function notify(title, description)
+    pcall(function()
+        Library:Notify({
+            Title = title,
+            Description = description,
+            Time = 3
+        })
+    end)
+end
+
+-- =====================================================
+-- 🎥 THIRD PERSON VIEW
+-- =====================================================
+
+local thirdPersonEnabled = false
+
+local function applyCamera()
+    local camera = workspace.CurrentCamera
+    local character = Player.Character
+    local humanoid = character
+        and character:FindFirstChildOfClass("Humanoid")
+
+    if thirdPersonEnabled then
+        Player.CameraMode = Enum.CameraMode.Classic
+        Player.CameraMinZoomDistance = 0.5
+        Player.CameraMaxZoomDistance = 100
+    else
+        Player.CameraMode = Enum.CameraMode.LockFirstPerson
+        Player.CameraMinZoomDistance = 0
+        Player.CameraMaxZoomDistance = 0
+    end
+
+    if camera and humanoid then
+        camera.CameraType = Enum.CameraType.Custom
+        camera.CameraSubject = humanoid
+    end
+end
+
+PlayerView:AddToggle("ThirdPersonToggle", {
+    Text = "🎥 3rd Person View",
+    Default = false,
+    Callback = function(value)
+        thirdPersonEnabled = value
+        applyCamera()
+        notify("Third Person", value and "ON" or "OFF")
+    end
+})
+
+-- =====================================================
+-- 🌀 SPIN CHARACTER
+-- =====================================================
+
+local spinEnabled = false
+local spinSpeed = 5
+local spinConnection
+
+local function stopSpin()
+    spinEnabled = false
+
+    if spinConnection then
+        spinConnection:Disconnect()
+        spinConnection = nil
+    end
+end
+
+local function startSpin()
+    stopSpin()
+    spinEnabled = true
+
+    spinConnection = RunService.Heartbeat:Connect(function(dt)
+        if not spinEnabled then
+            return
+        end
+
+        local character = Player.Character
+        local root = character
+            and character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character
+            and character:FindFirstChildOfClass("Humanoid")
+
+        if root and humanoid and humanoid.Health > 0 then
+            root.CFrame = root.CFrame
+                * CFrame.Angles(
+                    0,
+                    math.rad(spinSpeed * 60 * dt),
+                    0
+                )
+        end
+    end)
+end
+
+PlayerView:AddToggle("SpinToggle", {
+    Text = "🌀 Spin Character",
+    Default = false,
+    Callback = function(value)
+        if value then
+            startSpin()
+        else
+            stopSpin()
+        end
+
+        notify("Spin Character", value and "ON" or "OFF")
+    end
+})
+
+PlayerView:AddSlider("SpinSpeed", {
+    Text = "⚡ Spin Speed",
+    Default = 5,
+    Min = 1,
+    Max = 50,
+    Rounding = 0,
+    Callback = function(value)
+        spinSpeed = value
+    end
+})
+
+
+
+-- =====================================================
+-- 🔄 RESPAWN
+-- =====================================================
+
+Player.CharacterAdded:Connect(function(character)
+    task.spawn(function()
+        character:WaitForChild("Humanoid", 10)
+        task.wait(0.25)
+        applyCamera()
+    end)
+end)
+
+Player.CharacterRemoving:Connect(function()
+    stopSpin()
+end)
+}) 
+local function aa18()
+    local aa19 = {}
+    for _, aa20 in ipairs(aa1:GetPlayers()) do
+        if aa20 ~= aa4 then
+            table.insert(aa19, aa20.DisplayName)
+        end
+    end
+    return aa19
+end
+
+local function aa21(aa22)
+    for _, aa23 in ipairs(aa1:GetPlayers()) do
+        if aa23.DisplayName == aa22 then
+            return aa23
+        end
+    end
+    return nil
+end
+
+local function aa25(aa26, aa27)
+    if not aa26.Character then return end
+    local aa28 = aa26.Character:FindFirstChild("HumanoidRootPart")
+    if not aa28 or not aa27 then return end
+    local aa29 = aa27.CFrame
+    aa27.CFrame = aa28.CFrame * CFrame.new(0, 0, 2)
+    for aa30 = 1, 15 do
+        aa11:FireServer(aa28, aa28.CFrame)
+        task.wait()
+    end
+    aa27.CFrame = aa29
+end
+
+local function aa31(aa32, aa33, aa34)
+    return aa32:FindFirstChild(aa33) or aa32:WaitForChild(aa33, aa34 or 5)
+end
+
+local function aa35(aa36)
+    if aa36 and aa36:IsA("BasePart") then
+        aa11:FireServer(aa36, aa36.CFrame)
+        task.wait()
+    end
+end
+
+local function aa37(aa38, aa39)
+    return aa38:FindFirstChild(aa39) ~= nil
+end
+
+local function aa40(aa41)
+    local aa42 = aa4.Character or aa4.CharacterAdded:Wait()
+    local aa43 = aa42:WaitForChild("HumanoidRootPart")
+    local waitCount = 0
+    while (aa4.InPlot.Value and not aa4.InOwnedPlot.Value) and waitCount < 50 do
+        task.wait(0.1)
+        waitCount = waitCount + 1
+    end
+    waitCount = 0
+    while not aa4.CanSpawnToy.Value and waitCount < 50 do
+        task.wait(0.1)
+        waitCount = waitCount + 1
+    end
+    local aa44 = aa43.CFrame * CFrame.new(0, 14, 20)
+    local aa45 = workspace:FindFirstChild(aa4.Name .. "SpawnedInToys")
+    if not aa45 then
+        aa45 = workspace:FindFirstChild("PlotItems")
+        if aa45 then
+            aa45 = aa45:FindFirstChild("Plot1")
+        end
+    end
+    if not aa45 then
+        aa45 = workspace
+    end
+    local aa46 = nil
+    local aa47 = aa45.ChildAdded:Connect(function(aa48)
+        if aa48.Name == aa41 then
+            aa46 = aa48
+        end
+    end)
+    task.spawn(function()
+        pcall(function()
+            aa10:InvokeServer(aa41, aa44, Vector3.zero)
+        end)
+    end)
+    local aa49 = tick()
+    repeat task.wait(0.05) until aa46 or (tick() - aa49) > 5
+    aa47:Disconnect()
+    return aa46
+end
+
+local function aa50()
+    if aa17 then return nil end
+    aa17 = true
+    local aa51 = aa40("PalletLightBrown")
+    if not aa51 then
+        aa17 = false
+        return nil
+    end
+    local aa52 = aa31(aa51, "SoundPart", 3)
+    if not aa52 then
+        aa51:Destroy()
+        aa17 = false
+        return nil
+    end
+    local retryCount = 0
+    while retryCount < 10 do
+        if not aa12.aa13 then
+            aa51:Destroy()
+            aa17 = false
+            return nil
+        end
+        aa35(aa52)
+        task.wait()
+        if aa37(aa52, "PartOwner") then
+            break
+        end
+        retryCount = retryCount + 1
+    end
+    if not aa37(aa52, "PartOwner") then
+        aa51:Destroy()
+        aa17 = false
+        return nil
+    end
+    for _, aa54 in pairs(aa51:GetDescendants()) do
+        if aa54:IsA("BasePart") then
+            aa54.CanCollide = false
+            aa54.Transparency = 0.8
+        end
+    end
+    aa51.Name = "RagdollPalete"
+    local aa55 = Instance.new("BodyVelocity")
+    aa55.MaxForce = Vector3.new(0, math.huge, 0)
+    aa55.Velocity = Vector3.new(0, 900, 0)
+    aa55.Parent = aa52
+    aa17 = false
+    return aa51
+end
+
+local function startLagSpam()
+    if running then return end
+    if not createLineRemote then return end
+    running = true
+    task.spawn(function()
+        while running do
+            local spawnLocation = aa82:FindFirstChild("SpawnLocation")
+                or aa82:FindFirstChild("Spawn")
+                or (aa4.Character and aa4.Character:FindFirstChild("HumanoidRootPart"))
+            if spawnLocation then
+                createLineRemote:FireServer(
+                    spawnLocation,
+                    CFrame.new(
+                        math.random(-2010000000, 2000000001),
+                        0,
+                        math.random(-2008100000, 2000200000)
+                    )
+                )
+            end
+            task.wait()
+        end
+    end)
+end
+
+local function stopLagSpam()
+    if not running then return end
+    running = false
+end
+
+local function startGrabKick()
+    task.spawn(function()
+        while aa6 do
+            local aa62 = aa21(aa7)
+            local aa63 = aa4.Character
+            local aa64 = aa63 and aa63:FindFirstChild("HumanoidRootPart")
+            if aa62 and aa64 then
+                local aa65 = aa62.Character
+                local aa66 = aa65 and aa65:FindFirstChild("HumanoidRootPart")
+                if aa66 then
+                    local aa67 = (aa64.Position - aa66.Position).Magnitude
+                    if aa67 > aa9 then
+                        aa25(aa62, aa64)
+                    end
+                    aa3.RenderStepped:Wait()
+                    aa11:FireServer(aa66, aa66.CFrame)
+                    if destroyLineRemote then
+                        destroyLineRemote:FireServer(aa66)
+                    end
+                    aa66.AssemblyLinearVelocity = Vector3.zero
+                    aa66.AssemblyAngularVelocity = Vector3.zero
+                    local aa68 = aa66:FindFirstChild("ControlBP")
+                    if not aa68 then
+                        aa68 = Instance.new("BodyPosition")
+                        aa68.Name     = "ControlBP"
+                        aa68.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                        aa68.P        = 800000
+                        aa68.Parent   = aa66
+                    end
+                    aa68.Position = aa64.Position + Vector3.new(5, 10, 5)
+                end
+            end
+            task.wait()
+        end
+        local aa69 = aa21(aa7)
+        if aa69 and aa69.Character then
+            local aa70 = aa69.Character:FindFirstChild("HumanoidRootPart")
+            if aa70 and aa70:FindFirstChild("ControlBP") then
+                aa70.ControlBP:Destroy()
+            end
+        end
+    end)
+end
+
+local function startPaletteLoop()
+    local aa71 = workspace:FindFirstChild(aa4.Name .. "SpawnedInToys")
+    local aa72 = nil
+    aa16["aa73"] = aa3.RenderStepped:Connect(function()
+        if not aa12.aa13 then return end
+        if not aa14.aa15 then return end
+        if not usePalette then return end
+        local aa74 = aa1:FindFirstChild(aa14.aa15)
+        if not aa74 or not aa74.Character then return end
+        local aa75 = aa74.Character:FindFirstChild("HumanoidRootPart")
+        local aa76 = aa74.Character:FindFirstChild("Humanoid")
+        if not aa75 or not aa76 then return end
+        if aa72 and aa72:IsDescendantOf(workspace) then
+            local aa77 = aa72:FindFirstChild("SoundPart")
+            if aa77 then
+                if not aa37(aa77, "PartOwner") then
+                    aa72:Destroy()
+                    aa72 = nil
+                end
+            else
+                aa72:Destroy()
+                aa72 = nil
+            end
+        end
+        if not aa17 and (not aa72 or not aa72:IsDescendantOf(workspace)) then
+            aa72 = aa71 and aa71:FindFirstChild("RagdollPalete") or aa50()
+        end
+        if aa72 and aa72:FindFirstChild("SoundPart") then
+            local aa78 = aa76:FindFirstChild("Ragdolled")
+            if aa78 and not aa78.Value then
+                aa72.SoundPart.Position = aa75.Position
+            end
+        end
+    end)
+end
+}) 
