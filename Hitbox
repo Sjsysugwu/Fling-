@@ -1,0 +1,211 @@
+
+--[[
+♛ ALI BOSS | BLACK & WHITE LUXURY HITBOX ♛
+Black + White Neon Edition
+]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local Player = Players.LocalPlayer
+
+local BLACK = Color3.fromRGB(8, 8, 10)
+local WHITE = Color3.fromRGB(255, 255, 255)
+local DARK_BLACK = Color3.fromRGB(25, 25, 30)
+
+local MAX_DISTANCE = 1000
+
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "AliBossHitbox"
+GUI.ResetOnSpawn = false
+GUI.DisplayOrder = 999
+GUI.Parent = game:GetService("CoreGui")
+
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 220, 0, 145)
+Main.Position = UDim2.new(0.5, -110, 0.5, -72)
+Main.BackgroundColor3 = BLACK
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Draggable = true
+Main.Parent = GUI
+
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = WHITE
+Stroke.Thickness = 2
+Stroke.Parent = Main
+
+local Gradient = Instance.new("UIGradient")
+Gradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, BLACK),
+    ColorSequenceKeypoint.new(0.5, DARK_BLACK),
+    ColorSequenceKeypoint.new(1, WHITE)
+})
+Gradient.Rotation = 35
+Gradient.Parent = Main
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -35, 0, 35)
+Title.Position = UDim2.new(0, 10, 0, 3)
+Title.BackgroundTransparency = 1
+Title.Text = "🇦🇱by A_A🇦🇱"
+Title.TextColor3 = WHITE
+Title.TextSize = 15
+Title.Font = Enum.Font.GothamBold
+Title.Parent = Main
+
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.new(0, 28, 0, 28)
+Close.Position = UDim2.new(1, -32, 0, 5)
+Close.BackgroundColor3 = BLACK
+Close.Text = "👋🏻"
+Close.TextColor3 = WHITE
+Close.TextSize = 17
+Close.Font = Enum.Font.GothamBold
+Close.AutoButtonColor = false
+Close.Parent = Main
+
+Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 8)
+
+local CloseStroke = Instance.new("UIStroke")
+CloseStroke.Color = WHITE
+CloseStroke.Thickness = 1.5
+CloseStroke.Parent = Close
+
+local SizeBox = Instance.new("TextBox")
+SizeBox.Size = UDim2.new(0, 190, 0, 32)
+SizeBox.Position = UDim2.new(0, 15, 0, 43)
+SizeBox.BackgroundColor3 = Color3.fromRGB(28, 28, 32)
+SizeBox.Text = "10"
+SizeBox.PlaceholderText = "Hitbox Size"
+SizeBox.TextColor3 = WHITE
+SizeBox.TextSize = 15
+SizeBox.Font = Enum.Font.GothamBold
+SizeBox.ClearTextOnFocus = false
+SizeBox.Parent = Main
+
+Instance.new("UICorner", SizeBox).CornerRadius = UDim.new(0, 8)
+
+local BoxStroke = Instance.new("UIStroke")
+BoxStroke.Color = WHITE
+BoxStroke.Thickness = 1.5
+BoxStroke.Parent = SizeBox
+
+local Toggle = Instance.new("TextButton")
+Toggle.Size = UDim2.new(0, 190, 0, 35)
+Toggle.Position = UDim2.new(0, 15, 0, 85)
+Toggle.BackgroundColor3 = BLACK
+Toggle.Text = "HITBOX : OFF"
+Toggle.TextColor3 = WHITE
+Toggle.TextSize = 14
+Toggle.Font = Enum.Font.GothamBold
+Toggle.AutoButtonColor = false
+Toggle.Parent = Main
+
+Instance.new("UICorner", Toggle).CornerRadius = UDim.new(0, 8)
+
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Color = WHITE
+ToggleStroke.Thickness = 1.5
+ToggleStroke.Parent = Toggle
+
+local Enabled = false
+local OriginalSizes = {}
+
+local function UpdatePlayers()
+    for _, Target in ipairs(Players:GetPlayers()) do
+        if Target ~= Player then
+            local Character = Target.Character
+            local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+            local MyCharacter = Player.Character
+            local MyRoot = MyCharacter and MyCharacter:FindFirstChild("HumanoidRootPart")
+
+            if Root then
+                local InRange = MyRoot
+                    and (Root.Position - MyRoot.Position).Magnitude <= MAX_DISTANCE
+
+                if Enabled and InRange then
+                    if not OriginalSizes[Root] then
+                        OriginalSizes[Root] = {
+                            Size = Root.Size,
+                            Transparency = Root.Transparency,
+                            Material = Root.Material,
+                            Color = Root.Color,
+                            CanCollide = Root.CanCollide
+                        }
+                    end
+
+                    local Number = tonumber(SizeBox.Text) or 10
+                    Number = math.clamp(Number, 2, 30)
+
+                    local Pulse = (math.sin(os.clock() * 3) + 1) / 2
+                    local Shade = 0.05 + Pulse * 0.95
+
+                    Root.Size = Vector3.new(Number, Number, Number)
+                    Root.Transparency = 0.5
+                    Root.Color = Color3.new(Shade, Shade, Shade)
+                    Root.Material = Enum.Material.Neon
+                    Root.CanCollide = false
+
+                elseif OriginalSizes[Root] then
+                    local Old = OriginalSizes[Root]
+                    Root.Size = Old.Size
+                    Root.Transparency = Old.Transparency
+                    Root.Material = Old.Material
+                    Root.Color = Old.Color
+                    Root.CanCollide = Old.CanCollide
+                    OriginalSizes[Root] = nil
+                end
+            end
+        end
+    end
+end
+
+Toggle.MouseButton1Click:Connect(function()
+    Enabled = not Enabled
+
+    Toggle.Text = Enabled and "HITBOX : ON" or "HITBOX : OFF"
+    Toggle.BackgroundColor3 = Enabled and WHITE or BLACK
+    Toggle.TextColor3 = Enabled and BLACK or WHITE
+
+    TweenService:Create(
+        Toggle,
+        TweenInfo.new(0.2),
+        {
+            BackgroundColor3 = Enabled and WHITE or BLACK,
+            TextColor3 = Enabled and BLACK or WHITE
+        }
+    ):Play()
+
+    UpdatePlayers()
+end)
+
+RunService.Heartbeat:Connect(function()
+    if Enabled then
+        UpdatePlayers()
+    end
+end)
+
+Close.MouseButton1Click:Connect(function()
+    Enabled = false
+    UpdatePlayers()
+    GUI:Destroy()
+end)
+
+local Rotation = 0
+
+RunService.RenderStepped:Connect(function(Delta)
+    if not GUI.Parent then return end
+
+    Rotation = (Rotation + Delta * 50) % 360
+    Gradient.Rotation = Rotation
+
+    local Pulse = (math.sin(os.clock() * 2) + 1) / 2
+    Stroke.Color = Color3.new(Pulse, Pulse, Pulse)
+    CloseStroke.Color = Pulse > 0.5 and WHITE or DARK_BLACK
+    ToggleStroke.Color = Pulse > 0.5 and WHITE or DARK_BLACK
+    BoxStroke.Color = Pulse > 0.5 and WHITE or DARK_BLACK
+end)
