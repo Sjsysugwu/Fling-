@@ -878,7 +878,7 @@ local LocalPlayer=Players.LocalPlayer
 local PlayerGui=LocalPlayer:WaitForChild("PlayerGui")
 
 local GUI_NAME="XR_Tornado_GUI"
-local IMAGE_ID="rbxassetid://88090543209567"
+local IMAGE_ID="rbxassetid://94757651444847"
 
 -- =========================================================
 -- DEVICE SELECTOR
