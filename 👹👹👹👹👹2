@@ -1,0 +1,256 @@
+-- Skull Kid
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+local player = Players.LocalPlayer
+
+local function WaitForCharacter(p)
+	local char = p.Character or p.CharacterAdded:Wait()
+	repeat task.wait() until char:FindFirstChild("Humanoid") and char:FindFirstChild("HumanoidRootPart")
+	return char
+end
+
+local character = WaitForCharacter(player)
+local humanoid = character:WaitForChild("Humanoid")
+local root = character:WaitForChild("HumanoidRootPart")
+
+-- limpiar animaciones default
+local function clean(char)
+	local animate = char:FindFirstChild("Animate")
+	if animate then animate:Destroy() end
+	for _, t in pairs(humanoid:GetPlayingAnimationTracks()) do t:Stop() end
+end
+
+clean(character)
+
+player.CharacterAdded:Connect(function(char)
+	character = WaitForCharacter(player)
+	humanoid = character:WaitForChild("Humanoid")
+	root = character:WaitForChild("HumanoidRootPart")
+	clean(char)
+end)
+
+local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
+
+local function loadTrack(id, priority, looped)
+	local anim = Instance.new("Animation")
+	anim.AnimationId = id
+	local track = animator:LoadAnimation(anim)
+	track.Priority = priority
+	track.Looped = looped or false
+	return track
+end
+
+-- IDS
+local IDs = {
+	IntroAnim = "rbxassetid://96899815187798",
+	IntroSnd  = "rbxassetid://79019943739069",
+
+	Idle = "rbxassetid://86422908958165",
+	Walk = "rbxassetid://106345021112927",
+
+	Atk1 = "rbxassetid://129358357219637",
+	Atk2 = "rbxassetid://73053491533472",
+	Atk3 = "rbxassetid://139915745351673",
+
+	SpecialAnim = "rbxassetid://134939964894332",
+
+	AttackSnd = "rbxassetid://12222225",
+	SpinSnd   = "rbxassetid://97815876592965",
+	SpecialSnd= "rbxassetid://265201042"
+}
+
+-- ANIMS
+local intro = loadTrack(IDs.IntroAnim, Enum.AnimationPriority.Action, false)
+local idle = loadTrack(IDs.Idle, Enum.AnimationPriority.Idle, true)
+local walk = loadTrack(IDs.Walk, Enum.AnimationPriority.Movement, true)
+
+local atk1 = loadTrack(IDs.Atk1, Enum.AnimationPriority.Action, false)
+local atk2 = loadTrack(IDs.Atk2, Enum.AnimationPriority.Action, false)
+local spin = loadTrack(IDs.Atk3, Enum.AnimationPriority.Action, true)
+local specialAnim = loadTrack(IDs.SpecialAnim, Enum.AnimationPriority.Action, false)
+
+walk:AdjustSpeed(0.7)
+
+local busy = false
+
+-- INTRO
+task.spawn(function()
+	task.wait(0.3)
+
+	local s = Instance.new("Sound", root)
+	s.SoundId = IDs.IntroSnd
+	s.Volume = 2
+	s:Play()
+	Debris:AddItem(s,5)
+
+	intro:Play()
+	intro.Stopped:Wait()
+
+	idle:Play()
+end)
+
+-- MOVIMIENTO
+humanoid.Running:Connect(function(speed)
+	if busy then return end
+
+	if speed > 1 then
+		if not walk.IsPlaying then
+			idle:Stop()
+			walk:Play()
+		end
+	else
+		if not idle.IsPlaying then
+			walk:Stop()
+			idle:Play()
+		end
+	end
+end)
+
+local backpack = player:WaitForChild("Backpack")
+
+-- ATTACK COMBO
+local attackTool = Instance.new("Tool")
+attackTool.Name = "Attack"
+attackTool.RequiresHandle = false
+attackTool.Parent = backpack
+
+local cd = false
+local combo = 1
+
+attackTool.Activated:Connect(function()
+	if cd or busy then return end
+	cd = true
+	busy = true
+
+	idle:Stop()
+	walk:Stop()
+
+	local s = Instance.new("Sound", root)
+	s.SoundId = IDs.AttackSnd
+	s.Volume = 2
+	s:Play()
+	Debris:AddItem(s,2)
+
+	local anim = (combo == 1) and atk1 or atk2
+	combo = (combo == 1) and 2 or 1
+
+	anim:Play()
+	anim.Stopped:Wait()
+
+	idle:Play()
+
+	cd = false
+	busy = false
+end)
+
+-- SPINNING STROKE
+local spinTool = Instance.new("Tool")
+spinTool.Name = "Spinning Stroke"
+spinTool.RequiresHandle = false
+spinTool.Parent = backpack
+
+local spinCD = false
+spinTool.Activated:Connect(function()
+	if spinCD or busy then return end
+	spinCD = true
+	busy = true
+
+	idle:Stop()
+	walk:Stop()
+
+	local s = Instance.new("Sound", root)
+	s.SoundId = IDs.SpinSnd
+	s.Volume = 2.5
+	s:Play()
+	Debris:AddItem(s,3)
+
+	spin:Play()
+	spin:AdjustSpeed(3)
+
+	local bv = Instance.new("BodyVelocity")
+	bv.MaxForce = Vector3.new(1e5,0,1e5)
+	bv.Velocity = root.CFrame.LookVector * 20.3
+	bv.Parent = root
+
+	task.wait(1.7)
+
+	if bv then bv:Destroy() end
+
+	-- 🔥 corte seguro del loop
+	if spin.IsPlaying then spin:Stop() end
+
+	idle:Play()
+
+	spinCD = false
+	busy = false
+end)
+
+-- SPECIAL (ORIGINAL PERO ESTABLE)
+local specialTool = Instance.new("Tool")
+specialTool.Name = "Special"
+specialTool.RequiresHandle = false
+specialTool.Parent = backpack
+
+local specialCD = false
+specialTool.Activated:Connect(function()
+	if specialCD or busy or humanoid.Health <= 0 then return end
+	specialCD = true
+	busy = true
+
+	if walk.IsPlaying then walk:Stop() end
+	if idle.IsPlaying then idle:Stop() end
+
+	local sfx = Instance.new("Sound", root)
+	sfx.SoundId = IDs.SpecialSnd
+	sfx.Volume = 2.5
+	sfx:Play()
+	Debris:AddItem(sfx,2)
+
+	specialAnim:Play()
+
+	local origForward = root.CFrame.LookVector
+	if Vector3.new(origForward.X,0,origForward.Z).Magnitude < 0.01 then
+		origForward = Vector3.new(0,0,-1)
+	end
+
+	local forwardFlat = Vector3.new(origForward.X,0,origForward.Z).Unit
+
+	root.CFrame = CFrame.new(root.Position, root.Position - forwardFlat)
+
+	local bv = Instance.new("BodyVelocity")
+	bv.MaxForce = Vector3.new(1e5,0,1e5)
+	bv.Velocity = forwardFlat * 35
+	bv.Parent = root
+
+	local attA = Instance.new("Attachment", root)
+	local attB = Instance.new("Attachment", root)
+
+	local trail = Instance.new("Trail")
+	trail.Attachment0 = attA
+	trail.Attachment1 = attB
+	trail.Lifetime = 0.28
+	trail.Parent = root
+
+	Debris:AddItem(trail,1)
+
+	local dashDuration = 2
+	task.wait(dashDuration)
+
+	if bv then bv:Destroy() end
+	trail.Enabled = false
+	attA:Destroy()
+	attB:Destroy()
+
+	root.CFrame = CFrame.new(root.Position, root.Position + forwardFlat)
+
+	if specialAnim.IsPlaying then specialAnim:Stop() end
+	idle:Play()
+
+	task.wait(0.3)
+	specialCD = false
+	busy = false
+end)
+
+print("✅ Script limpio y funcionando")
