@@ -1,0 +1,231 @@
+--====================================================
+-- Full Anim System + Void Rush + Laugh + Stab (R15)
+--====================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+----------------------------------------------------
+-- IDS
+----------------------------------------------------
+local ANIM_IDLE   = "rbxassetid://113047257611459"
+local ANIM_WALK   = "rbxassetid://90175656540190"
+local ANIM_JUMP   = "rbxassetid://139390570947836"
+local ANIM_FLY    = "rbxassetid://119380285634530"
+local ANIM_LAUGH  = "rbxassetid://140494815503076"
+local ANIM_ATTACK = "rbxassetid://129358357219637"
+
+local SOUND_LAUGH  = "rbxassetid://126967668249129"
+local SOUND_FLY    = "rbxassetid://71729812996802"
+local SOUND_ATTACK = "rbxassetid://128582078327464"
+
+----------------------------------------------------
+-- GUI
+----------------------------------------------------
+local gui = playerGui:FindFirstChild("LaughUI")
+if not gui then
+	gui = Instance.new("ScreenGui")
+	gui.Name = "LaughUI"
+	gui.ResetOnSpawn = false
+	gui.Parent = playerGui
+
+	local btn = Instance.new("TextButton")
+	btn.Name = "LaughButton"
+	btn.Size = UDim2.new(0,140,0,50)
+	btn.Position = UDim2.new(0.05,0,0.8,0)
+	btn.Text = "noli dance"
+	btn.Font = Enum.Font.SourceSansBold
+	btn.TextSize = 20
+	btn.BackgroundColor3 = Color3.fromRGB(30,30,30)
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.Parent = gui
+end
+
+local laughBtn = gui:WaitForChild("LaughButton")
+
+----------------------------------------------------
+-- TOOL CREATOR
+----------------------------------------------------
+local function GetOrCreateTool(name)
+	local backpack = player:WaitForChild("Backpack")
+	local tool = backpack:FindFirstChild(name)
+	if tool then return tool end
+
+	tool = Instance.new("Tool")
+	tool.Name = name
+	tool.RequiresHandle = false
+	tool.Parent = backpack
+	return tool
+end
+
+----------------------------------------------------
+-- CHARACTER SETUP
+----------------------------------------------------
+local function SetupCharacter(char)
+	local animate = char:FindFirstChild("Animate")
+	if animate then animate:Destroy() end
+
+	local humanoid = char:WaitForChild("Humanoid")
+	local hrp = char:WaitForChild("HumanoidRootPart")
+
+	local oldAnimator = humanoid:FindFirstChildOfClass("Animator")
+	if oldAnimator then oldAnimator:Destroy() end
+
+	local animator = Instance.new("Animator")
+	animator.Parent = humanoid
+
+	------------------------------------------------
+	-- LOAD ANIMS
+	------------------------------------------------
+	local function LoadAnim(id, loop)
+		local anim = Instance.new("Animation")
+		anim.AnimationId = id
+		local track = humanoid:LoadAnimation(anim)
+		track.Looped = loop
+		return track
+	end
+
+	local Idle   = LoadAnim(ANIM_IDLE, true)
+	local Walk   = LoadAnim(ANIM_WALK, true)
+	local Jump   = LoadAnim(ANIM_JUMP, false)
+	local Fly    = LoadAnim(ANIM_FLY, true)
+	local Laugh  = LoadAnim(ANIM_LAUGH, false)
+	local Attack = LoadAnim(ANIM_ATTACK, false)
+
+	Idle:Play()
+
+	------------------------------------------------
+	-- SOUNDS
+	------------------------------------------------
+	local laughSound = Instance.new("Sound")
+	laughSound.SoundId = SOUND_LAUGH
+	laughSound.Volume = 1
+
+	local flySound = Instance.new("Sound")
+	flySound.SoundId = SOUND_FLY
+	flySound.Volume = 1
+	flySound.Looped = true
+
+	local attackSound = Instance.new("Sound")
+	attackSound.SoundId = SOUND_ATTACK
+	attackSound.Volume = 1
+
+	------------------------------------------------
+	-- STATES
+	------------------------------------------------
+	local attacking = false
+	local flying = false
+
+	local function StopMovement()
+		Idle:Stop()
+		Walk:Stop()
+		Jump:Stop()
+	end
+
+	------------------------------------------------
+	-- MOVEMENT
+	------------------------------------------------
+	humanoid.Running:Connect(function(speed)
+		if attacking or flying or Laugh.IsPlaying then return end
+		if speed > 1 then
+			Idle:Stop()
+			if not Walk.IsPlaying then Walk:Play() end
+		else
+			Walk:Stop()
+			if not Idle.IsPlaying then Idle:Play() end
+		end
+	end)
+
+	humanoid.Jumping:Connect(function()
+		if attacking or flying or Laugh.IsPlaying then return end
+		StopMovement()
+		Jump:Play()
+	end)
+
+	humanoid.StateChanged:Connect(function(_, new)
+		if new == Enum.HumanoidStateType.Landed then
+			if attacking or flying or Laugh.IsPlaying then return end
+			if humanoid.MoveDirection.Magnitude > 0 then Walk:Play() else Idle:Play() end
+		end
+	end)
+
+	------------------------------------------------
+	-- LAUGH
+	------------------------------------------------
+	laughBtn.MouseButton1Click:Connect(function()
+		if Laugh.IsPlaying or attacking or flying then return end
+		StopMovement()
+		SoundService:PlayLocalSound(laughSound)
+		Laugh:Play()
+		Laugh.Stopped:Wait()
+		if humanoid.MoveDirection.Magnitude > 0 then Walk:Play() else Idle:Play() end
+	end)
+
+	------------------------------------------------
+	-- STAB (ATTACK)
+	------------------------------------------------
+	local stabTool = GetOrCreateTool("Stab")
+
+	stabTool.Activated:Connect(function()
+		if attacking or flying or Laugh.IsPlaying then return end
+		attacking = true
+
+		StopMovement()
+		SoundService:PlayLocalSound(attackSound)
+		Attack:Play()
+
+		Attack.Stopped:Wait()
+		attacking = false
+		if humanoid.MoveDirection.Magnitude > 0 then Walk:Play() else Idle:Play() end
+	end)
+
+	------------------------------------------------
+	-- VOID RUSH (FLY 3s)
+	------------------------------------------------
+	local voidRushTool = GetOrCreateTool("Void Rush")
+
+	voidRushTool.Activated:Connect(function()
+		if flying or attacking then return end
+		flying = true
+
+		StopMovement()
+		Fly:Play()
+		SoundService:PlayLocalSound(flySound)
+
+		local bv = Instance.new("BodyVelocity")
+		bv.MaxForce = Vector3.new(1e6,1e6,1e6)
+		bv.P = 2500
+		bv.Parent = hrp
+
+		local hb
+		hb = RunService.Heartbeat:Connect(function()
+			if not flying then hb:Disconnect() return end
+			bv.Velocity = hrp.CFrame.LookVector * 60
+		end)
+
+		task.delay(3, function()
+			flying = false
+			if bv then bv:Destroy() end
+			Fly:Stop()
+			flySound:Stop()
+			if humanoid.MoveDirection.Magnitude > 0 then Walk:Play() else Idle:Play() end
+		end)
+	end)
+end
+
+----------------------------------------------------
+-- CHARACTER CONNECTION
+----------------------------------------------------
+if player.Character then
+	task.wait(0.2)
+	SetupCharacter(player.Character)
+end
+
+player.CharacterAdded:Connect(function(char)
+	task.wait(0.2)
+	SetupCharacter(char)
+end)
