@@ -1,0 +1,497 @@
+
+--========================================================
+-- XR BLACK & WHITE LUXURY V6
+-- LEFT ROCKET BUTTON + STABLE TURNING + FOLLOW CAMERA
+--========================================================
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local LP = Players.LocalPlayer
+local PG = LP:WaitForChild("PlayerGui")
+local Camera = workspace.CurrentCamera
+
+local SPEED = 100
+local MIN_SPEED = 20
+local MAX_SPEED = 300
+local MAX_DISTANCE = 15
+local CAMERA_DISTANCE = 22
+local SENSITIVITY = 0.004
+
+local WHITE = Color3.new(1,1,1)
+local BLACK = Color3.fromRGB(8,8,10)
+local PANEL = Color3.fromRGB(32,32,36)
+
+local active = false
+local thirdPerson = true
+local forward, backward, left, right = false,false,false,false
+local yaw, pitch = 0,0
+
+local missile
+local attachment, velocity, orientation
+local oldCameraType, oldCameraSubject
+local cameraTouch, lastTouch
+local connections = {}
+
+local function connect(signal, callback)
+    local c = signal:Connect(callback)
+    table.insert(connections, c)
+    return c
+end
+
+local oldGui = PG:FindFirstChild("XR_BW_Missile")
+if oldGui then oldGui:Destroy() end
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "XR_BW_Missile"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.DisplayOrder = 999
+gui.Parent = PG
+
+-- ROCKET BUTTON: TOP LEFT
+local rocketButton = Instance.new("TextButton")
+rocketButton.Size = UDim2.fromOffset(60,60)
+rocketButton.Position = UDim2.new(0,12,0,100)
+rocketButton.BackgroundColor3 = BLACK
+rocketButton.Text = "🚀"
+rocketButton.TextSize = 32
+rocketButton.TextColor3 = WHITE
+rocketButton.Font = Enum.Font.GothamBold
+rocketButton.Parent = gui
+
+Instance.new("UICorner",rocketButton).CornerRadius = UDim.new(0,15)
+
+local rocketStroke = Instance.new("UIStroke")
+rocketStroke.Color = WHITE
+rocketStroke.Thickness = 2
+rocketStroke.Parent = rocketButton
+
+-- MENU
+local menu = Instance.new("Frame")
+menu.Size = UDim2.fromOffset(220,275)
+menu.Position = UDim2.new(0,12,0,170)
+menu.BackgroundColor3 = BLACK
+menu.BorderSizePixel = 0
+menu.Visible = false
+menu.Parent = gui
+
+Instance.new("UICorner",menu).CornerRadius = UDim.new(0,12)
+
+local menuStroke = Instance.new("UIStroke")
+menuStroke.Color = WHITE
+menuStroke.Parent = menu
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,-10,0,30)
+title.Position = UDim2.fromOffset(5,3)
+title.BackgroundTransparency = 1
+title.Text = "XR🚀 MISSILE🚀"
+title.TextColor3 = WHITE
+title.Font = Enum.Font.GothamBlack
+title.TextSize = 14
+title.Parent = menu
+
+local function makeButton(text,y)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1,-20,0,34)
+    b.Position = UDim2.fromOffset(10,y)
+    b.BackgroundColor3 = PANEL
+    b.TextColor3 = WHITE
+    b.Text = text
+    b.TextSize = 12
+    b.Font = Enum.Font.GothamBold
+    b.Parent = menu
+
+    Instance.new("UICorner",b).CornerRadius = UDim.new(0,8)
+
+    local s = Instance.new("UIStroke")
+    s.Color = WHITE
+    s.Transparency = 0.3
+    s.Parent = b
+
+    return b
+end
+
+local startButton = makeButton("MISSILE: OFF",40)
+local cameraButton = makeButton("CAMERA: 3D",80)
+local minusButton = makeButton("- SPEED",120)
+local speedButton = makeButton("SPEED: 100",160)
+local plusButton = makeButton("+ SPEED",200)
+
+connect(rocketButton.Activated,function()
+    menu.Visible = not menu.Visible
+end)
+
+-- HUD
+local hud = Instance.new("TextLabel")
+hud.Size = UDim2.fromOffset(250,72)
+hud.Position = UDim2.fromOffset(10,10)
+hud.BackgroundTransparency = 1
+hud.TextColor3 = WHITE
+hud.TextStrokeColor3 = BLACK
+hud.TextStrokeTransparency = 0
+hud.Font = Enum.Font.Code
+hud.TextSize = 12
+hud.TextXAlignment = Enum.TextXAlignment.Left
+hud.TextYAlignment = Enum.TextYAlignment.Top
+hud.Visible = false
+hud.Parent = gui
+
+-- DIRECTION BUTTONS: BOTTOM RIGHT
+local controls = Instance.new("Frame")
+controls.Size = UDim2.fromOffset(145,100)
+controls.AnchorPoint = Vector2.new(1,1)
+controls.Position = UDim2.new(1,-10,1,-90)
+controls.BackgroundTransparency = 1
+controls.Visible = false
+controls.Parent = gui
+
+local function directionButton(label,x,y,key)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.fromOffset(42,40)
+    b.Position = UDim2.fromOffset(x,y)
+    b.BackgroundColor3 = BLACK
+    b.TextColor3 = WHITE
+    b.Text = label
+    b.TextSize = 17
+    b.Font = Enum.Font.GothamBold
+    b.Parent = controls
+
+    Instance.new("UICorner",b).CornerRadius = UDim.new(0,8)
+
+    local s = Instance.new("UIStroke")
+    s.Color = WHITE
+    s.Parent = b
+
+    local function set(value)
+        if key == "forward" then forward = value end
+        if key == "backward" then backward = value end
+        if key == "left" then left = value end
+        if key == "right" then right = value end
+    end
+
+    connect(b.InputBegan,function(input)
+        if input.UserInputType == Enum.UserInputType.Touch
+        or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            set(true)
+        end
+    end)
+
+    connect(b.InputEnded,function(input)
+        if input.UserInputType == Enum.UserInputType.Touch
+        or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            set(false)
+        end
+    end)
+end
+
+directionButton("▲",51,0,"forward")
+directionButton("▼",51,48,"backward")
+directionButton("◀",5,48,"left")
+directionButton("▶",97,48,"right")
+
+-- CAMERA LOOK
+local function readAngles()
+    local look = Camera.CFrame.LookVector
+    yaw = math.atan2(-look.X,-look.Z)
+    pitch = math.asin(math.clamp(look.Y,-1,1))
+end
+
+local function getLook()
+    return CFrame.fromOrientation(pitch,yaw,0).LookVector
+end
+
+connect(UIS.InputBegan,function(input)
+    if not active then return end
+
+    if input.UserInputType == Enum.UserInputType.Touch then
+        local objects = PG:GetGuiObjectsAtPosition(
+            input.Position.X,input.Position.Y
+        )
+
+        for _,obj in ipairs(objects) do
+            if obj:IsDescendantOf(menu)
+            or obj:IsDescendantOf(controls)
+            or obj == rocketButton then
+                return
+            end
+        end
+
+        cameraTouch = input
+        lastTouch = input.Position
+
+    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+        cameraTouch = input
+        lastTouch = input.Position
+    end
+end)
+
+connect(UIS.InputChanged,function(input)
+    if not active or not cameraTouch then return end
+
+    if input == cameraTouch
+    or input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position-lastTouch
+        lastTouch = input.Position
+        yaw -= delta.X*SENSITIVITY
+        pitch = math.clamp(
+            pitch-delta.Y*SENSITIVITY,
+            math.rad(-80),math.rad(80)
+        )
+    end
+end)
+
+connect(UIS.InputEnded,function(input)
+    if input == cameraTouch
+    or input.UserInputType == Enum.UserInputType.MouseButton2 then
+        cameraTouch = nil
+        lastTouch = nil
+    end
+end)
+
+-- PHYSICS
+local function clearPhysics()
+    if velocity then velocity:Destroy(); velocity = nil end
+    if orientation then orientation:Destroy(); orientation = nil end
+    if attachment then attachment:Destroy(); attachment = nil end
+end
+
+local function setupPhysics(part)
+    clearPhysics()
+
+    attachment = Instance.new("Attachment")
+    attachment.Parent = part
+
+    velocity = Instance.new("LinearVelocity")
+    velocity.Attachment0 = attachment
+    velocity.RelativeTo = Enum.ActuatorRelativeTo.World
+    velocity.MaxForce = 1000000
+    velocity.VectorVelocity = Vector3.zero
+    velocity.Parent = part
+
+    orientation = Instance.new("AlignOrientation")
+    orientation.Attachment0 = attachment
+    orientation.Mode = Enum.OrientationAlignmentMode.OneAttachment
+    orientation.MaxTorque = 1000000
+    orientation.Responsiveness = 25
+    orientation.Parent = part
+end
+
+-- STOP
+local function stopMissile()
+    active = false
+    forward,backward,left,right = false,false,false,false
+    cameraTouch,lastTouch = nil,nil
+
+    clearPhysics()
+    hud.Visible = false
+    controls.Visible = false
+
+    Camera.CameraType = oldCameraType or Enum.CameraType.Custom
+
+    if oldCameraSubject and oldCameraSubject.Parent then
+        Camera.CameraSubject = oldCameraSubject
+    elseif LP.Character then
+        local hum = LP.Character:FindFirstChildOfClass("Humanoid")
+        if hum then Camera.CameraSubject = hum end
+    end
+
+    startButton.Text = "MISSILE: OFF"
+end
+
+-- FIND NEAREST MISSILE
+local function findNearestMissile()
+    local character = LP.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+
+    local nearestPart
+    local nearestDistance = MAX_DISTANCE
+
+    for _,obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name == "BombMissile" then
+            local part
+
+            if obj:IsA("BasePart") then
+                part = obj
+            elseif obj:IsA("Model") then
+                part = obj.PrimaryPart
+                    or obj:FindFirstChildWhichIsA("BasePart",true)
+            end
+
+            if part then
+                local distance = (part.Position-root.Position).Magnitude
+                if distance <= nearestDistance then
+                    nearestDistance = distance
+                    nearestPart = part
+                end
+            end
+        end
+    end
+
+    return nearestPart
+end
+
+-- START
+local function startMissile()
+    local part = findNearestMissile()
+
+    if not part then
+        startButton.Text = "NO NEAR MISSILE"
+        task.delay(2,function()
+            if not active and startButton.Parent then
+                startButton.Text = "MISSILE: OFF"
+            end
+        end)
+        return
+    end
+
+    missile = part
+    oldCameraType = Camera.CameraType
+    oldCameraSubject = Camera.CameraSubject
+
+    readAngles()
+    setupPhysics(missile)
+
+    active = true
+    Camera.CameraType = Enum.CameraType.Scriptable
+
+    startButton.Text = "MISSILE: ON"
+    hud.Visible = true
+    controls.Visible = true
+end
+
+connect(startButton.Activated,function()
+    if active then
+        stopMissile()
+    else
+        startMissile()
+    end
+end)
+
+connect(cameraButton.Activated,function()
+    thirdPerson = not thirdPerson
+    cameraButton.Text = thirdPerson and "CAMERA: 3D" or "CAMERA: FPV"
+end)
+
+connect(minusButton.Activated,function()
+    SPEED = math.max(MIN_SPEED,SPEED-10)
+    speedButton.Text = "SPEED: "..SPEED
+end)
+
+connect(plusButton.Activated,function()
+    SPEED = math.min(MAX_SPEED,SPEED+10)
+    speedButton.Text = "SPEED: "..SPEED
+end)
+
+-- KEYBOARD
+connect(UIS.InputBegan,function(input,processed)
+    if processed or not active then return end
+
+    if input.KeyCode == Enum.KeyCode.F then
+        stopMissile()
+    elseif input.KeyCode == Enum.KeyCode.V then
+        thirdPerson = not thirdPerson
+        cameraButton.Text = thirdPerson and "CAMERA: 3D" or "CAMERA: FPV"
+    elseif input.KeyCode == Enum.KeyCode.W then
+        forward = true
+    elseif input.KeyCode == Enum.KeyCode.S then
+        backward = true
+    elseif input.KeyCode == Enum.KeyCode.A then
+        left = true
+    elseif input.KeyCode == Enum.KeyCode.D then
+        right = true
+    elseif input.KeyCode == Enum.KeyCode.Q then
+        SPEED = math.max(MIN_SPEED,SPEED-10)
+        speedButton.Text = "SPEED: "..SPEED
+    elseif input.KeyCode == Enum.KeyCode.E then
+        SPEED = math.min(MAX_SPEED,SPEED+10)
+        speedButton.Text = "SPEED: "..SPEED
+    end
+end)
+
+connect(UIS.InputEnded,function(input)
+    if input.KeyCode == Enum.KeyCode.W then forward = false end
+    if input.KeyCode == Enum.KeyCode.S then backward = false end
+    if input.KeyCode == Enum.KeyCode.A then left = false end
+    if input.KeyCode == Enum.KeyCode.D then right = false end
+end)
+
+-- FLIGHT LOOP: MISSILE TURNS WITH MOVEMENT
+connect(RunService.RenderStepped,function()
+    if not active then return end
+
+    if not missile or not missile.Parent then
+        stopMissile()
+        return
+    end
+
+    local look = getLook()
+    local cameraCF = CFrame.lookAt(Vector3.zero,look)
+    local cameraRight = cameraCF.RightVector
+    local direction = Vector3.zero
+
+    if forward then direction += look end
+    if backward then direction -= look end
+    if left then direction -= cameraRight end
+    if right then direction += cameraRight end
+
+    if direction.Magnitude > 0 then
+        direction = direction.Unit
+
+        if velocity then
+            velocity.VectorVelocity = direction*SPEED
+        end
+
+        -- Face the direction of travel without extra 180-degree roll
+        if orientation then
+            orientation.CFrame = CFrame.lookAt(
+                Vector3.zero,
+                direction
+            )
+        end
+    else
+        -- No input: keep the missile still and retain its last orientation
+        if velocity then
+            velocity.VectorVelocity = Vector3.zero
+        end
+    end
+
+    Camera.CameraType = Enum.CameraType.Scriptable
+
+    if thirdPerson then
+        local camPos =
+            missile.Position-look*CAMERA_DISTANCE+Vector3.new(0,5,0)
+
+        Camera.CFrame = CFrame.lookAt(
+            camPos,
+            missile.Position+look*5
+        )
+    else
+        Camera.CFrame = CFrame.lookAt(
+            missile.Position,
+            missile.Position+look
+        )
+    end
+
+    local pos = missile.Position
+    local heading =
+        (math.deg(math.atan2(-look.X,-look.Z))+360)%360
+
+    hud.Text = string.format(
+        "XR MISSILE\nALT: %.0f\nSPEED: %d\nHEADING: %03d°",
+        pos.Y,SPEED,heading
+    )
+end)
+
+connect(LP.CharacterAdded,function()
+    if active then stopMissile() end
+end)
+
+connect(UIS.WindowFocusReleased,function()
+    forward,backward,left,right = false,false,false,false
+    cameraTouch,lastTouch = nil,nil
+end)
