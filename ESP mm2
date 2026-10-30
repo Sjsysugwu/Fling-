@@ -1,0 +1,299 @@
+
+-- =========================================
+-- 👑 XR LUXURY ESP + GUNDROP FINDER
+-- 🟢 Normal Player
+-- 🔵 Gun
+-- 🔴 Knife
+-- 🟡 GunDrop
+-- by A_A + XR
+-- =========================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- COLORS
+local BLACK = Color3.fromRGB(15,15,20)
+local WHITE = Color3.fromRGB(255,255,255)
+local GREEN = Color3.fromRGB(0,255,70)
+local BLUE = Color3.fromRGB(0,140,255)
+local RED = Color3.fromRGB(255,30,40)
+local YELLOW = Color3.fromRGB(255,220,0)
+
+-- STATES
+local PlayerESP = false
+local GunDropESP = true
+
+local Drawings = {}
+local GunDropHighlights = {}
+local RainbowHue = 0
+
+-- GUI
+local OldGui = CoreGui:FindFirstChild("XR_LUXURY_ESP")
+if OldGui then OldGui:Destroy() end
+
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "XR_LUXURY_ESP"
+Gui.ResetOnSpawn = false
+Gui.DisplayOrder = 999999
+Gui.Parent = CoreGui
+
+-- BUTTON CREATOR
+local function CreateButton(name,text,position)
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.Size = UDim2.fromOffset(110,48)
+    button.Position = position
+    button.BackgroundColor3 = BLACK
+    button.Text = text
+    button.TextColor3 = WHITE
+    button.TextSize = 12
+    button.Font = Enum.Font.GothamBold
+    button.Parent = Gui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0,12)
+    corner.Parent = button
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 2
+    stroke.Color = YELLOW
+    stroke.Parent = button
+
+    return button,stroke
+end
+
+local PlayerButton,PlayerBorder = CreateButton(
+    "PlayerESP",
+    "👑 PLAYER OFF",
+    UDim2.new(1,-125,0,110)
+)
+
+local DropButton,DropBorder = CreateButton(
+    "GunDropESP",
+    "🟡 DROP ON",
+    UDim2.new(1,-125,0,165)
+)
+
+-- TOOL DETECTION
+local function GetPlayerColor(player)
+    local character = player.Character
+    if not character then return GREEN end
+
+    local backpack = player:FindFirstChildOfClass("Backpack")
+
+    for _,container in ipairs({character,backpack}) do
+        if container then
+            for _,item in ipairs(container:GetChildren()) do
+                if item:IsA("Tool") then
+                    local name = string.lower(item.Name)
+
+                    if name == "knife" then
+                        return RED
+                    elseif name == "gun" then
+                        return BLUE
+                    end
+                end
+            end
+        end
+    end
+
+    return GREEN
+end
+
+-- PLAYER ESP
+local function Hide(data)
+    pcall(function()
+        data.Box.Visible = false
+        data.Tracer.Visible = false
+    end)
+end
+
+local function RemoveESP(player)
+    local data = Drawings[player]
+    if not data then return end
+
+    pcall(function()
+        data.Box:Remove()
+        data.Tracer:Remove()
+    end)
+
+    Drawings[player] = nil
+end
+
+local function SetupESP(player)
+    if player == LocalPlayer or Drawings[player] then return end
+
+    local success,data = pcall(function()
+        local box = Drawing.new("Square")
+        box.Visible = false
+        box.Thickness = 2
+        box.Filled = false
+
+        local tracer = Drawing.new("Line")
+        tracer.Visible = false
+        tracer.Thickness = 2
+
+        return {Box=box,Tracer=tracer}
+    end)
+
+    if success and data then
+        Drawings[player] = data
+    end
+end
+
+for _,player in ipairs(Players:GetPlayers()) do
+    SetupESP(player)
+end
+
+Players.PlayerAdded:Connect(SetupESP)
+Players.PlayerRemoving:Connect(RemoveESP)
+
+-- GUNDROP ESP
+local function RemoveDrop(object)
+    local highlight = GunDropHighlights[object]
+
+    if highlight then
+        highlight:Destroy()
+        GunDropHighlights[object] = nil
+    end
+end
+
+local function SetupDrop(object)
+    if not GunDropESP then return end
+    if object.Name ~= "GunDrop" then return end
+    if GunDropHighlights[object] then return end
+
+    local success,highlight = pcall(function()
+        local h = Instance.new("Highlight")
+        h.Name = "XR_GunDrop_Highlight"
+        h.Adornee = object
+        h.FillColor = YELLOW
+        h.OutlineColor = WHITE
+        h.FillTransparency = 0.55
+        h.OutlineTransparency = 0
+        h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        h.Parent = Gui
+        return h
+    end)
+
+    if success then
+        GunDropHighlights[object] = highlight
+    end
+end
+
+local function ScanGunDrops()
+    for _,object in ipairs(Workspace:GetDescendants()) do
+        if object.Name == "GunDrop" then
+            SetupDrop(object)
+        end
+    end
+end
+
+-- IMMEDIATE FIRST SCAN
+ScanGunDrops()
+
+Workspace.DescendantAdded:Connect(function(object)
+    if object.Name == "GunDrop" then
+        SetupDrop(object)
+    end
+end)
+
+Workspace.DescendantRemoving:Connect(function(object)
+    RemoveDrop(object)
+end)
+
+-- BUTTONS
+PlayerButton.MouseButton1Click:Connect(function()
+    PlayerESP = not PlayerESP
+    PlayerButton.Text = PlayerESP and "👑 PLAYER ON" or "👑 PLAYER OFF"
+
+    if not PlayerESP then
+        for _,data in pairs(Drawings) do
+            Hide(data)
+        end
+    end
+end)
+
+DropButton.MouseButton1Click:Connect(function()
+    GunDropESP = not GunDropESP
+    DropButton.Text = GunDropESP and "🟡 DROP ON" or "🟡 DROP OFF"
+
+    if GunDropESP then
+        ScanGunDrops()
+    else
+        for object in pairs(GunDropHighlights) do
+            RemoveDrop(object)
+        end
+    end
+end)
+
+-- UPDATE
+local Connection
+Connection = RunService.RenderStepped:Connect(function(deltaTime)
+    RainbowHue = (RainbowHue + deltaTime * 0.35) % 1
+
+    local rainbow = Color3.fromHSV(RainbowHue,1,1)
+    PlayerBorder.Color = rainbow
+    DropBorder.Color = rainbow
+
+    if PlayerESP then
+        local camera = Workspace.CurrentCamera
+
+        if camera then
+            for player,data in pairs(Drawings) do
+                local character = player.Character
+                local humanoid = character and
+                    character:FindFirstChildOfClass("Humanoid")
+                local root = character and
+                    character:FindFirstChild("HumanoidRootPart")
+
+                if humanoid and root and humanoid.Health > 0 then
+                    local top = root.Position + Vector3.new(0,3,0)
+                    local bottom = root.Position - Vector3.new(0,3.5,0)
+
+                    local topPos,topVisible =
+                        camera:WorldToViewportPoint(top)
+
+                    local bottomPos,bottomVisible =
+                        camera:WorldToViewportPoint(bottom)
+
+                    if topVisible and bottomVisible then
+                        local height = math.abs(bottomPos.Y-topPos.Y)
+                        local width = height/2
+                        local color = GetPlayerColor(player)
+
+                        data.Box.Size = Vector2.new(width,height)
+                        data.Box.Position = Vector2.new(
+                            topPos.X-width/2,topPos.Y
+                        )
+
+                        data.Box.Color = color
+                        data.Tracer.Color = color
+
+                        data.Tracer.From = Vector2.new(
+                            camera.ViewportSize.X/2,
+                            camera.ViewportSize.Y
+                        )
+
+                        data.Tracer.To = Vector2.new(
+                            topPos.X,bottomPos.Y
+                        )
+
+                        data.Box.Visible = true
+                        data.Tracer.Visible = true
+                    else
+                        Hide(data)
+                    end
+                else
+                    Hide(data)
+                end
+            end
+        end
+    end
+end)
+
+print("[XR] LUXURY PLAYER + GUNDROP ESP LOADED 👑")
