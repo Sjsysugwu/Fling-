@@ -1,3 +1,289 @@
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local SoundService = game:GetService("SoundService")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local GuiParent = LocalPlayer:WaitForChild("PlayerGui")
+pcall(function()
+    if gethui then
+        GuiParent = gethui()
+    elseif game:GetService("CoreGui") then
+        GuiParent = game:GetService("CoreGui")
+    end
+end)
+
+-- دالة الإشعارات (تطلع من جهة اليمين)
+local function SendNotification(text)
+    local existing = GuiParent:FindFirstChild("DeltaNotificationUI")
+    if existing then
+        existing:Destroy()
+    end
+
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "DeltaNotificationUI"
+    ScreenGui.Parent = GuiParent
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(0, 260, 0, 45)
+    -- البدء من خارج الشاشة من جهة اليمين
+    Frame.Position = UDim2.new(1, 60, 1, -70)
+    Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Frame.BorderSizePixel = 0
+    Frame.Parent = ScreenGui
+
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 8)
+    UICorner.Parent = Frame
+
+    local Accent = Instance.new("Frame")
+    Accent.Size = UDim2.new(0, 4, 1, 0)
+    Accent.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    Accent.BorderSizePixel = 0
+    Accent.Parent = Frame
+
+    local AccentCorner = Instance.new("UICorner")
+    AccentCorner.CornerRadius = UDim.new(0, 2)
+    AccentCorner.Parent = Accent
+
+    local TextLabel = Instance.new("TextLabel")
+    TextLabel.Size = UDim2.new(1, -15, 1, 0)
+    TextLabel.Position = UDim2.new(0, 12, 0, 0)
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.Font = Enum.Font.FredokaOne
+    TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TextLabel.TextSize = 13
+    TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TextLabel.Text = text
+    TextLabel.Parent = Frame
+
+    -- الحركة للداخل من جهة اليمين
+    Frame:TweenPosition(UDim2.new(1, -275, 1, -70), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
+
+    task.spawn(function()
+        task.wait(2.5)
+        -- الخروج نحو اليمين
+        Frame:TweenPosition(UDim2.new(1, 60, 1, -70), Enum.EasingDirection.In, Enum.EasingStyle.Quad, 0.3, true)
+        task.wait(0.3)
+        ScreenGui:Destroy()
+    end)
+end
+
+if GuiParent:FindFirstChild("SharinganIntro") then
+    GuiParent.SharinganIntro:Destroy()
+end
+
+local IntroGui = Instance.new("ScreenGui")
+IntroGui.Name = "SharinganIntro"
+IntroGui.ResetOnSpawn = false
+IntroGui.Parent = GuiParent
+
+local ScreenGlow = Instance.new("Frame")
+ScreenGlow.Name = "ScreenGlow"
+ScreenGlow.Parent = IntroGui
+ScreenGlow.Position = UDim2.new(0, 0, 0, 0)
+ScreenGlow.Size = UDim2.new(1, 0, 1, 0)
+ScreenGlow.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+ScreenGlow.BackgroundTransparency = 1
+ScreenGlow.BorderSizePixel = 0
+
+local MainContainer = Instance.new("Frame")
+MainContainer.Name = "MainContainer"
+MainContainer.Parent = IntroGui
+MainContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+MainContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainContainer.Size = UDim2.new(0, 0, 0, 0)
+MainContainer.BackgroundTransparency = 1
+
+local Sharingan = Instance.new("ImageLabel")
+Sharingan.Name = "Sharingan"
+Sharingan.Parent = MainContainer
+Sharingan.AnchorPoint = Vector2.new(0.5, 0.5)
+Sharingan.Position = UDim2.new(0.5, 0, 0.5, 0)
+Sharingan.Size = UDim2.new(1, 0, 1, 0)
+Sharingan.BackgroundTransparency = 1
+Sharingan.Image = "rbxthumb://type=Asset&id=87670900021703&w=420&h=420"
+
+local NameLabel = Instance.new("TextLabel")
+NameLabel.Name = "NameLabel"
+NameLabel.Parent = MainContainer
+NameLabel.AnchorPoint = Vector2.new(0.5, 0)
+NameLabel.Position = UDim2.new(0.5, 0, 0.62, 0)
+NameLabel.Size = UDim2.new(0.65, 0, 0.15, 0)
+NameLabel.BackgroundTransparency = 1
+NameLabel.Text = "👑 XR TORNADO 👑"
+NameLabel.TextColor3 = Color3.fromRGB(255, 30, 30)
+NameLabel.TextScaled = true
+NameLabel.Font = Enum.Font.FredokaOne
+NameLabel.TextStrokeTransparency = 0
+NameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+
+local IntroSound = Instance.new("Sound")
+IntroSound.Name = "IntroAudio"
+IntroSound.SoundId = "rbxassetid://6473868845"
+IntroSound.Volume = 1
+IntroSound.Parent = IntroGui
+
+local maxSize = 320
+
+IntroSound:Play()
+
+for i = 1, 40 do
+    local progress = i / 40
+    MainContainer.Size = UDim2.new(0, maxSize * progress, 0, maxSize * progress)
+    ScreenGlow.BackgroundTransparency = 1 - (progress * 0.4)
+    Sharingan.Rotation = Sharingan.Rotation + (12 * progress)
+    task.wait(0.015)
+end
+
+for i = 1, 60 do
+    Sharingan.Rotation = Sharingan.Rotation + 12
+    task.wait(0.015)
+end
+
+for i = 40, 1, -1 do
+    local speedMultiplier = i / 40
+    Sharingan.Rotation = Sharingan.Rotation + (12 * speedMultiplier)
+    task.wait(0.015)
+end
+
+for i = 30, 1, -1 do
+    local progress = i / 30
+    Sharingan.ImageTransparency = 1 - progress
+    NameLabel.TextTransparency = 1 - progress
+    NameLabel.TextStrokeTransparency = 1 - progress
+    ScreenGlow.BackgroundTransparency = 1 - (progress * 0.4)
+    IntroSound.Volume = progress
+    task.wait(0.015)
+end
+
+IntroGui:Destroy()
+
+local Configs_HUB = { 
+  Cor_Hub = Color3.fromRGB(0, 0, 0), 
+  Cor_Options = Color3.fromRGB(20, 20, 20), 
+  Cor_Stroke = Color3.fromRGB(255, 50, 50), 
+  Cor_Text = Color3.fromRGB(255, 255, 255), 
+  Cor_DarkText = Color3.fromRGB(150, 150, 150), 
+  Corner_Radius = UDim.new(0, 12), 
+  Text_Font = Enum.Font.FredokaOne 
+}
+
+local ClickSound = Instance.new("Sound")
+ClickSound.SoundId = "rbxassetid://6895079853"
+ClickSound.Volume = 1.5
+ClickSound.Parent = SoundService
+
+local function Create(instance, parent, props)
+  local new = Instance.new(instance)
+  if props then
+    for prop, value in pairs(props) do
+      new[prop] = value
+    end
+  end
+  new.Parent = parent
+  return new
+end
+
+local function SetProps(instance, props)
+  if instance and props then
+    for prop, value in pairs(props) do
+      instance[prop] = value
+    end
+  end
+  return instance
+end
+
+local function Corner(parent, props)
+  local new = Create("UICorner", parent)
+  new.CornerRadius = Configs_HUB.Corner_Radius
+  if props then SetProps(new, props) end
+  return new
+end
+
+local function Stroke(parent, props)
+  local new = Create("UIStroke", parent)
+  new.Color = Configs_HUB.Cor_Stroke
+  new.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+  new.Thickness = 2
+  
+  local gradient = Instance.new("UIGradient")
+  gradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 50, 50)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 20, 20)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 50, 50))
+  }
+  gradient.Rotation = 0
+  gradient.Parent = new
+  
+  coroutine.wrap(function()
+    while new.Parent do
+      gradient.Rotation = (gradient.Rotation + 2) % 360
+      RunService.RenderStepped:Wait()
+    end
+  end)()
+  
+  if props then SetProps(new, props) end
+  return new
+end
+
+local function BindClick(button, callback)
+    button.Activated:Connect(function()
+        callback()
+    end)
+end
+
+local function CreateTween(instance, prop, value, time, tweenWait)
+  local tween = TweenService:Create(instance, TweenInfo.new(time, Enum.EasingStyle.Linear), {[prop] = value})
+  tween:Play()
+  if tweenWait then tween.Completed:Wait() end
+end
+
+local function MakeDraggable(gui)
+  local dragging, dragInput, dragStart, startPos
+  gui.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+      dragging = true
+      dragStart = input.Position
+      startPos = gui.Position
+
+      input.Changed:Connect(function()
+        if input.UserInputState == Enum.UserInputState.End then dragging = false end
+      end)
+    end
+  end)
+
+  gui.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+      dragInput = input
+    end
+  end)
+
+  UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+      local delta = input.Position - dragStart
+      gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+  end)
+end
+
+local existingGui = GuiParent:FindFirstChild("GAROU XR7 library")
+if existingGui then existingGui:Destroy() end
+
+local ScreenGui = Create("ScreenGui", GuiParent, {
+  Name = "GAROU XR7 library",
+  ResetOnSpawn = false,
+  ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+})
+
+function DestroyScript()
+  ScreenGui:Destroy()
+end
+
 -- =========================================================
 -- 👑 XR TORNADO HUB
 -- by A_A + XR
