@@ -1,0 +1,143 @@
+-- =========================================
+-- 👑 ONYX CORE V3
+-- BLACK & WHITE LUXURY
+-- SHOW GLASS + TP END
+-- by A_A + XR
+-- =========================================
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
+
+local player = Players.LocalPlayer
+local saved = {}
+local glassEnabled = false
+
+-- COLORS: BLACK & WHITE ONLY
+local BLACK = Color3.fromRGB(0, 0, 0)
+local WHITE = Color3.fromRGB(255, 255, 255)
+local DARK = Color3.fromRGB(12, 12, 12)
+
+-- REMOVE OLD GUI
+local old = CoreGui:FindFirstChild("ONYX_CORE_V3")
+if old then
+old:Destroy()
+end
+
+-- GUI
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "ONYX_CORE_V3"
+Gui.ResetOnSpawn = false
+Gui.Parent = CoreGui
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.fromOffset(195, 125)
+Frame.Position = UDim2.new(0.5, -97, 0.5, -62)
+Frame.BackgroundColor3 = BLACK
+Frame.BorderSizePixel = 2
+Frame.BorderColor3 = WHITE
+Frame.Active = true
+Frame.Draggable = true
+Frame.Parent = Gui
+
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
+
+-- TITLE
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 27)
+Title.BackgroundColor3 = WHITE
+Title.BorderSizePixel = 0
+Title.Text = "🎃XR lmpossible V3🎃"
+Title.TextColor3 = BLACK
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 12
+Title.Parent = Frame
+
+Instance.new("UICorner", Title).CornerRadius = UDim.new(0, 7)
+
+-- BUTTON CREATOR
+local function makeButton(name, y)
+local b = Instance.new("TextButton")
+b.Size = UDim2.new(0.9, 0, 0, 32)
+b.Position = UDim2.new(0.05, 0, 0, y)
+b.BackgroundColor3 = BLACK
+b.BorderSizePixel = 1
+b.BorderColor3 = WHITE
+b.TextColor3 = WHITE
+b.Text = name .. " [OFF]"
+b.Font = Enum.Font.GothamBold
+b.TextSize = 11
+b.Parent = Frame
+
+Instance.new("UICorner", b).CornerRadius = UDim.new(0, 5)  
+
+return b
+
+end
+
+local GlassBtn = makeButton("SHOW GLASS", 35)
+local TPBtn = makeButton("TP END", 77)
+
+-- BUTTON STATE
+local function setButton(button, enabled, name)
+button.Text = name .. (enabled and " [ON]" or " [OFF]")
+button.BackgroundColor3 = enabled and WHITE or BLACK
+button.TextColor3 = enabled and BLACK or WHITE
+button.BorderColor3 = WHITE
+end
+
+-- SHOW GLASS
+GlassBtn.MouseButton1Click:Connect(function()
+glassEnabled = not glassEnabled
+
+setButton(GlassBtn, glassEnabled, "SHOW GLASS")  
+
+if glassEnabled then  
+    for _, part in ipairs(Workspace:GetDescendants()) do  
+        if part:IsA("BasePart")  
+        and part.Transparency > 0  
+        and part.Size.Y < 2 then  
+
+            if not saved[part] then  
+                saved[part] = {  
+                    Color = part.Color,  
+                    Transparency = part.Transparency  
+                }  
+            end  
+
+            -- BLACK & WHITE GLASS  
+            part.Color = part.CanCollide and WHITE or BLACK  
+            part.Transparency = 0.5  
+        end  
+    end  
+else  
+    for part, properties in pairs(saved) do  
+        if part and part.Parent then  
+            part.Color = properties.Color  
+            part.Transparency = properties.Transparency  
+        end  
+    end  
+
+    table.clear(saved)  
+end
+
+end)
+
+-- TP END
+TPBtn.MouseButton1Click:Connect(function()
+local character = player.Character
+local root = character and character:FindFirstChild("HumanoidRootPart")
+
+if root then  
+    root.CFrame = CFrame.new(-747.32, -3.10, -515.45)  
+
+    setButton(TPBtn, true, "TP END")  
+
+    task.delay(1, function()  
+        if TPBtn.Parent then  
+            setButton(TPBtn, false, "TP END")  
+        end  
+    end)  
+end
+
+end)
