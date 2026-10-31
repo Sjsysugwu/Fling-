@@ -1,0 +1,1354 @@
+-- ═══════════════════════════════════════════════════════
+--   ✦ VOID STAR v2.6.0 — T.H.T
+--   RED & BLACK LUXURY
+-- ═══════════════════════════════════════════════════════
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local SoundService = game:GetService("SoundService")
+local Debris = game:GetService("Debris")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local HUG = ReplicatedStorage:WaitForChild("HugRemotes"):WaitForChild("HugRequest")
+
+-- ═══════════════════════════════════════════════════════
+--   SETTINGS
+-- ═══════════════════════════════════════════════════════
+local settings = {
+clickSoundId = "rbxassetid://6895079853",
+uiScale = 0.85,
+}
+
+local MIN_SCALE = 0.50
+local MAX_SCALE = 1.50
+
+-- ═══════════════════════════════════════════════════════
+--   LANGUAGE — ENGLISH
+-- ═══════════════════════════════════════════════════════
+local L = {
+autoAll = "⚡ Auto ALL players",
+on = "ON",
+off = "OFF",
+delay = "Auto delay (sec):",
+players = "👥 Players:",
+misc = "📦 Misc:",
+settings = "⚙ Settings",
+clickId = "Click sound ID:",
+test = "▶ Test",
+size = "Menu size:",
+clickHint = "e.g. 6895079853",
+tpSpawn = "🏠 To spawn",
+}
+
+local function T(key)
+return L[key] or key
+end
+
+-- ═══════════════════════════════════════════════════════
+--   RED & BLACK PALETTE
+-- ═══════════════════════════════════════════════════════
+local PALETTE = {
+Bg = Color3.fromRGB(8, 8, 10),
+Bg2 = Color3.fromRGB(25, 25, 28),
+Accent = Color3.fromRGB(190, 0, 20),
+Accent2 = Color3.fromRGB(255, 25, 45),
+Text = Color3.fromRGB(245, 245, 245),
+Sub = Color3.fromRGB(165, 165, 170),
+Green = Color3.fromRGB(255, 35, 55),
+Red = Color3.fromRGB(255, 0, 25),
+StarBg = Color3.fromRGB(8, 8, 10),
+StarText = Color3.fromRGB(255, 35, 55),
+}
+
+local C = {}
+for k, v in pairs(PALETTE) do
+C[k] = v
+end
+
+-- ═══════════════════════════════════════════════════════
+--   BRAND
+-- ═══════════════════════════════════════════════════════
+local function GetBrand()
+return "🎃XR 👫🎃"
+end
+
+local function GetAuthor()
+return "Void command x White command"
+end
+
+-- ═══════════════════════════════════════════════════════
+--   CLICK SOUND
+-- ═══════════════════════════════════════════════════════
+local function PlayClick()
+if settings.clickSoundId == "" then return end
+
+local s = Instance.new("Sound")
+s.SoundId = settings.clickSoundId
+s.Volume = 0.4
+s.Parent = SoundService
+s:Play()
+
+Debris:AddItem(s, 1)
+
+end
+
+-- ═══════════════════════════════════════════════════════
+--   AVATAR
+-- ═══════════════════════════════════════════════════════
+local avatarCache = {}
+
+local function GetAvatar(userId)
+if avatarCache[userId] then
+return avatarCache[userId]
+end
+
+local ok, url = pcall(function()
+return Players:GetUserThumbnailAsync(
+userId,
+Enum.ThumbnailType.HeadShot,
+Enum.ThumbnailSize.Size100x100
+)
+end)
+
+if ok and url then
+avatarCache[userId] = url
+return url
+end
+
+return ""
+
+end
+
+-- ═══════════════════════════════════════════════════════
+--   TELEPORT
+-- ═══════════════════════════════════════════════════════
+local function Teleport(pos)
+local char = LocalPlayer.Character
+if not char then return end
+
+local hrp = char:FindFirstChild("HumanoidRootPart")
+if not hrp then return end
+
+hrp.CFrame = CFrame.new(pos) * (hrp.CFrame - hrp.CFrame.Position)
+
+end
+
+local TP_LOCATIONS = {
+{ en = "🌈 Rainbow carpet", pos = Vector3.new(0.07, 399.00, -106.81) },
+{ en = "🥇 Gold carpet", pos = Vector3.new(99.82, 6.00, 535.15) },
+{ en = "🔴 Red spring", pos = Vector3.new(-28.06, -18.00, 368.68) },
+{ en = "🏠 To spawn", spawn = true },
+}
+
+-- ═══════════════════════════════════════════════════════
+--   CORE
+-- ═══════════════════════════════════════════════════════
+local function GrabPlayer(plr)
+if not plr or not plr.Character then return false end
+HUG:FireServer("tryGrab", plr.Character)
+return true
+end
+
+local function ThrowPlayer()
+HUG:FireServer("throw")
+end
+
+-- ═══════════════════════════════════════════════════════
+--   GUI
+-- ═══════════════════════════════════════════════════════
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "VoidStar"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = PlayerGui
+
+local FONT = Enum.Font.GothamMedium
+local FONT_B = Enum.Font.GothamBold
+
+-- ==== STAR BUTTON ====
+local StarBtn = Instance.new("TextButton")
+StarBtn.Size = UDim2.new(0, 38, 0, 38)
+StarBtn.Position = UDim2.new(0, 12, 0, 12)
+StarBtn.BackgroundColor3 = C.StarBg
+StarBtn.Text = "✨"
+StarBtn.TextColor3 = C.StarText
+StarBtn.TextSize = 20
+StarBtn.Font = FONT_B
+StarBtn.AutoButtonColor = false
+StarBtn.BorderSizePixel = 0
+StarBtn.Parent = ScreenGui
+
+local sc = Instance.new("UICorner")
+sc.CornerRadius = UDim.new(1, 0)
+sc.Parent = StarBtn
+
+local ss = Instance.new("UIStroke")
+ss.Color = C.Accent2
+ss.Thickness = 1.8
+ss.Transparency = 0.15
+ss.Parent = StarBtn
+
+-- ==== MAIN FRAME ====
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 300, 0, 690)
+MainFrame.Position = UDim2.new(0, 58, 0, 12)
+MainFrame.BackgroundColor3 = C.Bg
+MainFrame.BorderSizePixel = 0
+MainFrame.Visible = false
+MainFrame.Parent = ScreenGui
+
+local mc = Instance.new("UICorner")
+mc.CornerRadius = UDim.new(0, 12)
+mc.Parent = MainFrame
+
+local ms = Instance.new("UIStroke")
+ms.Color = C.Accent
+ms.Thickness = 1.2
+ms.Transparency = 0.25
+ms.Parent = MainFrame
+
+local MainScale = Instance.new("UIScale")
+MainScale.Scale = settings.uiScale
+MainScale.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -72, 0, 26)
+Title.Position = UDim2.new(0, 8, 0, 6)
+Title.BackgroundTransparency = 1
+Title.Text = GetBrand()
+Title.TextColor3 = C.Accent2
+Title.Font = FONT_B
+Title.TextSize = 12
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = MainFrame
+
+local HideBtn = Instance.new("TextButton")
+HideBtn.Size = UDim2.new(0, 24, 0, 24)
+HideBtn.Position = UDim2.new(1, -32, 0, 7)
+HideBtn.BackgroundColor3 = C.Bg2
+HideBtn.Text = "👁"
+HideBtn.TextColor3 = C.Accent2
+HideBtn.Font = FONT_B
+HideBtn.TextSize = 13
+HideBtn.AutoButtonColor = false
+HideBtn.BorderSizePixel = 0
+HideBtn.ZIndex = 5
+HideBtn.Parent = MainFrame
+
+local hbc = Instance.new("UICorner")
+hbc.CornerRadius = UDim.new(0, 6)
+hbc.Parent = HideBtn
+
+local hbs = Instance.new("UIStroke")
+hbs.Color = C.Accent2
+hbs.Thickness = 1
+hbs.Transparency = 0.4
+hbs.Parent = HideBtn
+
+local Sep1 = Instance.new("Frame")
+Sep1.Size = UDim2.new(1, -16, 0, 1)
+Sep1.Position = UDim2.new(0, 8, 0, 34)
+Sep1.BackgroundColor3 = C.Accent
+Sep1.BackgroundTransparency = 0.6
+Sep1.BorderSizePixel = 0
+Sep1.Parent = MainFrame
+
+-- ==== HEADER ====
+local HeaderAvatar = Instance.new("ImageLabel")
+HeaderAvatar.Size = UDim2.new(0, 40, 0, 40)
+HeaderAvatar.Position = UDim2.new(0, 8, 0, 42)
+HeaderAvatar.BackgroundColor3 = C.Bg2
+HeaderAvatar.BorderSizePixel = 0
+HeaderAvatar.Image = ""
+HeaderAvatar.Parent = MainFrame
+
+local hac = Instance.new("UICorner")
+hac.CornerRadius = UDim.new(1, 0)
+hac.Parent = HeaderAvatar
+
+local has_ = Instance.new("UIStroke")
+has_.Color = C.Accent2
+has_.Thickness = 1.5
+has_.Transparency = 0.2
+has_.Parent = HeaderAvatar
+
+local HeaderName = Instance.new("TextLabel")
+HeaderName.Size = UDim2.new(1, -70, 0, 18)
+HeaderName.Position = UDim2.new(0, 54, 0, 42)
+HeaderName.BackgroundTransparency = 1
+HeaderName.Text = LocalPlayer.DisplayName
+HeaderName.TextColor3 = C.Text
+HeaderName.Font = FONT_B
+HeaderName.TextSize = 13
+HeaderName.TextXAlignment = Enum.TextXAlignment.Left
+HeaderName.TextTruncate = Enum.TextTruncate.AtEnd
+HeaderName.Parent = MainFrame
+
+local HeaderUser = Instance.new("TextLabel")
+HeaderUser.Size = UDim2.new(1, -70, 0, 14)
+HeaderUser.Position = UDim2.new(0, 54, 0, 60)
+HeaderUser.BackgroundTransparency = 1
+HeaderUser.Text = "@" .. LocalPlayer.Name
+HeaderUser.TextColor3 = C.Sub
+HeaderUser.Font = FONT
+HeaderUser.TextSize = 11
+HeaderUser.TextXAlignment = Enum.TextXAlignment.Left
+HeaderUser.TextTruncate = Enum.TextTruncate.AtEnd
+HeaderUser.Parent = MainFrame
+
+local AnonBox = Instance.new("Frame")
+AnonBox.Size = UDim2.new(1, -16, 0, 44)
+AnonBox.Position = UDim2.new(0, 8, 0, 42)
+AnonBox.BackgroundColor3 = C.Bg2
+AnonBox.BorderSizePixel = 0
+AnonBox.Visible = false
+AnonBox.Parent = MainFrame
+
+local anbc = Instance.new("UICorner")
+anbc.CornerRadius = UDim.new(0, 8)
+anbc.Parent = AnonBox
+
+local anbs = Instance.new("UIStroke")
+anbs.Color = C.Accent
+anbs.Thickness = 1
+anbs.Transparency = 0.5
+anbs.Parent = AnonBox
+
+local AnonIcon = Instance.new("TextLabel")
+AnonIcon.Size = UDim2.new(0, 40, 1, 0)
+AnonIcon.Position = UDim2.new(0, 8, 0, 0)
+AnonIcon.BackgroundTransparency = 1
+AnonIcon.Text = "🎭"
+AnonIcon.Font = FONT_B
+AnonIcon.TextSize = 22
+AnonIcon.Parent = AnonBox
+
+local AnonText = Instance.new("TextLabel")
+AnonText.Size = UDim2.new(1, -60, 0, 18)
+AnonText.Position = UDim2.new(0, 54, 0, 6)
+AnonText.BackgroundTransparency = 1
+AnonText.Text = "anonymous"
+AnonText.TextColor3 = C.Text
+AnonText.Font = FONT_B
+AnonText.TextSize = 13
+AnonText.TextXAlignment = Enum.TextXAlignment.Left
+AnonText.Parent = AnonBox
+
+task.spawn(function()
+local url = GetAvatar(LocalPlayer.UserId)
+if url ~= "" and HeaderAvatar.Parent then
+HeaderAvatar.Image = url
+end
+end)
+
+local headerHidden = false
+
+local function ApplyHeaderState()
+if headerHidden then
+HeaderAvatar.Visible = false
+HeaderName.Visible = false
+HeaderUser.Visible = false
+AnonBox.Visible = true
+HideBtn.Text = "🎭"
+HideBtn.TextColor3 = C.Sub
+else
+HeaderAvatar.Visible = true
+HeaderName.Visible = true
+HeaderUser.Visible = true
+AnonBox.Visible = false
+HideBtn.Text = "👁"
+HideBtn.TextColor3 = C.Accent2
+end
+end
+
+HideBtn.MouseButton1Click:Connect(function()
+PlayClick()
+headerHidden = not headerHidden
+ApplyHeaderState()
+end)
+
+local SepH = Instance.new("Frame")
+SepH.Size = UDim2.new(1, -16, 0, 1)
+SepH.Position = UDim2.new(0, 8, 0, 88)
+SepH.BackgroundColor3 = C.Accent
+SepH.BackgroundTransparency = 0.6
+SepH.BorderSizePixel = 0
+SepH.Parent = MainFrame
+
+-- ==== SETTINGS BUTTON ====
+local SettingsBtn = Instance.new("TextButton")
+SettingsBtn.Size = UDim2.new(1, -16, 0, 34)
+SettingsBtn.Position = UDim2.new(0, 8, 0, 96)
+SettingsBtn.BackgroundColor3 = C.Bg2
+SettingsBtn.Text = T("settings")
+SettingsBtn.TextColor3 = C.Accent2
+SettingsBtn.Font = FONT_B
+SettingsBtn.TextSize = 12
+SettingsBtn.AutoButtonColor = false
+SettingsBtn.BorderSizePixel = 0
+SettingsBtn.ZIndex = 5
+SettingsBtn.Parent = MainFrame
+
+local sbc = Instance.new("UICorner")
+sbc.CornerRadius = UDim.new(0, 8)
+sbc.Parent = SettingsBtn
+
+local sbs = Instance.new("UIStroke")
+sbs.Color = C.Accent2
+sbs.Thickness = 1.2
+sbs.Transparency = 0.4
+sbs.Parent = SettingsBtn
+
+task.spawn(function()
+while SettingsBtn.Parent do
+for i = 0, 1, 0.05 do
+if not SettingsBtn.Parent then return end
+sbs.Transparency = 0.4 + math.sin(i * math.pi) * 0.15
+task.wait(0.04)
+end
+end
+end)
+
+SettingsBtn.MouseEnter:Connect(function()
+SettingsBtn.BackgroundColor3 = C.Bg2:Lerp(C.Accent2, 0.15)
+end)
+
+SettingsBtn.MouseLeave:Connect(function()
+SettingsBtn.BackgroundColor3 = C.Bg2
+end)
+
+-- ==== AUTO ALL ====
+local AutoBtn = Instance.new("TextButton")
+AutoBtn.Size = UDim2.new(1, -16, 0, 30)
+AutoBtn.Position = UDim2.new(0, 8, 0, 138)
+AutoBtn.BackgroundColor3 = C.Bg2
+AutoBtn.Text = T("autoAll") .. ": " .. T("off")
+AutoBtn.TextColor3 = C.Text
+AutoBtn.Font = FONT_B
+AutoBtn.TextSize = 12
+AutoBtn.AutoButtonColor = false
+AutoBtn.BorderSizePixel = 0
+AutoBtn.Parent = MainFrame
+
+local ac = Instance.new("UICorner")
+ac.CornerRadius = UDim.new(0, 8)
+ac.Parent = AutoBtn
+
+local as = Instance.new("UIStroke")
+as.Color = C.Accent2
+as.Thickness = 1
+as.Transparency = 0.5
+as.Parent = AutoBtn
+
+-- ═══════════════════════════════════════════════════════
+--   MISC — TELEPORTS
+-- ═══════════════════════════════════════════════════════
+local MiscLabel = Instance.new("TextLabel")
+MiscLabel.Size = UDim2.new(1, -16, 0, 14)
+MiscLabel.Position = UDim2.new(0, 8, 0, 172)
+MiscLabel.BackgroundTransparency = 1
+MiscLabel.Text = "📦 Misc:"
+MiscLabel.TextColor3 = C.Sub
+MiscLabel.Font = FONT_B
+MiscLabel.TextSize = 11
+MiscLabel.TextXAlignment = Enum.TextXAlignment.Left
+MiscLabel.Parent = MainFrame
+
+local miscButtons = {}
+
+for i, loc in ipairs(TP_LOCATIONS) do
+local y = 188 + (i - 1) * 28
+
+local btn = Instance.new("TextButton")
+btn.Size = UDim2.new(1, -16, 0, 24)
+btn.Position = UDim2.new(0, 8, 0, y)
+btn.BackgroundColor3 = C.Bg2
+btn.Text = "📍 " .. loc.en
+btn.TextColor3 = C.Text
+btn.Font = FONT_B
+btn.TextSize = 11
+btn.AutoButtonColor = false
+btn.BorderSizePixel = 0
+btn.Parent = MainFrame
+
+local bc = Instance.new("UICorner")
+bc.CornerRadius = UDim.new(0, 7)
+bc.Parent = btn
+
+local bs = Instance.new("UIStroke")
+bs.Color = C.Accent2
+bs.Thickness = 1
+bs.Transparency = 0.5
+bs.Parent = btn
+
+table.insert(miscButtons, {
+btn = btn,
+stroke = bs,
+loc = loc
+})
+
+btn.MouseEnter:Connect(function()
+btn.BackgroundColor3 = C.Bg2:Lerp(C.Accent2, 0.18)
+bs.Transparency = 0.2
+end)
+
+btn.MouseLeave:Connect(function()
+btn.BackgroundColor3 = C.Bg2
+bs.Transparency = 0.5
+end)
+
+btn.MouseButton1Click:Connect(function()
+PlayClick()
+
+if loc.spawn then
+local sp = workspace:FindFirstChildOfClass("SpawnLocation")
+local targetPos
+
+if sp then
+targetPos = sp.Position + Vector3.new(0, 5, 0)
+else
+targetPos = Vector3.new(0, 50, 0)
+warn("[SPAWN] SpawnLocation not found")
+end
+
+Teleport(targetPos)
+
+else
+Teleport(loc.pos)
+end
+
+end)
+
+end
+
+-- ==== DELAY ====
+local DelayLabel = Instance.new("TextLabel")
+DelayLabel.Size = UDim2.new(1, -16, 0, 14)
+DelayLabel.Position = UDim2.new(0, 8, 0, 316)
+DelayLabel.BackgroundTransparency = 1
+DelayLabel.Text = T("delay")
+DelayLabel.TextColor3 = C.Sub
+DelayLabel.Font = FONT
+DelayLabel.TextSize = 11
+DelayLabel.TextXAlignment = Enum.TextXAlignment.Left
+DelayLabel.Parent = MainFrame
+
+local DelayBox = Instance.new("TextBox")
+DelayBox.Size = UDim2.new(1, -16, 0, 22)
+DelayBox.Position = UDim2.new(0, 8, 0, 332)
+DelayBox.BackgroundColor3 = C.Bg2
+DelayBox.Text = "0.05"
+DelayBox.TextColor3 = C.Text
+DelayBox.Font = FONT_B
+DelayBox.TextSize = 12
+DelayBox.BorderSizePixel = 0
+DelayBox.ClearTextOnFocus = false
+DelayBox.Parent = MainFrame
+
+local dc = Instance.new("UICorner")
+dc.CornerRadius = UDim.new(0, 7)
+dc.Parent = DelayBox
+
+local ds = Instance.new("UIStroke")
+ds.Color = C.Accent
+ds.Thickness = 1
+ds.Transparency = 0.5
+ds.Parent = DelayBox
+
+local Sep2 = Instance.new("Frame")
+Sep2.Size = UDim2.new(1, -16, 0, 1)
+Sep2.Position = UDim2.new(0, 8, 0, 362)
+Sep2.BackgroundColor3 = C.Accent
+Sep2.BackgroundTransparency = 0.6
+Sep2.BorderSizePixel = 0
+Sep2.Parent = MainFrame
+
+local PlayersLabel = Instance.new("TextLabel")
+PlayersLabel.Size = UDim2.new(1, -16, 0, 14)
+PlayersLabel.Position = UDim2.new(0, 8, 0, 368)
+PlayersLabel.BackgroundTransparency = 1
+PlayersLabel.Text = T("players")
+PlayersLabel.TextColor3 = C.Text
+PlayersLabel.Font = FONT_B
+PlayersLabel.TextSize = 12
+PlayersLabel.TextXAlignment = Enum.TextXAlignment.Left
+PlayersLabel.Parent = MainFrame
+
+local PlayerScroll = Instance.new("ScrollingFrame")
+PlayerScroll.Size = UDim2.new(1, -16, 1, -410)
+PlayerScroll.Position = UDim2.new(0, 8, 0, 386)
+PlayerScroll.BackgroundTransparency = 1
+PlayerScroll.BorderSizePixel = 0
+PlayerScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+PlayerScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+PlayerScroll.ScrollBarThickness = 3
+PlayerScroll.ScrollBarImageColor3 = C.Accent2
+PlayerScroll.Parent = MainFrame
+
+local UIList = Instance.new("UIListLayout")
+UIList.Padding = UDim.new(0, 4)
+UIList.SortOrder = Enum.SortOrder.LayoutOrder
+UIList.Parent = PlayerScroll
+
+local Watermark = Instance.new("TextLabel")
+Watermark.Size = UDim2.new(1, -16, 0, 14)
+Watermark.Position = UDim2.new(0, 8, 1, -18)
+Watermark.BackgroundTransparency = 1
+Watermark.Text = GetAuthor()
+Watermark.TextColor3 = Color3.fromRGB(100, 100, 130)
+Watermark.Font = FONT
+Watermark.TextSize = 10
+Watermark.TextXAlignment = Enum.TextXAlignment.Right
+Watermark.ZIndex = 10
+Watermark.Parent = MainFrame
+
+-- ═══════════════════════════════════════════════════════
+--   SETTINGS WINDOW
+-- ═══════════════════════════════════════════════════════
+local SetFrame = Instance.new("Frame")
+SetFrame.Size = UDim2.new(0, 300, 0, 230)
+SetFrame.Position = UDim2.new(0, 368, 0, 12)
+SetFrame.BackgroundColor3 = C.Bg
+SetFrame.BorderSizePixel = 0
+SetFrame.Visible = false
+SetFrame.Parent = ScreenGui
+
+local setc = Instance.new("UICorner")
+setc.CornerRadius = UDim.new(0, 12)
+setc.Parent = SetFrame
+
+local sets = Instance.new("UIStroke")
+sets.Color = C.Accent
+sets.Thickness = 1.2
+sets.Transparency = 0.25
+sets.Parent = SetFrame
+
+local SetTitle = Instance.new("TextLabel")
+SetTitle.Size = UDim2.new(1, -50, 0, 26)
+SetTitle.Position = UDim2.new(0, 8, 0, 6)
+SetTitle.BackgroundTransparency = 1
+SetTitle.Text = T("settings")
+SetTitle.TextColor3 = C.Accent2
+SetTitle.Font = FONT_B
+SetTitle.TextSize = 14
+SetTitle.TextXAlignment = Enum.TextXAlignment.Left
+SetTitle.Parent = SetFrame
+
+local SetCloseBtn = Instance.new("TextButton")
+SetCloseBtn.Size = UDim2.new(0, 24, 0, 24)
+SetCloseBtn.Position = UDim2.new(1, -32, 0, 7)
+SetCloseBtn.BackgroundColor3 = C.Bg2
+SetCloseBtn.Text = "✕"
+SetCloseBtn.TextColor3 = C.Red
+SetCloseBtn.Font = FONT_B
+SetCloseBtn.TextSize = 13
+SetCloseBtn.AutoButtonColor = false
+SetCloseBtn.BorderSizePixel = 0
+SetCloseBtn.Parent = SetFrame
+
+local scc = Instance.new("UICorner")
+scc.CornerRadius = UDim.new(0, 6)
+scc.Parent = SetCloseBtn
+
+local scs = Instance.new("UIStroke")
+scs.Color = C.Red
+scs.Thickness = 1
+scs.Transparency = 0.4
+scs.Parent = SetCloseBtn
+
+local SetSep = Instance.new("Frame")
+SetSep.Size = UDim2.new(1, -16, 0, 1)
+SetSep.Position = UDim2.new(0, 8, 0, 34)
+SetSep.BackgroundColor3 = C.Accent
+SetSep.BackgroundTransparency = 0.6
+SetSep.BorderSizePixel = 0
+SetSep.Parent = SetFrame
+
+local function MakeLabel(text, y)
+local lbl = Instance.new("TextLabel")
+lbl.Size = UDim2.new(1, -16, 0, 14)
+lbl.Position = UDim2.new(0, 8, 0, y)
+lbl.BackgroundTransparency = 1
+lbl.Text = text
+lbl.TextColor3 = C.Sub
+lbl.Font = FONT
+lbl.TextSize = 11
+lbl.TextXAlignment = Enum.TextXAlignment.Left
+lbl.Parent = SetFrame
+return lbl
+end
+
+local ClickLabel = MakeLabel(T("clickId"), 44)
+
+local ClickInput = Instance.new("TextBox")
+ClickInput.Size = UDim2.new(1, -90, 0, 26)
+ClickInput.Position = UDim2.new(0, 8, 0, 60)
+ClickInput.BackgroundColor3 = C.Bg2
+ClickInput.Text = settings.clickSoundId
+ClickInput.PlaceholderText = T("clickHint")
+ClickInput.PlaceholderColor3 = C.Sub
+ClickInput.TextColor3 = C.Text
+ClickInput.Font = FONT_B
+ClickInput.TextSize = 11
+ClickInput.BorderSizePixel = 0
+ClickInput.ClearTextOnFocus = false
+ClickInput.TextXAlignment = Enum.TextXAlignment.Left
+ClickInput.Parent = SetFrame
+
+local cic = Instance.new("UICorner")
+cic.CornerRadius = UDim.new(0, 7)
+cic.Parent = ClickInput
+
+local cis = Instance.new("UIStroke")
+cis.Color = C.Accent
+cis.Thickness = 1
+cis.Transparency = 0.5
+cis.Parent = ClickInput
+
+local ClickTestBtn = Instance.new("TextButton")
+ClickTestBtn.Size = UDim2.new(0, 76, 0, 26)
+ClickTestBtn.Position = UDim2.new(1, -84, 0, 60)
+ClickTestBtn.BackgroundColor3 = C.Accent
+ClickTestBtn.Text = T("test")
+ClickTestBtn.TextColor3 = Color3.new(1, 1, 1)
+ClickTestBtn.Font = FONT_B
+ClickTestBtn.TextSize = 11
+ClickTestBtn.AutoButtonColor = false
+ClickTestBtn.BorderSizePixel = 0
+ClickTestBtn.Parent = SetFrame
+
+local ctbc = Instance.new("UICorner")
+ctbc.CornerRadius = UDim.new(0, 7)
+ctbc.Parent = ClickTestBtn
+
+ClickTestBtn.MouseButton1Click:Connect(function()
+local id = ClickInput.Text
+
+if id ~= "" and not string.find(id, "rbxassetid") then
+id = "rbxassetid://" .. id
+end
+
+settings.clickSoundId = id
+PlayClick()
+
+end)
+
+ClickInput.FocusLost:Connect(function()
+local id = ClickInput.Text
+
+if id ~= "" and not string.find(id, "rbxassetid") then
+id = "rbxassetid://" .. id
+ClickInput.Text = id
+end
+
+settings.clickSoundId = id
+
+end)
+
+-- ==== MENU SIZE ====
+local SizeLabel = MakeLabel(T("size"), 96)
+
+local SizeMinusBtn = Instance.new("TextButton")
+SizeMinusBtn.Size = UDim2.new(0, 60, 0, 30)
+SizeMinusBtn.Position = UDim2.new(0, 8, 0, 112)
+SizeMinusBtn.BackgroundColor3 = C.Bg2
+SizeMinusBtn.Text = "−"
+SizeMinusBtn.TextColor3 = C.Text
+SizeMinusBtn.Font = FONT_B
+SizeMinusBtn.TextSize = 18
+SizeMinusBtn.AutoButtonColor = false
+SizeMinusBtn.BorderSizePixel = 0
+SizeMinusBtn.Parent = SetFrame
+
+local smbc = Instance.new("UICorner")
+smbc.CornerRadius = UDim.new(0, 7)
+smbc.Parent = SizeMinusBtn
+
+local smbs = Instance.new("UIStroke")
+smbs.Color = C.Accent2
+smbs.Thickness = 1
+smbs.Transparency = 0.5
+smbs.Parent = SizeMinusBtn
+
+local SizeValueLbl = Instance.new("TextButton")
+SizeValueLbl.Size = UDim2.new(1, -140, 0, 30)
+SizeValueLbl.Position = UDim2.new(0, 70, 0, 112)
+SizeValueLbl.BackgroundColor3 = C.Bg2
+SizeValueLbl.Text = "85%"
+SizeValueLbl.TextColor3 = C.Text
+SizeValueLbl.Font = FONT_B
+SizeValueLbl.TextSize = 13
+SizeValueLbl.AutoButtonColor = false
+SizeValueLbl.BorderSizePixel = 0
+SizeValueLbl.Parent = SetFrame
+
+local svc = Instance.new("UICorner")
+svc.CornerRadius = UDim.new(0, 7)
+svc.Parent = SizeValueLbl
+
+local svs = Instance.new("UIStroke")
+svs.Color = C.Accent
+svs.Thickness = 1
+svs.Transparency = 0.5
+svs.Parent = SizeValueLbl
+
+local SizePlusBtn = Instance.new("TextButton")
+SizePlusBtn.Size = UDim2.new(0, 60, 0, 30)
+SizePlusBtn.Position = UDim2.new(1, -68, 0, 112)
+SizePlusBtn.BackgroundColor3 = C.Bg2
+SizePlusBtn.Text = "+"
+SizePlusBtn.TextColor3 = C.Text
+SizePlusBtn.Font = FONT_B
+SizePlusBtn.TextSize = 16
+SizePlusBtn.AutoButtonColor = false
+SizePlusBtn.BorderSizePixel = 0
+SizePlusBtn.Parent = SetFrame
+
+local spbc = Instance.new("UICorner")
+spbc.CornerRadius = UDim.new(0, 7)
+spbc.Parent = SizePlusBtn
+
+local spbs = Instance.new("UIStroke")
+spbs.Color = C.Accent2
+spbs.Thickness = 1
+spbs.Transparency = 0.5
+spbs.Parent = SizePlusBtn
+
+local SetWatermark = Instance.new("TextLabel")
+SetWatermark.Size = UDim2.new(1, -16, 0, 14)
+SetWatermark.Position = UDim2.new(0, 8, 1, -18)
+SetWatermark.BackgroundTransparency = 1
+SetWatermark.Text = GetAuthor()
+SetWatermark.TextColor3 = Color3.fromRGB(100, 100, 130)
+SetWatermark.Font = FONT
+SetWatermark.TextSize = 10
+SetWatermark.TextXAlignment = Enum.TextXAlignment.Right
+SetWatermark.Parent = SetFrame
+
+-- ═══════════════════════════════════════════════════════
+--   RED & BLACK THEME
+-- ═══════════════════════════════════════════════════════
+local themedElements = {}
+
+local function RegisterTheme(obj, role)
+table.insert(themedElements, {
+obj = obj,
+role = role
+})
+end
+
+RegisterTheme(StarBtn, "StarBg")
+RegisterTheme(ss, "Accent2Stroke")
+RegisterTheme(MainFrame, "Bg")
+RegisterTheme(ms, "AccentStroke")
+RegisterTheme(Title, "Accent2Text")
+RegisterTheme(HideBtn, "Bg2")
+RegisterTheme(HideBtn, "Accent2Text")
+RegisterTheme(hbs, "Accent2Stroke")
+RegisterTheme(Sep1, "AccentBg")
+RegisterTheme(HeaderAvatar, "Bg2")
+RegisterTheme(has_, "Accent2Stroke")
+RegisterTheme(HeaderName, "Text")
+RegisterTheme(HeaderUser, "SubText")
+RegisterTheme(AnonBox, "Bg2")
+RegisterTheme(anbs, "AccentStroke")
+RegisterTheme(AnonText, "Text")
+RegisterTheme(SepH, "AccentBg")
+RegisterTheme(SettingsBtn, "Bg2")
+RegisterTheme(SettingsBtn, "Accent2Text")
+RegisterTheme(sbs, "Accent2Stroke")
+RegisterTheme(AutoBtn, "Bg2")
+RegisterTheme(AutoBtn, "Text")
+RegisterTheme(as, "Accent2Stroke")
+RegisterTheme(MiscLabel, "SubText")
+RegisterTheme(DelayLabel, "SubText")
+RegisterTheme(DelayBox, "Bg2")
+RegisterTheme(DelayBox, "Text")
+RegisterTheme(ds, "AccentStroke")
+RegisterTheme(Sep2, "AccentBg")
+RegisterTheme(PlayersLabel, "Text")
+RegisterTheme(SetFrame, "Bg")
+RegisterTheme(sets, "AccentStroke")
+RegisterTheme(SetTitle, "Accent2Text")
+RegisterTheme(SetCloseBtn, "Bg2")
+RegisterTheme(scs, "RedStroke")
+RegisterTheme(SetSep, "AccentBg")
+RegisterTheme(ClickLabel, "SubText")
+RegisterTheme(ClickInput, "Bg2")
+RegisterTheme(ClickInput, "Text")
+RegisterTheme(cis, "AccentStroke")
+RegisterTheme(SizeLabel, "SubText")
+RegisterTheme(SizeMinusBtn, "Bg2")
+RegisterTheme(SizeMinusBtn, "Text")
+RegisterTheme(smbs, "Accent2Stroke")
+RegisterTheme(SizeValueLbl, "Bg2")
+RegisterTheme(SizeValueLbl, "Text")
+RegisterTheme(svs, "AccentStroke")
+RegisterTheme(SizePlusBtn, "Bg2")
+RegisterTheme(SizePlusBtn, "Text")
+RegisterTheme(spbs, "Accent2Stroke")
+
+for _, item in ipairs(miscButtons) do
+RegisterTheme(item.btn, "Bg2")
+RegisterTheme(item.btn, "Text")
+RegisterTheme(item.stroke, "Accent2Stroke")
+end
+
+local function ApplyTheme()
+for k, v in pairs(PALETTE) do
+C[k] = v
+end
+
+for _, item in ipairs(themedElements) do
+local o = item.obj
+local role = item.role
+
+if role == "Bg" then
+o.BackgroundColor3 = C.Bg
+elseif role == "Bg2" then
+o.BackgroundColor3 = C.Bg2
+elseif role == "StarBg" then
+o.BackgroundColor3 = C.StarBg
+o.TextColor3 = C.StarText
+elseif role == "AccentBg" then
+o.BackgroundColor3 = C.Accent
+elseif role == "AccentStroke" then
+o.Color = C.Accent
+elseif role == "Accent2Stroke" then
+o.Color = C.Accent2
+elseif role == "RedStroke" then
+o.Color = C.Red
+elseif role == "Text" then
+o.TextColor3 = C.Text
+elseif role == "SubText" then
+o.TextColor3 = C.Sub
+elseif role == "Accent2Text" then
+o.TextColor3 = C.Accent2
+end
+
+end
+
+Title.Text = GetBrand()
+Watermark.Text = GetAuthor()
+SetWatermark.Text = GetAuthor()
+
+end
+
+-- ═══════════════════════════════════════════════════════
+--   LOGIC
+-- ═══════════════════════════════════════════════════════
+local autoEnabled = false
+
+local function ParseDelay()
+local n = tonumber(DelayBox.Text)
+
+if not n or n < 0 then
+n = 0
+end
+
+return n
+
+end
+
+DelayBox.FocusLost:Connect(function()
+DelayBox.Text = tostring(ParseDelay())
+end)
+
+AutoBtn.MouseButton1Click:Connect(function()
+PlayClick()
+
+autoEnabled = not autoEnabled
+
+AutoBtn.Text = T("autoAll") .. ": " ..
+(autoEnabled and T("on") or T("off"))
+
+AutoBtn.TextColor3 = autoEnabled and C.Green or C.Text
+
+end)
+
+SettingsBtn.MouseButton1Click:Connect(function()
+PlayClick()
+SetFrame.Visible = not SetFrame.Visible
+end)
+
+SetCloseBtn.MouseButton1Click:Connect(function()
+PlayClick()
+SetFrame.Visible = false
+end)
+
+-- ==== SIZE ====
+local function UpdateSizeLabel()
+SizeValueLbl.Text = math.floor(MainScale.Scale * 100 + 0.5) .. "%"
+end
+
+SizeMinusBtn.MouseButton1Click:Connect(function()
+PlayClick()
+
+MainScale.Scale = math.max(
+MIN_SCALE,
+math.floor((MainScale.Scale - 0.05) * 100 + 0.5) / 100
+)
+
+settings.uiScale = MainScale.Scale
+UpdateSizeLabel()
+
+end)
+
+SizePlusBtn.MouseButton1Click:Connect(function()
+PlayClick()
+
+MainScale.Scale = math.min(
+MAX_SCALE,
+math.floor((MainScale.Scale + 0.05) * 100 + 0.5) / 100
+)
+
+settings.uiScale = MainScale.Scale
+UpdateSizeLabel()
+
+end)
+
+SizeValueLbl.MouseButton1Click:Connect(function()
+PlayClick()
+
+MainScale.Scale = 0.85
+settings.uiScale = 0.85
+
+UpdateSizeLabel()
+
+end)
+
+SizeMinusBtn.MouseEnter:Connect(function()
+SizeMinusBtn.BackgroundColor3 = C.Bg2:Lerp(C.Accent2, 0.18)
+smbs.Transparency = 0.2
+end)
+
+SizeMinusBtn.MouseLeave:Connect(function()
+SizeMinusBtn.BackgroundColor3 = C.Bg2
+smbs.Transparency = 0.5
+end)
+
+SizePlusBtn.MouseEnter:Connect(function()
+SizePlusBtn.BackgroundColor3 = C.Bg2:Lerp(C.Accent2, 0.18)
+spbs.Transparency = 0.2
+end)
+
+SizePlusBtn.MouseLeave:Connect(function()
+SizePlusBtn.BackgroundColor3 = C.Bg2
+spbs.Transparency = 0.5
+end)
+
+SizeValueLbl.MouseEnter:Connect(function()
+SizeValueLbl.BackgroundColor3 = C.Bg2:Lerp(C.Accent, 0.18)
+svs.Transparency = 0.2
+end)
+
+SizeValueLbl.MouseLeave:Connect(function()
+SizeValueLbl.BackgroundColor3 = C.Bg2
+svs.Transparency = 0.5
+end)
+
+UpdateSizeLabel()
+
+-- ═══════════════════════════════════════════════════════
+--   PLAYER LIST
+-- ═══════════════════════════════════════════════════════
+local perPlayerAuto = {}
+local playerRows = {}
+
+local function MakeRow(plr)
+local row = Instance.new("Frame")
+row.Size = UDim2.new(1, 0, 0, 40)
+row.BackgroundColor3 = C.Bg2
+row.BorderSizePixel = 0
+row.Parent = PlayerScroll
+
+local rc = Instance.new("UICorner")
+rc.CornerRadius = UDim.new(0, 6)
+rc.Parent = row
+
+RegisterTheme(row, "Bg2")
+
+local BUTTONS_W = 96
+local AVATAR_W = 36
+
+local av = Instance.new("ImageLabel")
+av.Size = UDim2.new(0, 32, 0, 32)
+av.Position = UDim2.new(0, 4, 0, 4)
+av.BackgroundColor3 = C.Bg
+av.BorderSizePixel = 0
+av.Image = ""
+av.Parent = row
+
+local avc = Instance.new("UICorner")
+avc.CornerRadius = UDim.new(1, 0)
+avc.Parent = av
+
+local avs = Instance.new("UIStroke")
+avs.Color = C.Accent2
+avs.Thickness = 1
+avs.Transparency = 0.4
+avs.Parent = av
+
+RegisterTheme(av, "Bg")
+RegisterTheme(avs, "Accent2Stroke")
+
+task.spawn(function()
+local url = GetAvatar(plr.UserId)
+if url ~= "" and av.Parent then
+av.Image = url
+end
+end)
+
+local displayLbl = Instance.new("TextLabel")
+displayLbl.Size = UDim2.new(1, -(BUTTONS_W + 12 + AVATAR_W), 0, 16)
+displayLbl.Position = UDim2.new(0, 4 + AVATAR_W, 0, 3)
+displayLbl.BackgroundTransparency = 1
+displayLbl.Text = plr.DisplayName
+displayLbl.TextColor3 = C.Text
+displayLbl.Font = FONT_B
+displayLbl.TextSize = 12
+displayLbl.TextXAlignment = Enum.TextXAlignment.Left
+displayLbl.TextTruncate = Enum.TextTruncate.AtEnd
+displayLbl.Parent = row
+
+RegisterTheme(displayLbl, "Text")
+
+local userLbl = Instance.new("TextLabel")
+userLbl.Size = UDim2.new(1, -(BUTTONS_W + 12 + AVATAR_W), 0, 14)
+userLbl.Position = UDim2.new(0, 4 + AVATAR_W, 0, 20)
+userLbl.BackgroundTransparency = 1
+userLbl.Text = "@" .. plr.Name .. " (" .. plr.UserId .. ")"
+userLbl.TextColor3 = C.Sub
+userLbl.Font = FONT
+userLbl.TextSize = 10
+userLbl.TextXAlignment = Enum.TextXAlignment.Left
+userLbl.TextTruncate = Enum.TextTruncate.AtEnd
+userLbl.Parent = row
+
+RegisterTheme(userLbl, "SubText")
+
+local gb = Instance.new("TextButton")
+gb.Size = UDim2.new(0, 28, 0, 32)
+gb.Position = UDim2.new(1, -(BUTTONS_W + 2), 0, 4)
+gb.BackgroundColor3 = C.Accent
+gb.Text = "🎯"
+gb.TextColor3 = Color3.new(1, 1, 1)
+gb.Font = FONT_B
+gb.TextSize = 12
+gb.AutoButtonColor = false
+gb.BorderSizePixel = 0
+gb.Parent = row
+
+local gbc = Instance.new("UICorner")
+gbc.CornerRadius = UDim.new(0, 5)
+gbc.Parent = gb
+
+RegisterTheme(gb, "AccentBg")
+
+local tb = Instance.new("TextButton")
+tb.Size = UDim2.new(0, 28, 0, 32)
+tb.Position = UDim2.new(1, -(BUTTONS_W - 32), 0, 4)
+tb.BackgroundColor3 = C.Red
+tb.Text = "💥"
+tb.TextColor3 = Color3.new(1, 1, 1)
+tb.Font = FONT_B
+tb.TextSize = 12
+tb.AutoButtonColor = false
+tb.BorderSizePixel = 0
+tb.Parent = row
+
+local tbc = Instance.new("UICorner")
+tbc.CornerRadius = UDim.new(0, 5)
+tbc.Parent = tb
+
+local ab = Instance.new("TextButton")
+ab.Size = UDim2.new(0, 28, 0, 32)
+ab.Position = UDim2.new(1, -32, 0, 4)
+ab.BackgroundColor3 = C.Bg
+ab.Text = "⚡"
+ab.TextColor3 = C.Sub
+ab.Font = FONT_B
+ab.TextSize = 12
+ab.AutoButtonColor = false
+ab.BorderSizePixel = 0
+ab.Parent = row
+
+local abc = Instance.new("UICorner")
+abc.CornerRadius = UDim.new(0, 5)
+abc.Parent = ab
+
+local abs = Instance.new("UIStroke")
+abs.Color = C.Accent2
+abs.Thickness = 1
+abs.Transparency = 0.4
+abs.Parent = ab
+
+local function UpdateAutoVisual()
+local on = perPlayerAuto[plr] == true
+
+ab.BackgroundColor3 = on and C.Accent2 or C.Bg
+ab.TextColor3 = on and Color3.new(1, 1, 1) or C.Sub
+abs.Transparency = on and 0 or 0.4
+
+end
+
+UpdateAutoVisual()
+
+gb.MouseButton1Click:Connect(function()
+PlayClick()
+GrabPlayer(plr)
+end)
+
+tb.MouseButton1Click:Connect(function()
+PlayClick()
+ThrowPlayer()
+end)
+
+ab.MouseButton1Click:Connect(function()
+PlayClick()
+
+perPlayerAuto[plr] = not (perPlayerAuto[plr] == true)
+UpdateAutoVisual()
+
+end)
+
+plr.Changed:Connect(function(prop)
+if prop == "DisplayName" then
+displayLbl.Text = plr.DisplayName
+elseif prop == "Name" then
+userLbl.Text = "@" .. plr.Name .. " (" .. plr.UserId .. ")"
+end
+end)
+
+return row
+
+end
+
+local function RefreshPlayerList()
+for _, r in pairs(playerRows) do
+r:Destroy()
+end
+
+playerRows = {}
+
+for _, plr in ipairs(Players:GetPlayers()) do
+if plr ~= LocalPlayer then
+playerRows[plr] = MakeRow(plr)
+end
+end
+
+end
+
+Players.PlayerAdded:Connect(RefreshPlayerList)
+
+Players.PlayerRemoving:Connect(function(plr)
+if playerRows[plr] then
+playerRows[plr]:Destroy()
+playerRows[plr] = nil
+end
+
+perPlayerAuto[plr] = nil
+
+end)
+
+RefreshPlayerList()
+
+-- ═══════════════════════════════════════════════════════
+--   AUTO CYCLE
+-- ═══════════════════════════════════════════════════════
+task.spawn(function()
+while true do
+task.wait(ParseDelay())
+
+for plr, enabled in pairs(perPlayerAuto) do
+if enabled and plr and plr.Parent and plr.Character then
+GrabPlayer(plr)
+task.wait(0.01)
+ThrowPlayer()
+task.wait(0.01)
+end
+end
+
+if autoEnabled then
+for _, plr in ipairs(Players:GetPlayers()) do
+if plr ~= LocalPlayer and plr.Character then
+GrabPlayer(plr)
+task.wait(0.01)
+ThrowPlayer()
+task.wait(0.01)
+end
+end
+end
+
+end
+
+end)
+
+-- ═══════════════════════════════════════════════════════
+--   OPEN / DRAG
+-- ═══════════════════════════════════════════════════════
+StarBtn.MouseButton1Click:Connect(function()
+PlayClick()
+
+MainFrame.Visible = not MainFrame.Visible
+
+if not MainFrame.Visible then
+SetFrame.Visible = false
+end
+
+end)
+
+local function MakeDraggable(handle, frame)
+local dragging, dragStart, startPos
+
+handle.InputBegan:Connect(function(input)
+if input.UserInputType == Enum.UserInputType.MouseButton1
+or input.UserInputType == Enum.UserInputType.Touch then
+
+dragging = true
+dragStart = input.Position
+startPos = frame.Position
+
+input.Changed:Connect(function()
+if input.UserInputState == Enum.UserInputState.End then
+dragging = false
+end
+end)
+
+end
+
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+if dragging and (
+input.UserInputType == Enum.UserInputType.MouseMovement
+or input.UserInputType == Enum.UserInputType.Touch
+) then
+
+local delta = input.Position - dragStart
+
+frame.Position = UDim2.new(
+startPos.X.Scale,
+startPos.X.Offset + delta.X,
+startPos.Y.Scale,
+startPos.Y.Offset + delta.Y
+)
+
+end
+
+end)
+
+end
+
+MakeDraggable(StarBtn, StarBtn)
+MakeDraggable(Title, MainFrame)
+MakeDraggable(SetTitle, SetFrame)
+
+ApplyTheme()
+
+print("╔═══════════════════════════════════════════╗")
+print("║   ✦ VOID STAR v2.6.0 — T.H.T          ║")
+print("║   RED & BLACK LUXURY                   ║")
+print("╚═══════════════════════════════════════════╝")
