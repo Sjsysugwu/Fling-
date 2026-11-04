@@ -1,0 +1,114 @@
+--========================================================
+-- 🌪️ VORTEX | RED LUXURY
+-- ON/OFF | CAMERA ROTATION FIX
+--========================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local Player = Players.LocalPlayer
+local Enabled = false
+
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "VORTEX_GUI"
+GUI.ResetOnSpawn = false
+GUI.Parent = Player:WaitForChild("PlayerGui")
+
+local Button = Instance.new("TextButton")
+Button.Name = "VortexToggle"
+Button.Size = UDim2.fromOffset(125, 42)
+Button.Position = UDim2.new(1, -140, 0, 20)
+Button.BackgroundColor3 = Color3.fromRGB(65, 0, 12)
+Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Button.Text = "VORTEX : OFF"
+Button.TextSize = 14
+Button.Font = Enum.Font.GothamBold
+Button.Parent = GUI
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 10)
+Corner.Parent = Button
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(255, 20, 45)
+Stroke.Thickness = 2
+Stroke.Parent = Button
+
+Button.MouseButton1Click:Connect(function()
+	Enabled = not Enabled
+
+	Button.Text = Enabled and "VORTEX : ON" or "VORTEX : OFF"
+	Button.BackgroundColor3 = Enabled
+		and Color3.fromRGB(180, 0, 25)
+		or Color3.fromRGB(65, 0, 12)
+
+	local Character = Player.Character
+	local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+
+	if Humanoid then
+		Humanoid.AutoRotate = true
+	end
+end)
+
+-- الحركة: الكاميرا تلتف بحرية والشخصية لا تتحرك بسبب دوران الكاميرا
+RunService.RenderStepped:Connect(function()
+	if not Enabled then return end
+
+	local Character = Player.Character
+	if not Character then return end
+
+	local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+	local RootPart = Character:FindFirstChild("HumanoidRootPart")
+
+	if not Humanoid or not RootPart then return end
+
+	local Direction = Humanoid.MoveDirection
+
+	if Direction.Magnitude < 0.01 then
+		return
+	end
+
+	local Camera = workspace.CurrentCamera
+	if not Camera then return end
+
+	local Forward = Vector3.new(
+		Camera.CFrame.LookVector.X,
+		0,
+		Camera.CFrame.LookVector.Z
+	)
+
+	local Right = Vector3.new(
+		Camera.CFrame.RightVector.X,
+		0,
+		Camera.CFrame.RightVector.Z
+	)
+
+	if Forward.Magnitude < 0.01 or Right.Magnitude < 0.01 then
+		return
+	end
+
+	Forward = Forward.Unit
+	Right = Right.Unit
+
+	local MoveForward = Direction:Dot(Forward)
+	local MoveRight = Direction:Dot(Right)
+
+	local TargetDirection
+
+	if math.abs(MoveRight) > math.abs(MoveForward) then
+		TargetDirection = MoveRight > 0 and Right or -Right
+	else
+		TargetDirection = MoveForward > 0 and Forward or -Forward
+	end
+
+	-- تغيير اتجاه الشخصية فقط عند وجود حركة
+	RootPart.CFrame = CFrame.lookAt(
+		RootPart.Position,
+		RootPart.Position + TargetDirection
+	)
+end)
+
+Player.CharacterAdded:Connect(function(Character)
+	local Humanoid = Character:WaitForChild("Humanoid")
+	Humanoid.AutoRotate = true
+end)
