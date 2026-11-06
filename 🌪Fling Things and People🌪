@@ -1,288 +1,353 @@
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+
+-- =====================================================
+-- 👑 OKUMAN KEY GATE
+-- Animated RED / WHITE / YELLOW
+-- Account notification + profile picture + clock
+-- SUCCESS / ERROR SOUND + COPY KEY
+-- =====================================================
+
 local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
 local SoundService = game:GetService("SoundService")
 
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
 
-local GuiParent = LocalPlayer:WaitForChild("PlayerGui")
-pcall(function()
-    if gethui then
-        GuiParent = gethui()
-    elseif game:GetService("CoreGui") then
-        GuiParent = game:GetService("CoreGui")
+local MY_KEY = "PUT-YOUR-KEY-HERE"
+local KEY_FILE = "combat_hub_key.txt"
+
+local SUCCESS_SOUND_ID = "rbxassetid://6895079853"
+local ERROR_SOUND_ID = "rbxassetid://9120386436"
+
+local function playSound(soundId)
+    local sound = Instance.new("Sound")
+    sound.SoundId = soundId
+    sound.Volume = 1
+    sound.Parent = SoundService
+    sound:Play()
+    sound.Ended:Connect(function()
+        sound:Destroy()
+    end)
+    task.delay(5, function()
+        if sound and sound.Parent then
+            sound:Destroy()
+        end
+    end)
+end
+
+local function readSaved()
+    if typeof(readfile) == "function" and typeof(isfile) == "function" then
+        if isfile(KEY_FILE) then
+            return readfile(KEY_FILE)
+        end
+    end
+    return nil
+end
+
+local function saveKey(key)
+    if typeof(writefile) == "function" then
+        pcall(writefile, KEY_FILE, key)
+    end
+end
+
+local function copyText(value)
+    if typeof(setclipboard) == "function" then
+        setclipboard(value)
+        return true
+    end
+    return false
+end
+
+-- TOP ACCOUNT NOTIFICATION
+local function showSuccessNotification()
+    local Notice = Instance.new("ScreenGui")
+    Notice.Name = "OKUMAN_Success_Notice"
+    Notice.ResetOnSpawn = false
+    Notice.DisplayOrder = 1000000
+    Notice.Parent = PlayerGui
+
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(0, 340, 0, 86)
+    Frame.Position = UDim2.new(0.5, -170, 0, -110)
+    Frame.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
+    Frame.BorderSizePixel = 0
+    Frame.Parent = Notice
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 14)
+    Corner.Parent = Frame
+
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = Color3.fromRGB(255, 20, 45)
+    Stroke.Thickness = 2
+    Stroke.Parent = Frame
+
+    local Avatar = Instance.new("ImageLabel")
+    Avatar.Size = UDim2.new(0, 58, 0, 58)
+    Avatar.Position = UDim2.new(0, 12, 0.5, -29)
+    Avatar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    Avatar.BorderSizePixel = 0
+    Avatar.Parent = Frame
+
+    local AvatarCorner = Instance.new("UICorner")
+    AvatarCorner.CornerRadius = UDim.new(1, 0)
+    AvatarCorner.Parent = Avatar
+
+    task.spawn(function()
+        local success, image = pcall(function()
+            return Players:GetUserThumbnailAsync(
+                Player.UserId,
+                Enum.ThumbnailType.HeadShot,
+                Enum.ThumbnailSize.Size100x100
+            )
+        end)
+        if success then
+            Avatar.Image = image
+        end
+    end)
+
+    local Name = Instance.new("TextLabel")
+    Name.Size = UDim2.new(1, -85, 0, 25)
+    Name.Position = UDim2.new(0, 80, 0, 10)
+    Name.BackgroundTransparency = 1
+    Name.Text = "@" .. Player.Name
+    Name.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Name.TextSize = 16
+    Name.Font = Enum.Font.GothamBold
+    Name.TextXAlignment = Enum.TextXAlignment.Left
+    Name.Parent = Frame
+
+    local Status = Instance.new("TextLabel")
+    Status.Size = UDim2.new(1, -85, 0, 20)
+    Status.Position = UDim2.new(0, 80, 0, 35)
+    Status.BackgroundTransparency = 1
+    Status.Text = "ACCESS GRANTED"
+    Status.TextColor3 = Color3.fromRGB(255, 35, 55)
+    Status.TextSize = 14
+    Status.Font = Enum.Font.GothamBold
+    Status.TextXAlignment = Enum.TextXAlignment.Left
+    Status.Parent = Frame
+
+    local Clock = Instance.new("TextLabel")
+    Clock.Size = UDim2.new(1, -85, 0, 18)
+    Clock.Position = UDim2.new(0, 80, 0, 57)
+    Clock.BackgroundTransparency = 1
+    Clock.TextColor3 = Color3.fromRGB(255, 220, 40)
+    Clock.TextSize = 12
+    Clock.Font = Enum.Font.Gotham
+    Clock.TextXAlignment = Enum.TextXAlignment.Left
+    Clock.Parent = Frame
+
+    local slideIn = TweenService:Create(
+        Frame,
+        TweenInfo.new(0.55, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+        {Position = UDim2.new(0.5, -170, 0, 18)}
+    )
+    slideIn:Play()
+
+    task.spawn(function()
+        for i = 1, 5 do
+            Clock.Text = "LOGIN TIME: " .. os.date("%H:%M:%S")
+            task.wait(1)
+        end
+    end)
+
+    task.delay(5, function()
+        if Frame.Parent then
+            local slideOut = TweenService:Create(
+                Frame,
+                TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                {Position = UDim2.new(0.5, -170, 0, -110)}
+            )
+            slideOut:Play()
+            slideOut.Completed:Wait()
+            Notice:Destroy()
+        end
+    end)
+end
+
+-- KEY CHECK
+local savedKey = readSaved()
+if savedKey == MY_KEY then
+    playSound(SUCCESS_SOUND_ID)
+    showSuccessNotification()
+    return
+end
+
+-- GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "OKUMAN_KEY_GATE"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.DisplayOrder = 999999
+ScreenGui.Parent = PlayerGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 380, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -190, 0.5, -150)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 13)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 16)
+MainCorner.Parent = MainFrame
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(255, 20, 45)
+MainStroke.Thickness = 2
+MainStroke.Parent = MainFrame
+
+-- TITLE
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -20, 0, 48)
+Title.Position = UDim2.new(0, 10, 0, 12)
+Title.BackgroundTransparency = 1
+Title.Text = "👑 XR key 👑"
+Title.TextSize = 27
+Title.Font = Enum.Font.GothamBlack
+Title.Parent = MainFrame
+
+task.spawn(function()
+    local colors = {
+        Color3.fromRGB(255, 20, 45),
+        Color3.fromRGB(255, 255, 255),
+        Color3.fromRGB(255, 220, 40)
+    }
+    local index = 1
+    while Title.Parent do
+        local nextIndex = index % #colors + 1
+        local tween = TweenService:Create(
+            Title,
+            TweenInfo.new(0.8, Enum.EasingStyle.Linear),
+            {TextColor3 = colors[nextIndex]}
+        )
+        tween:Play()
+        tween.Completed:Wait()
+        index = nextIndex
     end
 end)
 
--- دالة الإشعارات (تطلع من جهة اليمين)
-local function SendNotification(text)
-    local existing = GuiParent:FindFirstChild("DeltaNotificationUI")
-    if existing then
-        existing:Destroy()
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Size = UDim2.new(1, -20, 0, 25)
+Subtitle.Position = UDim2.new(0, 10, 0, 65)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Text = "ENTER YOUR ACCESS KEY"
+Subtitle.TextColor3 = Color3.fromRGB(220, 220, 220)
+Subtitle.TextSize = 13
+Subtitle.Font = Enum.Font.GothamBold
+Subtitle.Parent = MainFrame
+
+local Account = Instance.new("TextLabel")
+Account.Size = UDim2.new(1, -20, 0, 20)
+Account.Position = UDim2.new(0, 10, 0, 91)
+Account.BackgroundTransparency = 1
+Account.Text = "ACCOUNT: @" .. Player.Name
+Account.TextColor3 = Color3.fromRGB(255, 220, 40)
+Account.TextSize = 12
+Account.Font = Enum.Font.Gotham
+Account.Parent = MainFrame
+
+-- KEY BOX
+local KeyBox = Instance.new("TextBox")
+KeyBox.Size = UDim2.new(1, -40, 0, 42)
+KeyBox.Position = UDim2.new(0, 20, 0, 125)
+KeyBox.BackgroundColor3 = Color3.fromRGB(28, 25, 29)
+KeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyBox.PlaceholderText = "Enter key here..."
+KeyBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+KeyBox.Text = ""
+KeyBox.TextSize = 15
+KeyBox.Font = Enum.Font.Gotham
+KeyBox.ClearTextOnFocus = false
+KeyBox.Parent = MainFrame
+
+local BoxCorner = Instance.new("UICorner")
+BoxCorner.CornerRadius = UDim.new(0, 9)
+BoxCorner.Parent = KeyBox
+
+-- UNLOCK BUTTON
+local Unlock = Instance.new("TextButton")
+Unlock.Size = UDim2.new(1, -40, 0, 42)
+Unlock.Position = UDim2.new(0, 20, 0, 178)
+Unlock.BackgroundColor3 = Color3.fromRGB(190, 0, 25)
+Unlock.Text = "UNLOCK"
+Unlock.TextColor3 = Color3.fromRGB(255, 255, 255)
+Unlock.TextSize = 16
+Unlock.Font = Enum.Font.GothamBold
+Unlock.Parent = MainFrame
+
+local UnlockCorner = Instance.new("UICorner")
+UnlockCorner.CornerRadius = UDim.new(0, 9)
+UnlockCorner.Parent = Unlock
+
+-- COPY BUTTON: copies exactly what's in the key box
+local CopyButton = Instance.new("TextButton")
+CopyButton.Size = UDim2.new(1, -40, 0, 38)
+CopyButton.Position = UDim2.new(0, 20, 0, 228)
+CopyButton.BackgroundColor3 = Color3.fromRGB(255, 20, 45)
+CopyButton.Text = "COPY"
+CopyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CopyButton.TextSize = 15
+CopyButton.Font = Enum.Font.GothamBold
+CopyButton.Parent = MainFrame
+
+local CopyCorner = Instance.new("UICorner")
+CopyCorner.CornerRadius = UDim.new(0, 9)
+CopyCorner.Parent = CopyButton
+
+local Status = Instance.new("TextLabel")
+Status.Size = UDim2.new(1, -20, 0, 20)
+Status.Position = UDim2.new(0, 10, 1, -24)
+Status.BackgroundTransparency = 1
+Status.Text = ""
+Status.TextColor3 = Color3.fromRGB(255, 70, 70)
+Status.TextSize = 12
+Status.Font = Enum.Font.GothamBold
+Status.Parent = MainFrame
+
+-- COPY ACTION
+CopyButton.MouseButton1Click:Connect(function()
+    local textToCopy = KeyBox.Text
+
+    if textToCopy ~= "https://discord.gg/7hTNswjZS" then
+        if copyText(textToCopy) then
+            CopyButton.Text = "COPIED!"
+            Status.Text = "KEY COPIED"
+            task.wait(1)
+            if CopyButton.Parent then
+                CopyButton.Text = "COPY"
+                Status.Text = ""
+            end
+        else
+            Status.Text = "CLIPBOARD NOT SUPPORTED"
+        end
+    else
+        Status.Text = "ENTER KEY FIRST"
     end
+end)
 
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "DeltaNotificationUI"
-    ScreenGui.Parent = GuiParent
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- UNLOCK ACTION
+Unlock.MouseButton1Click:Connect(function()
+    if KeyBox.Text == MY_KEY then
+        saveKey(MY_KEY)
+        playSound(SUCCESS_SOUND_ID)
+        Status.Text = "ACCESS GRANTED"
+        Status.TextColor3 = Color3.fromRGB(80, 255, 120)
+        showSuccessNotification()
 
-    local Frame = Instance.new("Frame")
-    Frame.Size = UDim2.new(0, 260, 0, 45)
-    -- البدء من خارج الشاشة من جهة اليمين
-    Frame.Position = UDim2.new(1, 60, 1, -70)
-    Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    Frame.BorderSizePixel = 0
-    Frame.Parent = ScreenGui
-
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 8)
-    UICorner.Parent = Frame
-
-    local Accent = Instance.new("Frame")
-    Accent.Size = UDim2.new(0, 4, 1, 0)
-    Accent.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-    Accent.BorderSizePixel = 0
-    Accent.Parent = Frame
-
-    local AccentCorner = Instance.new("UICorner")
-    AccentCorner.CornerRadius = UDim.new(0, 2)
-    AccentCorner.Parent = Accent
-
-    local TextLabel = Instance.new("TextLabel")
-    TextLabel.Size = UDim2.new(1, -15, 1, 0)
-    TextLabel.Position = UDim2.new(0, 12, 0, 0)
-    TextLabel.BackgroundTransparency = 1
-    TextLabel.Font = Enum.Font.FredokaOne
-    TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TextLabel.TextSize = 13
-    TextLabel.TextXAlignment = Enum.TextXAlignment.Left
-    TextLabel.Text = text
-    TextLabel.Parent = Frame
-
-    -- الحركة للداخل من جهة اليمين
-    Frame:TweenPosition(UDim2.new(1, -275, 1, -70), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
-
-    task.spawn(function()
-        task.wait(2.5)
-        -- الخروج نحو اليمين
-        Frame:TweenPosition(UDim2.new(1, 60, 1, -70), Enum.EasingDirection.In, Enum.EasingStyle.Quad, 0.3, true)
-        task.wait(0.3)
+        task.wait(0.6)
         ScreenGui:Destroy()
-    end)
-end
-
-if GuiParent:FindFirstChild("SharinganIntro") then
-    GuiParent.SharinganIntro:Destroy()
-end
-
-local IntroGui = Instance.new("ScreenGui")
-IntroGui.Name = "SharinganIntro"
-IntroGui.ResetOnSpawn = false
-IntroGui.Parent = GuiParent
-
-local ScreenGlow = Instance.new("Frame")
-ScreenGlow.Name = "ScreenGlow"
-ScreenGlow.Parent = IntroGui
-ScreenGlow.Position = UDim2.new(0, 0, 0, 0)
-ScreenGlow.Size = UDim2.new(1, 0, 1, 0)
-ScreenGlow.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-ScreenGlow.BackgroundTransparency = 1
-ScreenGlow.BorderSizePixel = 0
-
-local MainContainer = Instance.new("Frame")
-MainContainer.Name = "MainContainer"
-MainContainer.Parent = IntroGui
-MainContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-MainContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainContainer.Size = UDim2.new(0, 0, 0, 0)
-MainContainer.BackgroundTransparency = 1
-
-local Sharingan = Instance.new("ImageLabel")
-Sharingan.Name = "Sharingan"
-Sharingan.Parent = MainContainer
-Sharingan.AnchorPoint = Vector2.new(0.5, 0.5)
-Sharingan.Position = UDim2.new(0.5, 0, 0.5, 0)
-Sharingan.Size = UDim2.new(1, 0, 1, 0)
-Sharingan.BackgroundTransparency = 1
-Sharingan.Image = "rbxthumb://type=Asset&id=87670900021703&w=420&h=420"
-
-local NameLabel = Instance.new("TextLabel")
-NameLabel.Name = "NameLabel"
-NameLabel.Parent = MainContainer
-NameLabel.AnchorPoint = Vector2.new(0.5, 0)
-NameLabel.Position = UDim2.new(0.5, 0, 0.62, 0)
-NameLabel.Size = UDim2.new(0.65, 0, 0.15, 0)
-NameLabel.BackgroundTransparency = 1
-NameLabel.Text = "👑 XR TORNADO 👑"
-NameLabel.TextColor3 = Color3.fromRGB(255, 30, 30)
-NameLabel.TextScaled = true
-NameLabel.Font = Enum.Font.FredokaOne
-NameLabel.TextStrokeTransparency = 0
-NameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-
-local IntroSound = Instance.new("Sound")
-IntroSound.Name = "IntroAudio"
-IntroSound.SoundId = "rbxassetid://6473868845"
-IntroSound.Volume = 1
-IntroSound.Parent = IntroGui
-
-local maxSize = 320
-
-IntroSound:Play()
-
-for i = 1, 40 do
-    local progress = i / 40
-    MainContainer.Size = UDim2.new(0, maxSize * progress, 0, maxSize * progress)
-    ScreenGlow.BackgroundTransparency = 1 - (progress * 0.4)
-    Sharingan.Rotation = Sharingan.Rotation + (12 * progress)
-    task.wait(0.015)
-end
-
-for i = 1, 60 do
-    Sharingan.Rotation = Sharingan.Rotation + 12
-    task.wait(0.015)
-end
-
-for i = 40, 1, -1 do
-    local speedMultiplier = i / 40
-    Sharingan.Rotation = Sharingan.Rotation + (12 * speedMultiplier)
-    task.wait(0.015)
-end
-
-for i = 30, 1, -1 do
-    local progress = i / 30
-    Sharingan.ImageTransparency = 1 - progress
-    NameLabel.TextTransparency = 1 - progress
-    NameLabel.TextStrokeTransparency = 1 - progress
-    ScreenGlow.BackgroundTransparency = 1 - (progress * 0.4)
-    IntroSound.Volume = progress
-    task.wait(0.015)
-end
-
-IntroGui:Destroy()
-
-local Configs_HUB = { 
-  Cor_Hub = Color3.fromRGB(0, 0, 0), 
-  Cor_Options = Color3.fromRGB(20, 20, 20), 
-  Cor_Stroke = Color3.fromRGB(255, 50, 50), 
-  Cor_Text = Color3.fromRGB(255, 255, 255), 
-  Cor_DarkText = Color3.fromRGB(150, 150, 150), 
-  Corner_Radius = UDim.new(0, 12), 
-  Text_Font = Enum.Font.FredokaOne 
-}
-
-local ClickSound = Instance.new("Sound")
-ClickSound.SoundId = "rbxassetid://6895079853"
-ClickSound.Volume = 1.5
-ClickSound.Parent = SoundService
-
-local function Create(instance, parent, props)
-  local new = Instance.new(instance)
-  if props then
-    for prop, value in pairs(props) do
-      new[prop] = value
+    else
+        playSound(ERROR_SOUND_ID)
+        Status.Text = "INVALID KEY"
+        Status.TextColor3 = Color3.fromRGB(255, 50, 50)
+        Unlock.Text = "TRY AGAIN"
+        task.wait(1)
+        if Unlock.Parent then
+            Unlock.Text = "UNLOCK"
+        end
     end
-  end
-  new.Parent = parent
-  return new
-end
-
-local function SetProps(instance, props)
-  if instance and props then
-    for prop, value in pairs(props) do
-      instance[prop] = value
-    end
-  end
-  return instance
-end
-
-local function Corner(parent, props)
-  local new = Create("UICorner", parent)
-  new.CornerRadius = Configs_HUB.Corner_Radius
-  if props then SetProps(new, props) end
-  return new
-end
-
-local function Stroke(parent, props)
-  local new = Create("UIStroke", parent)
-  new.Color = Configs_HUB.Cor_Stroke
-  new.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  new.Thickness = 2
-  
-  local gradient = Instance.new("UIGradient")
-  gradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 50, 50)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 20, 20)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 50, 50))
-  }
-  gradient.Rotation = 0
-  gradient.Parent = new
-  
-  coroutine.wrap(function()
-    while new.Parent do
-      gradient.Rotation = (gradient.Rotation + 2) % 360
-      RunService.RenderStepped:Wait()
-    end
-  end)()
-  
-  if props then SetProps(new, props) end
-  return new
-end
-
-local function BindClick(button, callback)
-    button.Activated:Connect(function()
-        callback()
-    end)
-end
-
-local function CreateTween(instance, prop, value, time, tweenWait)
-  local tween = TweenService:Create(instance, TweenInfo.new(time, Enum.EasingStyle.Linear), {[prop] = value})
-  tween:Play()
-  if tweenWait then tween.Completed:Wait() end
-end
-
-local function MakeDraggable(gui)
-  local dragging, dragInput, dragStart, startPos
-  gui.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-      dragging = true
-      dragStart = input.Position
-      startPos = gui.Position
-
-      input.Changed:Connect(function()
-        if input.UserInputState == Enum.UserInputState.End then dragging = false end
-      end)
-    end
-  end)
-
-  gui.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-      dragInput = input
-    end
-  end)
-
-  UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-      local delta = input.Position - dragStart
-      gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-  end)
-end
-
-local existingGui = GuiParent:FindFirstChild("GAROU XR7 library")
-if existingGui then existingGui:Destroy() end
-
-local ScreenGui = Create("ScreenGui", GuiParent, {
-  Name = "GAROU XR7 library",
-  ResetOnSpawn = false,
-  ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-})
-
-function DestroyScript()
-  ScreenGui:Destroy()
-end
+end)
 
 -- =========================================================
 -- 👑 XR TORNADO HUB
